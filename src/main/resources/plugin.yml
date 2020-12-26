@@ -1,0 +1,12 @@
+main: at.livekit.plugin.Plugin
+name: LiveKit
+version: 1.0
+author: Philip Lindner
+description: Server connector for something epic
+api-version: 1.16
+commands:
+  livekit:
+    description: An example command
+    usage: /livekit
+    permission: myplugin.mycommand
+    permission-message: You don't have the myplugin.mycommand permission.
