@@ -28,7 +28,7 @@ public class WorldListener implements Listener
 {
     //BLOCK EVENTS
 
-    @EventHandler
+    /*@EventHandler
     public void onBlockPlaceEvent(BlockPlaceEvent event) {
         LiveMap livemap = LiveKit.getLiveMap(event.getBlock().getWorld().getName());
         if(livemap == null) return;
@@ -137,5 +137,5 @@ public class WorldListener implements Listener
                 livemap.queue(bd.getChunk());
             }
         }
-    }
+    }*/
 }

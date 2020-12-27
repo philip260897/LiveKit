@@ -14,26 +14,30 @@ import org.json.JSONObject;
 
 import at.livekit.livekit.Identity;
 import at.livekit.plugin.Plugin;
+import at.livekit.server.IPacket;
 
 public class SettingsModule extends BaseModule 
 {
     public int liveKitVersion = 1;
     public int liveMapVersion = 1;
     public int liveKitPort = 8123;
+    public String serverName = "Minecraft Server";
 
-    public int liveMapTickRate = 8;
+    public int liveMapTickRate = 4;
     public boolean needsIdentity = true;
-    public String liveMap = null;
+    //public String liveMap = null;
     //public String[] liveMaps = new String[]{"world"};
     //public String[] capabilities = new String[]{"admin"};
     public Map<String, JSONObject> modules = new HashMap<String, JSONObject>();
 
-    public SettingsModule() {
-        super(1, "LiveKit Settings", "livekit.admin.settings", UpdateRate.NEVER);
+    public SettingsModule(ModuleListener listener) {
+        super(1, "LiveKit Settings", "livekit.admin.settings", UpdateRate.NEVER, listener);
     }
+
     
     @Override
     public void onEnable() {
+        super.onEnable();
         File settingsFile = new File(Plugin.workingDirectory+"/settings.json");
         if(!settingsFile.exists()) return;
 
@@ -42,20 +46,22 @@ public class SettingsModule extends BaseModule
             liveKitPort = json.getInt("liveKitPort");
             liveMapTickRate = json.getInt("liveMapTickRate");
             needsIdentity = json.getBoolean("needsIdentity");
-            liveMap = json.getString("liveMap");
+           // liveMap = json.getString("liveMap");
+            serverName = json.getString("serverName");
 
             if(liveMapTickRate > 20) liveMapTickRate = 20;
             if(liveMapTickRate < 1) liveMapTickRate = 1;
 
             JSONArray mods = json.getJSONArray("modules");
             for(int i = 0; i < mods.length(); i++) {
-                modules.put(mods.getJSONObject(i).getString("type"), mods.getJSONObject(i));
+                modules.put(mods.getJSONObject(i).getString("moduleType"), mods.getJSONObject(i));
             }
         }catch(Exception ex){ex.printStackTrace();}
     }
 
     public void registerModule(String type, JSONObject moduleInfo) {
         if(!modules.containsKey(type)) {
+            System.out.println("registering "+type);
             moduleInfo.remove("version");
             modules.put(type, moduleInfo);
         }
@@ -73,9 +79,10 @@ public class SettingsModule extends BaseModule
         JSONObject json = new JSONObject();
         json.put("liveKitPort", liveKitPort);
         json.put("liveMapTickRate", liveMapTickRate);
-        json.put("liveMap", liveMap);
+        //json.put("liveMap", liveMap);
         json.put("needsIdentity", needsIdentity);
         json.put("modules", modules.values());
+        json.put("serverName", serverName);
 
         try{
             PrintWriter writer = new PrintWriter(settingsFile);
@@ -83,9 +90,33 @@ public class SettingsModule extends BaseModule
             writer.flush();
             writer.close();
         }catch(Exception ex){ex.printStackTrace();}
+        super.onDisable();
     }
 
     @Override
+    public IPacket onJoinAsync(String uuid) {
+        JSONObject json = new JSONObject();
+        json.put("liveKitTickRate", liveMapTickRate);
+        json.put("needsIdentity", needsIdentity);
+        json.put("modules", modules);
+        return new ModuleUpdatePacket(this, json);
+    }
+
+    @Override
+    public Map<String, IPacket> onUpdateAsync(List<String> uuids) {
+        Map<String, IPacket> responses = new HashMap<String,IPacket>();
+        for(String uuid : uuids) {
+            responses.put(uuid, this.onJoinAsync(uuid));
+        }
+        return responses;
+    }
+
+    @Override
+    public IPacket onChangeAsync(String uuid, IPacket packet) {
+        return null;
+    }
+
+    /*@Override
     public JSONObject toJson(String uuid) {
         JSONObject json = super.toJson(uuid);
         json.put("liveKitVersion", liveKitVersion);
@@ -96,5 +127,5 @@ public class SettingsModule extends BaseModule
         json.put("liveMap", liveMap);
         json.put("modules", modules);
         return json;
-    }
+    }*/
 }

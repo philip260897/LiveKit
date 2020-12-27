@@ -8,6 +8,8 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import org.json.JSONObject;
 
@@ -54,6 +56,16 @@ public class TCPServer implements Runnable {
         }catch(IOException ex){}
     }
 
+    public List<String> getConnectedUUIDs() {
+        List<String> uuids = new ArrayList<String>();
+        synchronized(clients) {
+            for(LiveKitClient c : clients) {
+                uuids.add(c.getPlayerUUID());
+            }
+        }
+        return uuids;
+    }
+
     /*public void broadcast(IPacket packet) {
         System.out.println("[Server] Broadcasting to "+clients.size()+" clients!");
         synchronized(clients) {
@@ -62,6 +74,16 @@ public class TCPServer implements Runnable {
             }
         }
     }*/
+    public void broadcast(Map<String,IPacket> packets) {
+        synchronized(clients) {
+            for(LiveKitClient client : clients) {
+                if(client.hasIdentity()) {
+                    client.sendPacket(packets.get(client.getPlayerUUID()));
+                }
+            }
+        }
+    }
+
     public void broadcastForWorld(String world, IPacket packet) {
         int count = 0;
         synchronized(clients) {
@@ -170,7 +192,14 @@ public class TCPServer implements Runnable {
             thread.stop();
         }
 
+        public void sendPackets(List<IPacket> packets) {
+            for(IPacket p : packets)
+                sendPacket(p);
+        }
+
         public void sendPacket(IPacket packet) {
+            if(packet == null) return;
+            
             writer.println(packet.toJson().toString());
             writer.flush();
         }

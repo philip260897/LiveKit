@@ -2,8 +2,6 @@ package at.livekit.plugin;
 
 import java.io.File;
 import java.io.PrintWriter;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.logging.Logger;
 
 import org.bukkit.Material;
@@ -17,9 +15,8 @@ import org.json.JSONObject;
 
 import at.livekit.livekit.LiveKit;
 import at.livekit.livekit.PlayerAuth;
-import at.livekit.main.LiveEntity;
+import at.livekit.modules.BaseModule;
 import at.livekit.utils.HeadLibrary;
-import at.livekit.utils.HeadLibraryEvent;
 import net.md_5.bungee.api.ChatColor;
 
 public class Plugin extends JavaPlugin implements CommandExecutor {
@@ -45,7 +42,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 		logger.info("Biomes: " + Biome.values().length);
 
 		try{
-			LiveKit.start();
+			LiveKit.getInstance().onEnable();
 		}catch(Exception ex){ex.printStackTrace();}
 
 		/*for(String world : worlds) {
@@ -74,7 +71,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 		});
 		server.open();*/
 
-		HeadLibrary.setHeadLibraryListener(new HeadLibraryEvent(){
+		/*HeadLibrary.setHeadLibraryListener(new HeadLibraryEvent(){
 			@Override
 			public void onHeadResolved(String uuid, String base64) {
 				LiveEntity entity = (LiveEntity)LiveKit.getLiveMap(LiveKit.getLiveMapWorld()).getSyncable(uuid);
@@ -83,16 +80,16 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 				}
 				
 			}
-		});
+		});*/
 
 
-		this.getServer().getPluginManager().registerEvents(new PlayerListener(), this);
-		this.getServer().getPluginManager().registerEvents(new WorldListener(), this);
+		//this.getServer().getPluginManager().registerEvents(new PlayerListener(), this);
+		//this.getServer().getPluginManager().registerEvents(new WorldListener(), this);
     }
     
     @Override
     public void onDisable() {
-		LiveKit.dispose();
+		LiveKit.getInstance().onDisable();
 			
 		try{
 			HeadLibrary.dispose();
@@ -126,6 +123,27 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 					if(sender instanceof Player) {
 						Player player = (Player) sender;
 						player.sendMessage(PlayerAuth.get(player.getUniqueId().toString()).generateClaimPin());
+					}
+				}
+				if(args[0].equalsIgnoreCase("modules")) {
+					for(BaseModule module : LiveKit.getInstance().getModules()) {
+						sender.sendMessage("["+module.getType()+"] Version: "+module.getVersion()+" Enabled: "+module.isEnabled());
+					}
+				}
+			}
+			if(args.length == 3) {
+				if(args[0].equalsIgnoreCase("modules")) {
+					String module = args[1];
+					String action = args[2];
+
+					BaseModule m = LiveKit.getInstance().getModuleManager().getModule(module);
+					if(m != null) {
+						if(action.equals("enable")) {
+							LiveKit.getInstance().getModuleManager().enableModule(m.getType());
+						} else {
+							LiveKit.getInstance().getModuleManager().disableModule(m.getType());
+						}
+						LiveKit.getInstance().notifyQueue(m.getType());
 					}
 				}
 			}

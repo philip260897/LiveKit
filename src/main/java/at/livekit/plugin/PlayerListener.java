@@ -25,7 +25,7 @@ import org.bukkit.event.entity.EntityDeathEvent;
 
 public class PlayerListener implements Listener
 {
-	@EventHandler
+	/*@EventHandler
 	public void onPlayerJoin(PlayerJoinEvent event) 
 	{
 		Player player = event.getPlayer();
@@ -66,6 +66,6 @@ public class PlayerListener implements Listener
 				entity.updateLocation(player.getLocation().getX(), player.getLocation().getY(), player.getLocation().getZ());
 			}
 		}
-	}
+	}*/
 
 }
