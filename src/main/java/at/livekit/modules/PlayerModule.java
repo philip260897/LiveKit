@@ -8,9 +8,11 @@ import java.util.Map.Entry;
 
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -18,6 +20,7 @@ import org.json.JSONObject;
 import at.livekit.main.LiveSyncable;
 import at.livekit.plugin.Plugin;
 import at.livekit.server.IPacket;
+import at.livekit.utils.HeadLibrary;
 
 public class PlayerModule extends BaseModule implements Listener
 {
@@ -27,10 +30,19 @@ public class PlayerModule extends BaseModule implements Listener
         super(1, "Players", "livekit.basics.map", UpdateRate.NEVER, listener, true);
     }
      
+    public LPlayer getPlayer(String uuid) {
+        return _players.get(uuid);
+    }
+
     @Override
     public void onEnable() {
         for(OfflinePlayer player : Bukkit.getOfflinePlayers()) {
             _players.put(player.getUniqueId().toString(), LPlayer.fromOfflinePlayer(player));
+        }
+        for(Player player : Bukkit.getOnlinePlayers()) {
+            if(!_players.containsKey(player.getUniqueId().toString())) {
+                _players.put(player.getUniqueId().toString(), LPlayer.fromOfflinePlayer(player));
+            }
         }
         Bukkit.getServer().getPluginManager().registerEvents(this, Plugin.instance);
         super.onEnable();
@@ -40,6 +52,8 @@ public class PlayerModule extends BaseModule implements Listener
     @EventHandler
 	public void onPlayerJoin(PlayerJoinEvent event) 
 	{
+        if(!isEnabled()) return;
+        Player p = event.getPlayer();
         LPlayer player = null;
         if(_players.containsKey(event.getPlayer().getUniqueId().toString())) {
             player = _players.get(event.getPlayer().getUniqueId().toString());
@@ -49,14 +63,34 @@ public class PlayerModule extends BaseModule implements Listener
         }
         player.updateLastOnline(System.currentTimeMillis(), true);
         player.updateWorld(event.getPlayer().getLocation().getWorld().getName());
+		player.updateLocation(p.getLocation().getX(), p.getLocation().getY(), p.getLocation().getZ());
+		player.updateHealth(p.getHealthScale());
+		player.updateExhaustion(p.getExhaustion());
+
+        if(!HeadLibrary.has(p.getUniqueId().toString())) { 
+			HeadLibrary.resolveAsync(p.getUniqueId().toString());
+		} 
+		player.updateHead(HeadLibrary.get(p.getUniqueId().toString()));
        // player.assets.add(new LAsset("asset-bank-amount", "Bank Amount", "0$"));
         //player.markDirty();
         notifyChange();
+    }
+    
+    @EventHandler
+	public void onPlayerMove(PlayerMoveEvent event) {
+        if(!isEnabled()) return;
+        LPlayer player = null;
+        if(_players.containsKey(event.getPlayer().getUniqueId().toString())) {
+            player = _players.get(event.getPlayer().getUniqueId().toString());
+            player.updateLocation(event.getPlayer().getLocation().getX(), event.getPlayer().getLocation().getY(), event.getPlayer().getLocation().getZ());
+            notifyChange();
+        }
     }
 
     @EventHandler
 	public void onPlayerQuit(PlayerQuitEvent event) 
 	{
+        if(!isEnabled()) return;
         LPlayer player = null;
         if(_players.containsKey(event.getPlayer().getUniqueId().toString())) {
             player = _players.get(event.getPlayer().getUniqueId().toString());
@@ -93,7 +127,7 @@ public class PlayerModule extends BaseModule implements Listener
 
         json.put("players", players);
 
-        return new ModuleUpdatePacket(this, json);
+        return new ModuleUpdatePacket(this, json, true);
     }
 
     @Override
@@ -114,7 +148,7 @@ public class PlayerModule extends BaseModule implements Listener
                 }
                 json.put("players", players);
             
-                responses.put(uuid, new ModuleUpdatePacket(this, json));
+                responses.put(uuid, new ModuleUpdatePacket(this, json, false));
             //return new ModuleUpdatePacket(this, json);
            }
            for(LiveSyncable l : _players.values()) l.clearChanges();
@@ -128,12 +162,18 @@ public class PlayerModule extends BaseModule implements Listener
     }
 
     public static class LPlayer extends LiveSyncable {
-        
+        public String head;
         public String name = "Unknown";
         public long lastOnline = 0;
         public long firstPlayed = 0;
         public boolean online = false;
         public String world = "Unknown";
+        public double x = 0;
+        public double y = 0;
+        public double z = 0;
+        public double health = 0;
+        public int armor = 0;
+        public double exhaustion = 0;
 
         public List<LAsset> assets = new ArrayList<LAsset>();
         public List<LMapAsset> mapAssets = new ArrayList<LMapAsset>();
@@ -170,6 +210,32 @@ public class PlayerModule extends BaseModule implements Listener
             this.world = world;
             this.markDirty("world");
         }
+        public void updateLocation(double x, double y, double z){
+            this.x = x;
+            this.y = y;
+            this.z = z;
+            this.markDirty("x", "y", "z");
+        }
+    
+        public void updateHead(String head) {
+            this.head = head;
+            this.markDirty("head");
+        }
+    
+        public void updateArmor(int armor) {
+            this.armor = armor;
+            this.markDirty("armor");
+        }
+    
+        public void updateHealth(double health) {
+            this.health = health;
+            this.markDirty("health");
+        }
+    
+        public void updateExhaustion(double exhaustion) {
+            this.exhaustion = exhaustion;
+            this.markDirty("exhaustion");
+        }
 
         private JSONObject censor(JSONObject json) {
             json.remove("firstPlayed");
@@ -182,6 +248,11 @@ public class PlayerModule extends BaseModule implements Listener
             p.lastOnline = player.getLastPlayed();
             p.firstPlayed = player.getFirstPlayed();
             p.online = player.isOnline();
+
+            if(!HeadLibrary.has(player.getUniqueId().toString())) { 
+                HeadLibrary.resolveAsync(player.getUniqueId().toString());
+            } 
+            p.updateHead(HeadLibrary.get(player.getUniqueId().toString()));
 
             return p;
         }

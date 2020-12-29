@@ -48,6 +48,7 @@ public abstract class BaseModule
     
     public void onEnable() {
         enabled = true;
+        if(listener != null) listener.onFullUpdate(getType());
     }
 
     public void onDisable() {
@@ -128,22 +129,27 @@ public abstract class BaseModule
 
     public static interface ModuleListener {
         void onDataChangeAvailable(String moduleType);
+
+        void onFullUpdate(String moduleType);
     }
 
     public static class ModuleUpdatePacket extends ModulePacket 
     {
         public static int PACKET_ID = 15;
         private JSONObject data;
+        private boolean full;
 
-        public ModuleUpdatePacket(BaseModule module, JSONObject data) {
+        public ModuleUpdatePacket(BaseModule module, JSONObject data, boolean full) {
             super(module.getType());
             this.data = data;
+            this.full = full;
         }
 
         @Override
         public JSONObject toJson() {
             JSONObject json = super.toJson();
             json.put("data", data);
+            json.put("full", full);
             json.put("packet_id", PACKET_ID);
             return json;
         }

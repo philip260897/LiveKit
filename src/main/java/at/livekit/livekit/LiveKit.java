@@ -40,11 +40,21 @@ public class LiveKit implements ModuleListener, Runnable {
     private TCPServer _server;
     private ModuleManager _modules = new ModuleManager(this);
     private List<String> _moduleUpdates = new ArrayList<String>();
+    private List<String> _moduleFull = new ArrayList<String>();
     private List<RequestPacket> _packetsIncoming = new ArrayList<RequestPacket>();
 
     @Override
     public void onDataChangeAvailable(String moduleType) {
         notifyQueue(moduleType);
+    }
+
+    @Override
+    public void onFullUpdate(String moduleType) {
+        synchronized(_moduleFull) {
+            if(!_moduleFull.contains(moduleType)) {
+                _moduleFull.add(moduleType);
+            }
+        }
     }
 
     public void notifyQueue(String moduleType) {
@@ -155,6 +165,22 @@ public class LiveKit implements ModuleListener, Runnable {
 
                     if(module.equals("SettingsModule")) {
                         _server.broadcast(_modules.modulesAvailableAsync(clientUUIDs));
+                    }
+                }
+            }while(module != null);
+            module = null;
+            do {
+                synchronized(_moduleFull) {
+                    if(_moduleFull.size() > 0) {
+                        module = _moduleFull.remove(0);
+                    } else { 
+                        module = null;
+                    }
+                }
+                if(module != null) {
+                    BaseModule m = _modules.getModule(module);
+                    for(LiveKitClient client : _server.getClients()) {
+                        client.sendPacket(m.onJoinAsync(client.getPlayerUUID()));
                     }
                 }
             }while(module != null);
@@ -288,6 +314,8 @@ public class LiveKit implements ModuleListener, Runnable {
     public Collection<BaseModule> getModules() {
         return _modules.getModules();
     }
+
+
 }
 
 

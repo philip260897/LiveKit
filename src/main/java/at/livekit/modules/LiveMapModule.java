@@ -55,7 +55,7 @@ public class LiveMapModule extends BaseModule implements Listener
     private String world;
     private BoundingBox boundingBox;
     private HashMap<String, byte[]> _regions = new HashMap<String, byte[]>();
-    private HashMap<String, LiveSyncable> _syncables = new HashMap<String, LiveSyncable>();
+    //private HashMap<String, LiveSyncable> _syncables = new HashMap<String, LiveSyncable>();
 
     private List<IPacket> _updates = new ArrayList<IPacket>();
     
@@ -130,7 +130,7 @@ public class LiveMapModule extends BaseModule implements Listener
             save();
         }catch(Exception ex){ex.printStackTrace();}
         _regions.clear();
-        _syncables.clear();
+        //_syncables.clear();
         _updates.clear();
         _queueChunks.clear();
 
@@ -154,13 +154,13 @@ public class LiveMapModule extends BaseModule implements Listener
             }
         }
 
-        synchronized(_syncables) {
+       /* synchronized(_syncables) {
             for(Entry<String, LiveSyncable> entry : _syncables.entrySet()) {
                 syncable.put(entry.getValue().serialize());
             }
-        }
+        }*/
 
-        return new ModuleUpdatePacket(this, json);
+        return new ModuleUpdatePacket(this, json, true);
     }
 
     @Override 
@@ -181,14 +181,14 @@ public class LiveMapModule extends BaseModule implements Listener
             _updates.clear();
         }
 
-        synchronized(_syncables) {
+       /* synchronized(_syncables) {
             for(Entry<String, LiveSyncable> entry : _syncables.entrySet()) {
                 syncable.put(entry.getValue().serializeChanges());
             }
-        }
+        }*/
 
         for(String uuid : uuids) {
-            response.put(uuid, new ModuleUpdatePacket(this, json));
+            response.put(uuid, new ModuleUpdatePacket(this, json, false));
         }
 
         return response;
@@ -409,41 +409,41 @@ public class LiveMapModule extends BaseModule implements Listener
     @EventHandler
 	public void onPlayerJoin(PlayerJoinEvent event) 
 	{
-        if(!isEnabled()) return;
+        /*if(!isEnabled()) return;
 		Player player = event.getPlayer();
         if(!event.getPlayer().getWorld().getName().equals(world)) return;
 
 		LiveEntity entity = new LiveEntity(player.getUniqueId().toString(), player.getDisplayName(), null);
 		entity.updateLocation(player.getLocation().getX(), player.getLocation().getY(), player.getLocation().getZ());
 		entity.updateHealth(player.getHealthScale());
-		entity.updateExhaustion(player.getExhaustion());
+		entity.updateExhaustion(player.getExhaustion());*/
 
 		/*if(!HeadLibrary.has(player.getUniqueId().toString())) { 
 			HeadLibrary.resolveAsync(player.getUniqueId().toString());
 		} 
 		entity.updateHead(HeadLibrary.get(player.getUniqueId().toString()));
 */
-        synchronized(_syncables) {
+       /* synchronized(_syncables) {
             _syncables.put(entity.getUUID(), entity);
         }
-        notifyChange();
+        notifyChange();*/
 	}
 	
 	@EventHandler
 	public void onPlayerQuit(PlayerQuitEvent event) 
 	{
-        if(!isEnabled()) return;
+        /*if(!isEnabled()) return;
         if(!event.getPlayer().getWorld().getName().equals(world)) return;
 
         synchronized(_syncables) {
             _syncables.remove(event.getPlayer().getUniqueId().toString());
         }
-        notifyChange();
+        notifyChange();*/
 	}
 
 	@EventHandler
 	public void onPlayerMove(PlayerMoveEvent event) {
-        if(!isEnabled()) return;
+        /*if(!isEnabled()) return;
 		Player player = event.getPlayer();
         if(!event.getPlayer().getWorld().getName().equals(world)) return;
 
@@ -454,7 +454,7 @@ public class LiveMapModule extends BaseModule implements Listener
             }
         }
 
-        notifyChange();
+        notifyChange();*/
 	}
 
     //World events
@@ -477,7 +477,7 @@ public class LiveMapModule extends BaseModule implements Listener
         if(!event.getBlock().getWorld().getName().equals(world)) return;
 
         if(event.getBlock().getY() == event.getBlock().getWorld().getHighestBlockAt(event.getBlock().getX(), event.getBlock().getZ()).getY()) {
-            updateBlock(event.getBlock());
+            updateBlock(event.getBlock().getRelative(BlockFace.DOWN));
         }        
     }
 

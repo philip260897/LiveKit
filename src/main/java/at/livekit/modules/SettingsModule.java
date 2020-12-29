@@ -99,7 +99,7 @@ public class SettingsModule extends BaseModule
         json.put("liveKitTickRate", liveMapTickRate);
         json.put("needsIdentity", needsIdentity);
         json.put("modules", modules);
-        return new ModuleUpdatePacket(this, json);
+        return new ModuleUpdatePacket(this, json, true);
     }
 
     @Override

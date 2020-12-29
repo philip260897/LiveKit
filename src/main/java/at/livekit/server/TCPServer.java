@@ -41,6 +41,10 @@ public class TCPServer implements Runnable {
         thread.start();
     }
 
+    public List<LiveKitClient> getClients() {
+        return clients;
+    }
+
     public void close() {
         System.out.println("Shutting down LiveKit Server");
         abort = true;

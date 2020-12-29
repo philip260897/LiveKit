@@ -44,6 +44,7 @@ public class ModuleManager
         this.registerModule(new SettingsModule(listener));
         this.registerModule(new PlayerModule(listener));
         this.registerModule(new LiveMapModule("world", listener));
+        this.registerModule(new WeatherTimeModule("world", listener));
 
         this.settings = (SettingsModule) _modules.get("SettingsModule");
         this.settings.onEnable();

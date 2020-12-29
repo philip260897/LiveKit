@@ -16,7 +16,10 @@ import org.json.JSONObject;
 import at.livekit.livekit.LiveKit;
 import at.livekit.livekit.PlayerAuth;
 import at.livekit.modules.BaseModule;
+import at.livekit.modules.PlayerModule;
+import at.livekit.modules.PlayerModule.LPlayer;
 import at.livekit.utils.HeadLibrary;
+import at.livekit.utils.HeadLibraryEvent;
 import net.md_5.bungee.api.ChatColor;
 
 public class Plugin extends JavaPlugin implements CommandExecutor {
@@ -71,16 +74,16 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 		});
 		server.open();*/
 
-		/*HeadLibrary.setHeadLibraryListener(new HeadLibraryEvent(){
+		HeadLibrary.setHeadLibraryListener(new HeadLibraryEvent(){
 			@Override
 			public void onHeadResolved(String uuid, String base64) {
-				LiveEntity entity = (LiveEntity)LiveKit.getLiveMap(LiveKit.getLiveMapWorld()).getSyncable(uuid);
-				if(entity != null) {
-					entity.updateHead(base64);
+				PlayerModule module = (PlayerModule)LiveKit.getInstance().getModuleManager().getModule("PlayerModule");
+				LPlayer player = module.getPlayer(uuid);
+				if(player != null) {
+					player.updateHead(base64);
 				}
-				
 			}
-		});*/
+		});
 
 
 		//this.getServer().getPluginManager().registerEvents(new PlayerListener(), this);
@@ -143,7 +146,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 						} else {
 							LiveKit.getInstance().getModuleManager().disableModule(m.getType());
 						}
-						LiveKit.getInstance().notifyQueue(m.getType());
+						LiveKit.getInstance().notifyQueue("SettingsModule");
 					}
 				}
 			}
