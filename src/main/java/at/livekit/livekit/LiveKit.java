@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 
 import org.bukkit.Bukkit;
 import org.json.JSONObject;
@@ -67,6 +68,28 @@ public class LiveKit implements ModuleListener, Runnable {
 
     public ModuleManager getModuleManager() {
         return _modules;
+    }
+
+    public void reloadPermissions() {
+        if(_server != null) {
+            for(LiveKitClient client : _server.getClients()) {
+                if(client.hasIdentity()) {
+                    client.getIdentity().reloadPermissions();
+                }
+            }
+            notifyQueue("SettingsModule");
+        }
+    }
+
+    public Identity getIdentity(String uuid) {
+        if(_server != null) {
+            for(LiveKitClient client : _server.getClients()) {
+                if(client.hasIdentity() && client.getIdentity().getUuid().equals(uuid)) {
+                    return client.getIdentity();
+                }
+            }
+        }
+        return null;
     }
 
     public void onEnable() throws Exception{
@@ -150,7 +173,7 @@ public class LiveKit implements ModuleListener, Runnable {
 
 
             String module = null;
-            List<String> clientUUIDs = _server.getConnectedUUIDs();
+            List<Identity> clientUUIDs = _server.getConnectedUUIDs();
             do {
                 synchronized(_moduleUpdates) {
                     if(_moduleUpdates.size() > 0) {
@@ -161,10 +184,13 @@ public class LiveKit implements ModuleListener, Runnable {
                 }
                 if(module != null) {
                     BaseModule m = _modules.getModule(module);
-                    _server.broadcast(m.onUpdateAsync(clientUUIDs));
+                    _server.broadcast(m.onUpdateAsync(clientUUIDs.stream().filter(identity->m.hasAccess(identity)).collect(Collectors.toList())));
 
                     if(module.equals("SettingsModule")) {
                         _server.broadcast(_modules.modulesAvailableAsync(clientUUIDs));
+                        for(LiveKitClient client : _server.getClients()) {
+                            client.sendPackets(_modules.onJoinAsync(client.getIdentity()));
+                        }
                     }
                 }
             }while(module != null);
@@ -180,7 +206,9 @@ public class LiveKit implements ModuleListener, Runnable {
                 if(module != null) {
                     BaseModule m = _modules.getModule(module);
                     for(LiveKitClient client : _server.getClients()) {
-                        client.sendPacket(m.onJoinAsync(client.getPlayerUUID()));
+                        if(client.hasIdentity()) {
+                            client.sendPacket(m.onJoinAsync(client.getIdentity()));
+                        }
                     }
                 }
             }while(module != null);
@@ -238,32 +266,20 @@ public class LiveKit implements ModuleListener, Runnable {
                 if(identity.isValidSession(auth.getValue())) {
                     identity.removeSession(auth.getValue());
                 } else {
-                   // identity = null;
+                    identity = null;
                 }
             }
-            String name = "";
             if(identity != null) {
-                final String uuid = identity.getUUID();
-                try{
-                    name = Bukkit.getScheduler().callSyncMethod(Plugin.instance, new Callable<String>(){
-                        @Override
-                        public String call() throws Exception {
-                            // TODO Auto-generated method stub
-                            return  Bukkit.getOfflinePlayer(UUID.fromString(uuid)).getName();
-                        }
-                    }).get();
-                }catch(Exception ex){ex.printStackTrace();}
-            }
+                client.setIdentity(identity.getUUID());
+                client.getIdentity().loadPermissionsSync();
             
-            //client.sendPacket(new ModulesPacket(buildModuleInfo(identity != null ? identity.getUUID() : null)));
-            try{
-                client.sendPacket(_modules.modulesAvailableAsync(identity.getUUID()));
-                client.sendPackets(_modules.onJoinAsync(identity.getUUID()));
-            }catch(Exception ex){ex.printStackTrace();}
+                try{
+                    client.sendPacket(_modules.modulesAvailableAsync(client.getIdentity()));
+                    client.sendPackets(_modules.onJoinAsync(client.getIdentity()));
+                }catch(Exception ex){ex.printStackTrace();}
 
-            if(identity != null) {
-                client.setPlayerUUID(identity.getUUID());
-                return new IdentityPacket(identity.getUUID(), name, HeadLibrary.get(identity.getUUID()), identity.generateSessionKey());
+            
+                return new IdentityPacket(identity.getUUID(), client.getIdentity().getName(), HeadLibrary.get(identity.getUUID()), identity.generateSessionKey());
             }
             return new StatusPacket(0, "Invalid authentication credentials!");
         }

@@ -29,7 +29,23 @@ public class LiveSyncable
     }
 
     public boolean hasChanges() {
-        return this._changes.size() > 0;
+        if( this._changes.size() > 0 ) return true;
+
+        for(Field field : this.getClass().getDeclaredFields()) {
+            if(Collection.class.isAssignableFrom(field.getType())) {
+                try{
+                    Collection c = (Collection) field.get(this);
+                    for(Object o : c) {
+                        if(o instanceof LiveSyncable) {
+                            LiveSyncable syncable = (LiveSyncable)o;
+                            if(syncable.hasChanges()) return true;
+                        }
+                    }
+                }catch(Exception ex){ex.printStackTrace();}
+            } 
+        }
+
+        return false;
     }
 
     public void markDirty() {
@@ -78,7 +94,7 @@ public class LiveSyncable
     }
 
     public JSONObject serializeChanges(boolean clear) {
-        if(_changes.size() == 0 && !_forceDirty) return null;
+        //if(_changes.size() == 0 && !_forceDirty) return null;
         if(clear) _forceDirty = false;
 
         JSONObject json = new JSONObject();
@@ -95,7 +111,8 @@ public class LiveSyncable
                             if(o instanceof LiveSyncable) {
                                 LiveSyncable syncable = (LiveSyncable)o;
                                 if(syncable.hasChanges()) {
-                                    array.put(syncable.serializeChanges(clear));
+                                    JSONObject j = syncable.serializeChanges(clear);
+                                    if(j != null)array.put(j);
                                 }
                             }
                         }
@@ -108,7 +125,7 @@ public class LiveSyncable
                     }catch(Exception ex){ex.printStackTrace();}
                 }
             }
-            _changes.clear();
+            if(clear)_changes.clear();
         }
 
         return json;

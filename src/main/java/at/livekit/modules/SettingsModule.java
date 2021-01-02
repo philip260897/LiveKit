@@ -94,7 +94,7 @@ public class SettingsModule extends BaseModule
     }
 
     @Override
-    public IPacket onJoinAsync(String uuid) {
+    public IPacket onJoinAsync(Identity identity) {
         JSONObject json = new JSONObject();
         json.put("liveKitTickRate", liveMapTickRate);
         json.put("needsIdentity", needsIdentity);
@@ -103,16 +103,16 @@ public class SettingsModule extends BaseModule
     }
 
     @Override
-    public Map<String, IPacket> onUpdateAsync(List<String> uuids) {
-        Map<String, IPacket> responses = new HashMap<String,IPacket>();
-        for(String uuid : uuids) {
-            responses.put(uuid, this.onJoinAsync(uuid));
+    public Map<Identity, IPacket> onUpdateAsync(List<Identity> identities) {
+        Map<Identity, IPacket> responses = new HashMap<Identity,IPacket>();
+        for(Identity identity : identities) {
+            responses.put(identity, this.onJoinAsync(identity));
         }
         return responses;
     }
 
     @Override
-    public IPacket onChangeAsync(String uuid, IPacket packet) {
+    public IPacket onChangeAsync(Identity identity, IPacket packet) {
         return null;
     }
 

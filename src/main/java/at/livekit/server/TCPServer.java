@@ -13,6 +13,7 @@ import java.util.Map.Entry;
 
 import org.json.JSONObject;
 
+import at.livekit.livekit.Identity;
 import at.livekit.livekit.LiveKitClient;
 import at.livekit.packets.AuthorizationPacket;
 import at.livekit.packets.LiveMapSubscriptionPacket;
@@ -60,11 +61,13 @@ public class TCPServer implements Runnable {
         }catch(IOException ex){}
     }
 
-    public List<String> getConnectedUUIDs() {
-        List<String> uuids = new ArrayList<String>();
+    public List<Identity> getConnectedUUIDs() {
+        List<Identity> uuids = new ArrayList<Identity>();
         synchronized(clients) {
             for(LiveKitClient c : clients) {
-                uuids.add(c.getPlayerUUID());
+                if(c.hasIdentity()) {
+                    uuids.add(c.getIdentity());
+                }
             }
         }
         return uuids;
@@ -78,11 +81,11 @@ public class TCPServer implements Runnable {
             }
         }
     }*/
-    public void broadcast(Map<String,IPacket> packets) {
+    public void broadcast(Map<Identity,IPacket> packets) {
         synchronized(clients) {
             for(LiveKitClient client : clients) {
                 if(client.hasIdentity()) {
-                    client.sendPacket(packets.get(client.getPlayerUUID()));
+                    client.sendPacket(packets.get(client.getIdentity()));
                 }
             }
         }

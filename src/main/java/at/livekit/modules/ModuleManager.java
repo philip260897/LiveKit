@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 import org.bukkit.Bukkit;
 import org.json.JSONArray;
 
+import at.livekit.livekit.Identity;
 import at.livekit.modules.BaseModule.ModuleListener;
 import at.livekit.modules.BaseModule.ModulesAvailablePacket;
 import at.livekit.packets.StatusPacket;
@@ -101,32 +102,32 @@ public class ModuleManager
         }).get();*/
     }
 
-    public Map<String,IPacket> modulesAvailableAsync(List<String> uuids)/* throws Exception */ {
+    public Map<Identity,IPacket> modulesAvailableAsync(List<Identity> identities)/* throws Exception */ {
         /*return Bukkit.getScheduler().callSyncMethod(Plugin.instance, new Callable<Map<String,IPacket>>(){
             @Override
             public Map<String,IPacket> call() throws Exception {*/
-                Map<String,IPacket> packets = new HashMap<String,IPacket>(uuids.size());
-                for(String uuid: uuids) {
+                Map<Identity,IPacket> packets = new HashMap<Identity,IPacket>(identities.size());
+                for(Identity identity : identities) {
                     JSONArray mods = new JSONArray();
                     for(BaseModule module : _modules.values()) {
-                        if(module.isEnabled() && module.hasAccess(uuid)) {
+                        if(module.isEnabled() && module.hasAccess(identity)) {
                             mods.put(module.moduleInfo());
                         }
                     }
-                    packets.put(uuid, new ModulesAvailablePacket(mods));
+                    packets.put(identity, new ModulesAvailablePacket(mods));
                 }
                 return packets;
             /*}
         }).get();*/
     }
 
-    public IPacket modulesAvailableAsync(String uuid)/* throws Exception*/ {
+    public IPacket modulesAvailableAsync(Identity identity)/* throws Exception*/ {
         /*return Bukkit.getScheduler().callSyncMethod(Plugin.instance, new Callable<IPacket>(){
             @Override
             public IPacket call() throws Exception {*/
                 JSONArray mods = new JSONArray();
                 for(BaseModule module : _modules.values()) {
-                    if(module.isEnabled() && module.hasAccess(uuid)) {
+                    if(module.isEnabled() && module.hasAccess(identity)) {
                         mods.put(module.moduleInfo());
                     }
                 }
@@ -141,14 +142,14 @@ public class ModuleManager
      * @return  for each active module an IPacket with respective module data
      * @throws Exception yes
      */
-    public List<IPacket> onJoinAsync(String uuid) /*throws Exception */{
+    public List<IPacket> onJoinAsync(Identity identity) /*throws Exception */{
        /* return Bukkit.getScheduler().callSyncMethod(Plugin.instance, new Callable<List<IPacket>>(){
             @Override
             public List<IPacket> call() throws Exception {*/
                 List<IPacket> packets = new ArrayList<IPacket>(_modules.size());
                 for(BaseModule module : _modules.values()) {
-                    if(module.isEnabled() && module.hasAccess(uuid)) {
-                        IPacket update = module.onJoinAsync(uuid);
+                    if(module.isEnabled() && module.hasAccess(identity)) {
+                        IPacket update = module.onJoinAsync(identity);
                         if(update != null) packets.add( update);
                     }
                 }
@@ -164,7 +165,7 @@ public class ModuleManager
      * @return an update packet (IPacket) for each context for the specified module
      * @throws Exception
      */
-    public Map<String,IPacket> onUpdateAsync(String type, List<String> uuids)/* throws Exception*/ {
+    public Map<Identity,IPacket> onUpdateAsync(String type, List<Identity> identities)/* throws Exception*/ {
        /* return Bukkit.getScheduler().callSyncMethod(Plugin.instance, new Callable<Map<String,IPacket> >(){
             @Override
             public Map<String,IPacket>  call() throws Exception {*/
@@ -172,7 +173,7 @@ public class ModuleManager
 
                 BaseModule module = _modules.get(type);
                 if(module != null && module.isEnabled()) {
-                    return module.onUpdateAsync(uuids.stream().filter(uuid->module.hasAccess(uuid)).collect(Collectors.toList()));
+                    return module.onUpdateAsync(identities.stream().filter(identity->module.hasAccess(identity)).collect(Collectors.toList()));
                    /* for(String uuid : uuids) {
                         if(module.hasAccess(uuid)) {*/
                             
@@ -194,14 +195,14 @@ public class ModuleManager
      * @return  response message according to action
      * @throws Exception yes
      */
-    public IPacket onChangeAsync(String type, String uuid, IPacket packet) /*throws Exception */{
+    public IPacket onChangeAsync(String type, Identity identity, IPacket packet) /*throws Exception */{
         /*return Bukkit.getScheduler().callSyncMethod(Plugin.instance, new Callable<IPacket>(){
             @Override
             public IPacket call() throws Exception {*/
                 BaseModule module = _modules.get(type);
                 if(module != null && module.isEnabled()) {
-                    if(module.hasAccess(uuid)) {
-                        return module.onChangeAsync(uuid, packet);
+                    if(module.hasAccess(identity)) {
+                        return module.onChangeAsync(identity, packet);
                     }
                     return new StatusPacket(0, "Access Denied");
                 }

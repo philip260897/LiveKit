@@ -58,6 +58,10 @@ public abstract class BaseModule
     protected void notifyChange() {
         if(listener != null) listener.onDataChangeAvailable(this.getType());
     }
+
+    protected void notifyFull() {
+        if(listener != null) listener.onFullUpdate(this.getType());
+    }
     
     private long lastUpdate = 0;
     public boolean canUpdate(int tickrate) {
@@ -73,21 +77,14 @@ public abstract class BaseModule
         lastUpdate = System.currentTimeMillis();
     }
 
-    public IPacket onJoinAsync(String uuid){return null;}
+    public IPacket onJoinAsync(Identity identity){return null;}
 
-    public Map<String, IPacket> onUpdateAsync(List<String> uuids){return null;}
+    public Map<Identity, IPacket> onUpdateAsync(List<Identity> identities){return null;}
 
-    public IPacket onChangeAsync(String uuid, IPacket packet){return null;}
+    public IPacket onChangeAsync(Identity identity, IPacket packet){return null;}
 
-    public boolean hasAccess(String uuid) {
-        if(anonymousAllowed) return true;
-
-        if(uuid == null) return false;
-        
-        OfflinePlayer player = Bukkit.getOfflinePlayer(UUID.fromString(uuid));
-        if(player.isOp()) return true;
-
-        return false;
+    public boolean hasAccess(Identity identity) {
+        return identity.hasPermission(permission);
     }
 
     /*public JSONObject toJson(String uuid) {

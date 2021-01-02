@@ -40,7 +40,9 @@ public class HeadLibrary implements Runnable
             thread = new Thread(new HeadLibrary());
             thread.start();
         } else {
-            thread.notifyAll();
+            synchronized(thread) {
+                thread.notifyAll();
+            }
         }
     }
 

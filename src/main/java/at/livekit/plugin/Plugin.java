@@ -2,6 +2,8 @@ package at.livekit.plugin;
 
 import java.io.File;
 import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 
 import org.bukkit.Material;
@@ -10,17 +12,22 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.json.JSONObject;
 
+import at.livekit.livekit.Identity;
 import at.livekit.livekit.LiveKit;
 import at.livekit.livekit.PlayerAuth;
 import at.livekit.modules.BaseModule;
 import at.livekit.modules.PlayerModule;
 import at.livekit.modules.PlayerModule.LPlayer;
+import at.livekit.modules.PlayerModule.PlayerAsset;
+import at.livekit.modules.PlayerModule.ValueAsset;
 import at.livekit.utils.HeadLibrary;
 import at.livekit.utils.HeadLibraryEvent;
 import net.md_5.bungee.api.ChatColor;
+import net.milkbowl.vault.permission.Permission;
 
 public class Plugin extends JavaPlugin implements CommandExecutor {
 	//private static int pluginPort = 8123;
@@ -29,10 +36,26 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 	public static Plugin instance;
 	public static String workingDirectory;
 
+	public static Permission perms;
+	public static List<String> permissions = new ArrayList<String>();
+
 	@Override
 	public void onEnable() {
 		instance = this;
 		logger = getLogger();
+
+		if(!setupPermissions()) {
+			logger.severe("[LiveKit] Vault not found! Disabling!");
+			getServer().getPluginManager().disablePlugin(this);
+			return;
+		}
+
+		permissions.add("livekit.basics.claim");
+		permissions.add("livekit.basics.map");
+		permissions.add("livekit.basics.players");
+		permissions.add("livekit.basics.weathertime");
+		//permissions.add("livekit.players.other");
+		permissions.add("livekit.admin.settings");
 
 		File folder = new File(System.getProperty("user.dir") + "/plugins/LiveKit/");
 		if (!folder.exists()) {
@@ -48,31 +71,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 			LiveKit.getInstance().onEnable();
 		}catch(Exception ex){ex.printStackTrace();}
 
-		/*for(String world : worlds) {
-			LiveMap livemap = new LiveMap(world);
-			livemaps.put(world, livemap);
-			livemap.start();
-		}*/
 
-		/*server = new TCPServer(8123);
-		server.setServerListener(new ServerListener() {
-			@Override
-			public void onConnect(RemoteClient client) {
-				client.sendPacket(new WelcomePacket(1,1,LiveMap.TICK_RATE,worlds));
-			}
-			@Override
-			public void onDisconnect(RemoteClient client) {
-
-			}
-
-			@Override
-			public void onLiveMapSettings(RemoteClient client, String world) {
-				if(livemaps.containsKey(world)) {
-					livemaps.get(world).fullUpdate(client);
-				}
-			}
-		});
-		server.open();*/
 
 		HeadLibrary.setHeadLibraryListener(new HeadLibraryEvent(){
 			@Override
@@ -84,10 +83,6 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 				}
 			}
 		});
-
-
-		//this.getServer().getPluginManager().registerEvents(new PlayerListener(), this);
-		//this.getServer().getPluginManager().registerEvents(new WorldListener(), this);
     }
     
     @Override
@@ -98,6 +93,12 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 			HeadLibrary.dispose();
 		}catch(Exception ex){ex.printStackTrace();}
 	}
+
+	private boolean setupPermissions() {
+        RegisteredServiceProvider<Permission> rsp = getServer().getServicesManager().getRegistration(Permission.class);
+        perms = rsp.getProvider();
+        return perms != null;
+    }
 
 	static ChatColor pluginColor = ChatColor.BLUE;
 	static String chatPrefix = pluginColor+"[livekit] "+ChatColor.WHITE;
@@ -125,12 +126,60 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 				if(args[0].equalsIgnoreCase("claim")) {
 					if(sender instanceof Player) {
 						Player player = (Player) sender;
-						player.sendMessage(PlayerAuth.get(player.getUniqueId().toString()).generateClaimPin());
+						if(perms.playerHas(player, "livekit.basics.weathertime")) {
+							player.sendMessage(PlayerAuth.get(player.getUniqueId().toString()).generateClaimPin());
+						} else {
+							player.sendMessage("Permission denied!");
+						}
+					}
+				}
+				if(args[0].equalsIgnoreCase("permreload")) {
+					if(sender instanceof Player) {
+						Player player = (Player) sender;
+						if(perms.playerHas(player, "livekit.admin.permreload")) {
+							
+							LiveKit.getInstance().reloadPermissions();
+							player.sendMessage("Permissions reloaded");
+
+						} else {
+							player.sendMessage("Permission denied!");
+						}
+					}
+				}
+				if(args[0].equalsIgnoreCase("identity")) {
+					if(sender instanceof Player) {
+						Player player = (Player) sender;
+						if(perms.playerHas(player, "livekit.basics.identity")) {
+							Identity identity = LiveKit.getInstance().getIdentity(player.getUniqueId().toString());
+							player.sendMessage("Name: "+identity.getName());
+							player.sendMessage("Permissions: ");
+							for(String perm : identity.getPermissions()) {
+								player.sendMessage(perm);
+							}
+
+						} else {
+							player.sendMessage("Permission denied!");
+						}
 					}
 				}
 				if(args[0].equalsIgnoreCase("modules")) {
 					for(BaseModule module : LiveKit.getInstance().getModules()) {
 						sender.sendMessage("["+module.getType()+"] Version: "+module.getVersion()+" Enabled: "+module.isEnabled());
+					}
+				}
+				if(args[0].equalsIgnoreCase("test")) {
+					if(sender instanceof Player) {
+						LPlayer player = ((PlayerModule)LiveKit.getInstance().getModuleManager().getModule("PlayerModule")).getPlayer(((Player)sender).getUniqueId().toString());
+						PlayerAsset asset = new ValueAsset("test", "Test", "test");
+						player.getAssetGroup("Locations").addPlayerAsset(asset);
+						LiveKit.getInstance().notifyQueue("PlayerModule");
+					}
+				}
+				if(args[0].equalsIgnoreCase("test2")) {
+					if(sender instanceof Player) {
+						LPlayer player = ((PlayerModule)LiveKit.getInstance().getModuleManager().getModule("PlayerModule")).getPlayer(((Player)sender).getUniqueId().toString());
+						player.getAssetGroup("Locations").removePlayerAsset(player.getAsset("test"));
+						LiveKit.getInstance().notifyQueue("PlayerModule");
 					}
 				}
 			}

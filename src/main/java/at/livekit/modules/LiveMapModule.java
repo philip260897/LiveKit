@@ -40,6 +40,7 @@ import org.bukkit.event.world.StructureGrowEvent;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import at.livekit.livekit.Identity;
 import at.livekit.main.LiveEntity;
 import at.livekit.main.LiveSyncable;
 import at.livekit.plugin.Plugin;
@@ -139,7 +140,7 @@ public class LiveMapModule extends BaseModule implements Listener
     }
 
     @Override
-    public IPacket onJoinAsync(String uuid) {
+    public IPacket onJoinAsync(Identity identity) {
         JSONObject json = new JSONObject();
         json.put("world", world);
         JSONArray syncable = new JSONArray();
@@ -164,8 +165,8 @@ public class LiveMapModule extends BaseModule implements Listener
     }
 
     @Override 
-    public Map<String,IPacket> onUpdateAsync(List<String> uuids) {
-        Map<String,IPacket> response = new HashMap<String, IPacket>();
+    public Map<Identity,IPacket> onUpdateAsync(List<Identity> identities) {
+        Map<Identity,IPacket> response = new HashMap<Identity, IPacket>();
         
         JSONObject json = new JSONObject();
         json.put("world", world);
@@ -187,8 +188,8 @@ public class LiveMapModule extends BaseModule implements Listener
             }
         }*/
 
-        for(String uuid : uuids) {
-            response.put(uuid, new ModuleUpdatePacket(this, json, false));
+        for(Identity identity : identities) {
+            response.put(identity, new ModuleUpdatePacket(this, json, false));
         }
 
         return response;

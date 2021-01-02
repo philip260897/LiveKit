@@ -8,6 +8,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.json.JSONObject;
 
+import at.livekit.livekit.Identity;
 import at.livekit.server.IPacket;
 
 public class WeatherTimeModule extends BaseModule
@@ -19,7 +20,7 @@ public class WeatherTimeModule extends BaseModule
     private String world;
 
     public WeatherTimeModule(String world, ModuleListener listener) {
-        super(1, "Weather/Time", "livekit.basics.time", UpdateRate.ONCE_PERSEC, listener, true);
+        super(1, "Weather/Time", "livekit.basics.weathertime", UpdateRate.ONCE_PERSEC, listener, true);
         this.world = world;
     }
 
@@ -27,7 +28,7 @@ public class WeatherTimeModule extends BaseModule
     public void update() {
         World w = Bukkit.getWorld(world);
         if(w != null) {
-            weather = w.hasStorm() ? 1 : w.isThundering() ? 2:0;
+            weather = w.isThundering() ? 2 : w.hasStorm() ? 1:0;
             weatherTime = w.getWeatherDuration();
             time = (int)(w.getTime());
             notifyChange();
@@ -36,7 +37,7 @@ public class WeatherTimeModule extends BaseModule
     }
 
     @Override
-    public IPacket onJoinAsync(String uuid) {
+    public IPacket onJoinAsync(Identity identity) {
         JSONObject data = new JSONObject();
         data.put("world", world);
         data.put("weather", weather);
@@ -46,10 +47,10 @@ public class WeatherTimeModule extends BaseModule
     }
 
     @Override
-    public Map<String,IPacket> onUpdateAsync(List<String> uuids) {
-        Map<String,IPacket> responses = new HashMap<String,IPacket>();
-        for(String uuid : uuids) {
-            responses.put(uuid, onJoinAsync(uuid));
+    public Map<Identity,IPacket> onUpdateAsync(List<Identity> identities) {
+        Map<Identity,IPacket> responses = new HashMap<Identity,IPacket>();
+        for(Identity identity : identities) {
+            responses.put(identity, onJoinAsync(identity));
         }
         return responses;
     }

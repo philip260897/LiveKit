@@ -9,7 +9,8 @@ import at.livekit.server.TCPServer.RemoteClientListener;
 public class LiveKitClient extends RemoteClient
 {
     //private PlayerAuth identity;
-    private String playerUUID;
+    //private String playerUUID;
+    private Identity identity;
     private String liveMapWorld;
 
     public LiveKitClient(Socket socket, RemoteClientListener listener) throws IOException {
@@ -17,11 +18,11 @@ public class LiveKitClient extends RemoteClient
     }
 
     public boolean hasIdentity() {
-        return playerUUID != null;
+        return  identity != null;
     }
 
-    public String getPlayerUUID() {
-        return playerUUID;
+    public Identity getIdentity() {
+        return identity;
     }
 
     public String getSubscribedLiveMap() {
@@ -36,7 +37,7 @@ public class LiveKitClient extends RemoteClient
         this.close();
     }
 
-    protected void setPlayerUUID(String playerUUID) {
-        this.playerUUID = playerUUID;
+    protected void setIdentity(String uuid) {
+        this.identity = new Identity(uuid);
     }
 }

@@ -4,9 +4,10 @@ version: 1.0
 author: Philip Lindner
 description: Server connector for something epic
 api-version: 1.16
+softdepend: [Vault]
 commands:
   livekit:
-    description: An example command
+    description: LiveKit command
     usage: /livekit
-    permission: myplugin.mycommand
-    permission-message: You don't have the myplugin.mycommand permission.
+    permission: livekit.basics
+    permission-message: You don't have the livekit.basics permission.
