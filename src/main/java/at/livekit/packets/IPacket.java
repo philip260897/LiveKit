@@ -1,4 +1,4 @@
-package at.livekit.server;
+package at.livekit.packets;
 
 import org.json.JSONObject;
 

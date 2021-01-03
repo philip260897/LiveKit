@@ -9,7 +9,7 @@ import org.bukkit.World;
 import org.json.JSONObject;
 
 import at.livekit.livekit.Identity;
-import at.livekit.server.IPacket;
+import at.livekit.packets.IPacket;
 
 public class WeatherTimeModule extends BaseModule
 {

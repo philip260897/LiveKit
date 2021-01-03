@@ -2,8 +2,6 @@ package at.livekit.packets;
 
 import org.json.JSONObject;
 
-import at.livekit.server.IPacket;
-
 public class ServerSettingsPacket implements IPacket {
     public static int PACKETID = 12;
 

@@ -1,8 +1,5 @@
 package at.livekit.packets;
-
 import org.json.JSONObject;
-
-import at.livekit.server.IPacket;
 
 public class AuthorizationPacket extends RequestPacket {
     public static int PACKETID = 10;

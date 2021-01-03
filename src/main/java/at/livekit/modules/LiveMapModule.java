@@ -21,7 +21,6 @@ import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
-import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
@@ -41,12 +40,10 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import at.livekit.livekit.Identity;
-import at.livekit.main.LiveEntity;
-import at.livekit.main.LiveSyncable;
 import at.livekit.plugin.Plugin;
-import at.livekit.server.BlockPacket;
-import at.livekit.server.ChunkPacket;
-import at.livekit.server.IPacket;
+import at.livekit.packets.BlockPacket;
+import at.livekit.packets.ChunkPacket;
+import at.livekit.packets.IPacket;
 
 public class LiveMapModule extends BaseModule implements Listener
 {

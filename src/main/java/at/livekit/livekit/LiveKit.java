@@ -3,13 +3,8 @@ package at.livekit.livekit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
-
-import org.bukkit.Bukkit;
 import org.json.JSONObject;
 
 import at.livekit.modules.BaseModule;
@@ -21,10 +16,7 @@ import at.livekit.packets.IdentityPacket;
 import at.livekit.packets.RequestPacket;
 import at.livekit.packets.ServerSettingsPacket;
 import at.livekit.packets.StatusPacket;
-import at.livekit.plugin.Plugin;
-import at.livekit.server.IPacket;
-import at.livekit.server.TCPServer;
-import at.livekit.server.TCPServer.ServerListener;
+import at.livekit.livekit.TCPServer.ServerListener;
 import at.livekit.utils.HeadLibrary;
 
 public class LiveKit implements ModuleListener, Runnable {

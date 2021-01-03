@@ -3,8 +3,8 @@ package at.livekit.livekit;
 import java.io.IOException;
 import java.net.Socket;
 
-import at.livekit.server.TCPServer.RemoteClient;
-import at.livekit.server.TCPServer.RemoteClientListener;
+import at.livekit.livekit.TCPServer.RemoteClient;
+import at.livekit.livekit.TCPServer.RemoteClientListener;
 
 public class LiveKitClient extends RemoteClient
 {

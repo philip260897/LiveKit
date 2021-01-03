@@ -3,7 +3,6 @@ package at.livekit.packets;
 import org.json.JSONObject;
 
 import at.livekit.livekit.LiveKitClient;
-import at.livekit.server.IPacket;
 
 public class RequestPacket implements IPacket {
     public int requestId = -1;

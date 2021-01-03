@@ -17,7 +17,7 @@ import at.livekit.modules.BaseModule.ModuleListener;
 import at.livekit.modules.BaseModule.ModulesAvailablePacket;
 import at.livekit.packets.StatusPacket;
 import at.livekit.plugin.Plugin;
-import at.livekit.server.IPacket;
+import at.livekit.packets.IPacket;
 
 public class ModuleManager 
 {

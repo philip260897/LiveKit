@@ -1,19 +1,18 @@
-package at.livekit.server;
+package at.livekit.packets;
 
 import java.util.Base64;
-
 import org.apache.commons.lang.NotImplementedException;
 import org.json.JSONObject;
 
-public class RegionPacket implements IPacket {
 
-    public static int PACKETID = 0x00;
+public class BlockPacket implements IPacket{
+    public static int PACKETID = 0x02;
 
     private int x;
     private int z;
     private String data;
 
-    public RegionPacket(int x, int z, byte[] data) {
+    public BlockPacket(int x, int z, byte[] data) {
         this.x = x;
         this.z = z;
         this.data = Base64.getEncoder().encodeToString(data);
@@ -37,5 +36,4 @@ public class RegionPacket implements IPacket {
         json.put("packet_id", PACKETID);
         return json;
     }
-
 }

@@ -1,4 +1,4 @@
-package at.livekit.server;
+package at.livekit.livekit;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -9,14 +9,9 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-
 import org.json.JSONObject;
-
-import at.livekit.livekit.Identity;
-import at.livekit.livekit.LiveKitClient;
 import at.livekit.packets.AuthorizationPacket;
-import at.livekit.packets.LiveMapSubscriptionPacket;
+import at.livekit.packets.IPacket;
 import at.livekit.packets.RequestPacket;
 
 public class TCPServer implements Runnable {
@@ -137,9 +132,9 @@ public class TCPServer implements Runnable {
                                     if(packetId == AuthorizationPacket.PACKETID) {
                                         response = listener.onPacketReceived((LiveKitClient)sender, (AuthorizationPacket) new AuthorizationPacket().fromJson(data)); 
                                     }
-                                    if(packetId == LiveMapSubscriptionPacket.PACKETID) {
+                                    /*if(packetId == LiveMapSubscriptionPacket.PACKETID) {
                                         response = listener.onPacketReceived((LiveKitClient)sender, (LiveMapSubscriptionPacket) new LiveMapSubscriptionPacket().fromJson(data));    
-                                    }
+                                    }*/
 
                                     if(response != null) sender.sendPacket(response.setRequestId(requestId));
                                 }
@@ -175,7 +170,7 @@ public class TCPServer implements Runnable {
         private Thread thread;
         private RemoteClientListener listener;
 
-        private LiveMapSubscriptionPacket settings;
+        //private LiveMapSubscriptionPacket settings;
 
         public RemoteClient(Socket socket, RemoteClientListener listener) throws IOException {
             this.socket = socket;

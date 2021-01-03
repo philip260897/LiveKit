@@ -26,7 +26,7 @@ import org.json.JSONObject;
 
 import at.livekit.livekit.Identity;
 import at.livekit.plugin.Plugin;
-import at.livekit.server.IPacket;
+import at.livekit.packets.IPacket;
 import at.livekit.utils.HeadLibrary;
 import at.livekit.utils.Utils;
 

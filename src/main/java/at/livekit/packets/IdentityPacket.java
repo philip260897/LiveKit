@@ -2,8 +2,6 @@ package at.livekit.packets;
 
 import org.json.JSONObject;
 
-import at.livekit.server.IPacket;
-
 public class IdentityPacket extends RequestPacket {
 
     public static int PACKETID = 13;

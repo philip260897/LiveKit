@@ -2,17 +2,11 @@ package at.livekit.modules;
 
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
-
-import org.bukkit.Bukkit;
-import org.bukkit.OfflinePlayer;
-import org.bukkit.entity.Player;
-import org.bukkit.permissions.Permission;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import at.livekit.livekit.Identity;
-import at.livekit.server.IPacket;
+import at.livekit.packets.IPacket;
 
 public abstract class BaseModule 
 {
