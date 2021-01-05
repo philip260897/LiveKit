@@ -3,11 +3,11 @@ package at.livekit.livekit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 
+import at.livekit.plugin.Permissions;
 import at.livekit.plugin.Plugin;
 
 public class Identity 
@@ -49,54 +49,25 @@ public class Identity
         return permissions.contains(permission);
     }
 
-    public void loadPermissionsSync() {
+    public void loadPermissionsAsync() {
         if(!isAnonymous()) {
             try{
-                OfflinePlayer player = Bukkit.getScheduler().callSyncMethod(Plugin.instance, new Callable<OfflinePlayer>(){
-                    @Override
-                    public OfflinePlayer call() throws Exception {
-                        OfflinePlayer player = Bukkit.getOfflinePlayer(UUID.fromString(uuid));
-                        op = player.isOp();
-                        name = player.getName();
-                        return player;
-                    }
-                    
-                }).get();
+                OfflinePlayer player = Bukkit.getOfflinePlayer(UUID.fromString(uuid));
+                op = player.isOp();
+                name = player.getName();
+
                 synchronized(permissions) {
                     permissions.clear();
-                    for(String permission : Plugin.permissions) {
-                        if(Plugin.perms.playerHas(Bukkit.getWorlds().get(0).getName(), player, permission)) {
+                    for(String permission : Permissions.permissions) {
+                        if(Permissions.has(player, permission)) {
                             permissions.add(permission);
                         }
                     }
                 }
             }catch(Exception ex){};
         } else {
-            permissions.add("livekit.livemap.view");
-            permissions.add("livekit.players.view");
+            permissions.add("livekit.basics.livemap");
+            permissions.add("livekit.basics.map");
         }
-    }
-
-    public void reloadPermissions() {
-        /*OfflinePlayer player = Bukkit.getOfflinePlayer(UUID.fromString(uuid));
-        op = player.isOp();
-        name = player.getName();
-
-        Bukkit.getScheduler().runTaskAsynchronously(Plugin.instance, new Runnable(){
-
-            @Override
-            public void run() {
-                synchronized(permissions) {
-                    permissions.clear();
-                    for(String permission : Plugin.permissions) {
-                        if(Plugin.perms.playerHas(Bukkit.getWorlds().get(0).getName(), player, permission)) {
-                            permissions.add(permission);
-                        }
-                    }
-                }
-            }
-
-        });*/
-
     }
 }

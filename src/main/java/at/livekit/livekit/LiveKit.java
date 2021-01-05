@@ -16,6 +16,7 @@ import at.livekit.packets.IdentityPacket;
 import at.livekit.packets.RequestPacket;
 import at.livekit.packets.ServerSettingsPacket;
 import at.livekit.packets.StatusPacket;
+import at.livekit.plugin.Plugin;
 import at.livekit.livekit.TCPServer.ServerListener;
 import at.livekit.utils.HeadLibrary;
 
@@ -34,6 +35,7 @@ public class LiveKit implements ModuleListener, Runnable {
     private ModuleManager _modules = new ModuleManager(this);
     private List<String> _moduleUpdates = new ArrayList<String>();
     private List<String> _moduleFull = new ArrayList<String>();
+    private List<String> _commands = new ArrayList<String>();
     private List<RequestPacket> _packetsIncoming = new ArrayList<RequestPacket>();
 
     @Override
@@ -50,6 +52,14 @@ public class LiveKit implements ModuleListener, Runnable {
         }
     }
 
+    protected void notifyCommand(String command) {
+        synchronized(_commands) {
+            if(!_commands.contains(command)) {
+                _commands.add(command);
+            }
+        }
+    }
+
     public void notifyQueue(String moduleType) {
         synchronized(_moduleUpdates) {
             if(!_moduleUpdates.contains(moduleType)) {
@@ -62,15 +72,8 @@ public class LiveKit implements ModuleListener, Runnable {
         return _modules;
     }
 
-    public void reloadPermissions() {
-        if(_server != null) {
-            for(LiveKitClient client : _server.getClients()) {
-                if(client.hasIdentity()) {
-                    client.getIdentity().reloadPermissions();
-                }
-            }
-            notifyQueue("SettingsModule");
-        }
+    public void commandReloadPermissions() {
+        notifyCommand("permreload");
     }
 
     public Identity getIdentity(String uuid) {
@@ -134,26 +137,6 @@ public class LiveKit implements ModuleListener, Runnable {
             int tickTime = 1000/(_modules.getSettings().liveMapTickRate);
             long start = System.currentTimeMillis();
 
-            //handle module updates
-            /*List<String> clientUUIDs = null;
-            String module = null;
-            synchronized(_moduleUpdates) {
-                if(_moduleUpdates.size() != 0) {
-                    module = _moduleUpdates.remove(0);
-                }
-            }
-            if(module != null) {
-                clientUUIDs = _server.getConnectedUUIDs();
-                try{
-                    Map<String,IPacket> updatePackets = _modules.onUpdate(module, clientUUIDs);
-                    _server.broadcast(updatePackets);
-
-                    if(module.equals("SettingsModule")) {
-                        updatePackets = _modules.modulesAvailable(clientUUIDs);
-                        _server.broadcast(updatePackets);
-                    }
-                }catch(Exception ex){ex.printStackTrace();}
-            }*/
             if(_futureModuleUpdates != null) {
                 if(_futureModuleUpdates.isDone()) {
                     _futureModuleUpdates = null;
@@ -204,6 +187,17 @@ public class LiveKit implements ModuleListener, Runnable {
                     }
                 }
             }while(module != null);
+
+            String command = null;
+            do{
+                synchronized(_commands) {
+                    if(_commands.size() != 0) command = _commands.remove(0);
+                    else command = null;
+                }
+                if(command != null) {
+                    handleCommand(command);
+                }
+            }while(command != null);
             
 
             synchronized(_packetsIncoming) {
@@ -215,7 +209,7 @@ public class LiveKit implements ModuleListener, Runnable {
             }
 
             long delta = start - System.currentTimeMillis();
-            if(delta >= tickTime) System.out.println("LiveKit tick can't keep up");
+            if(delta >= tickTime) Plugin.severe("LiveKit tick can't keep up");
             else {
                 try{
                     Thread.sleep(tickTime-delta);
@@ -231,19 +225,23 @@ public class LiveKit implements ModuleListener, Runnable {
     public void onDisable() {
         try{
             abort = true;
-            _thread.interrupt();
-            synchronized(_shutdownLock) {
-                _shutdownLock.wait(1000);
+            if(_thread != null) {
+                _thread.interrupt();
+                synchronized(_shutdownLock) {
+                    _shutdownLock.wait(1000);
+                }
             }
         }catch(Exception ex){ex.printStackTrace();}
         try{
             PlayerAuth.save();
         }catch(Exception ex){ex.printStackTrace();}
         try{
-            _modules.onDisable();
+            if(_modules != null)
+                _modules.onDisable();
         }catch(Exception ex){ex.printStackTrace();}
         try{
-            _server.close();
+            if(_server != null)
+                _server.close();
         }catch(Exception ex){ex.printStackTrace();}
     }
     
@@ -263,7 +261,7 @@ public class LiveKit implements ModuleListener, Runnable {
             }
             if(identity != null) {
                 client.setIdentity(identity.getUUID());
-                client.getIdentity().loadPermissionsSync();
+                client.getIdentity().loadPermissionsAsync();
             
                 try{
                     client.sendPacket(_modules.modulesAvailableAsync(client.getIdentity()));
@@ -292,6 +290,24 @@ public class LiveKit implements ModuleListener, Runnable {
         return new StatusPacket(0, "Unkown request");
     }
 
+    private void handleCommand(String command) {
+        if(command.equalsIgnoreCase("permreload")) {
+            //reload permissions for all connected clients
+            for(LiveKitClient client : _server.getClients()) {
+                if(client.hasIdentity()) {
+                    client.getIdentity().loadPermissionsAsync();
+                }
+            }
+
+            List<Identity> clientUUIDs = _server.getConnectedUUIDs();
+            //broadcast modules available for all clients
+            _server.broadcast(_modules.modulesAvailableAsync(clientUUIDs));
+            //give full update for all modules
+            for(LiveKitClient client : _server.getClients()) {
+                client.sendPackets(_modules.onJoinAsync(client.getIdentity()));
+            }
+        }
+    }
 
 
     /*private static boolean hasAccess(LiveKitClient client, String resource) {

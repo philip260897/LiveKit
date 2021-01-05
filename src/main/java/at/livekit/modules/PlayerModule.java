@@ -84,12 +84,12 @@ public class PlayerModule extends BaseModule implements Listener
             
             _players.put(player.getUniqueId().toString(), LPlayer.fromOfflinePlayer(player));
         }
-        for(Player player : Bukkit.getOnlinePlayers()) {
+        /*for(Player player : Bukkit.getOnlinePlayers()) {
             if(!_players.containsKey(player.getUniqueId().toString())) {
                 _players.put(player.getUniqueId().toString(), LPlayer.fromOfflinePlayer(player));
             }
-        }
-        Bukkit.getServer().getPluginManager().registerEvents(this, Plugin.instance);
+        }*/
+        Bukkit.getServer().getPluginManager().registerEvents(this, Plugin.getInstance());
         super.onEnable();
     }
 
@@ -155,11 +155,13 @@ public class PlayerModule extends BaseModule implements Listener
         if(!isEnabled()) return;
         if(event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
 
-        System.out.println("right");
+        
+
+       // System.out.println("right");
         LPlayer player = getPlayer(event.getPlayer().getUniqueId().toString());
         if(player != null) {
             if(Utils.isBed(event.getClickedBlock().getType())) {
-                System.out.println("is bed");
+               // System.out.println("is bed");
                 if(event.getPlayer().getBedSpawnLocation() != null) {
                     MapAsset spawnloc = (MapAsset) player.getAsset("spawn-bed");
                     if(spawnloc == null) {
@@ -167,7 +169,7 @@ public class PlayerModule extends BaseModule implements Listener
                         spawnloc = new MapAsset("spawn-bed", "Bed Spawn", "Bed spawn location", null);
                         locations.addPlayerAsset(spawnloc);
                     }
-                    System.out.println("spwn updated");
+                   // System.out.println("spwn updated");
                     spawnloc.updatePosition(event.getPlayer().getBedSpawnLocation());
                     player.markDirty();
                     notifyChange();
@@ -342,6 +344,15 @@ public class PlayerModule extends BaseModule implements Listener
                 HeadLibrary.resolveAsync(player.getUniqueId().toString());
             } 
             p.updateHead(HeadLibrary.get(player.getUniqueId().toString()));
+
+            if(player.getPlayer() != null) {
+                Player online = player.getPlayer();
+                p.updateLocation(online.getLocation().getX(), online.getLocation().getY(), online.getLocation().getZ());
+                p.updateLastOnline(System.currentTimeMillis(), true);
+                p.updateWorld(online.getLocation().getWorld().getName());
+                p.updateHealth(online.getHealthScale());
+                p.updateExhaustion(online.getExhaustion());
+            }
 
             AssetGroup locations = new AssetGroup("Locations"); 
             if(player.getBedSpawnLocation() != null) {

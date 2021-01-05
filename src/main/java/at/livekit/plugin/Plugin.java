@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.block.Biome;
 import org.bukkit.command.Command;
@@ -27,45 +28,48 @@ import at.livekit.modules.PlayerModule.ValueAsset;
 import at.livekit.utils.HeadLibrary;
 import at.livekit.utils.HeadLibraryEvent;
 import net.md_5.bungee.api.ChatColor;
-import net.milkbowl.vault.permission.Permission;
 
 public class Plugin extends JavaPlugin implements CommandExecutor {
-	//private static int pluginPort = 8123;
-	protected static Logger logger;
 
-	public static Plugin instance;
-	public static String workingDirectory;
+	private static Logger logger;
+	private static Plugin instance;
 
-	public static Permission perms;
-	public static List<String> permissions = new ArrayList<String>();
+	private static String name;
+	private static ChatColor color = ChatColor.GREEN;
+	private static String prefix;
+	private static String prefixError;
 
 	@Override
 	public void onEnable() {
 		instance = this;
 		logger = getLogger();
 
-		if(!setupPermissions()) {
-			logger.severe("[LiveKit] Vault not found! Disabling!");
+		//create config folder if doesn't exist
+		if(!getDataFolder().exists()) {
+			getDataFolder().mkdirs();
+		}
+
+		name = this.getDescription().getName();
+		prefix = color+"["+ChatColor.WHITE+name+color+"] "+ChatColor.WHITE;
+		prefixError = ChatColor.RED+"["+ChatColor.WHITE+name+ChatColor.RED+"] "+ChatColor.WHITE;
+
+		//initialize config
+		Config.initialize();
+		//initialize permission -> disable plugin if permission initialization failed
+		if(!Permissions.initialize()) {
 			getServer().getPluginManager().disablePlugin(this);
 			return;
 		}
 
-		permissions.add("livekit.basics.claim");
-		permissions.add("livekit.basics.map");
-		permissions.add("livekit.basics.players");
-		permissions.add("livekit.basics.weathertime");
-		//permissions.add("livekit.players.other");
-		permissions.add("livekit.admin.settings");
-
-		File folder = new File(System.getProperty("user.dir") + "/plugins/LiveKit/");
-		if (!folder.exists()) {
-			logger.info("Creating LiveKit directory");
-			folder.mkdir();
+		if(Bukkit.getWorld(Config.getModuleString("LiveMapModule", "world")) == null) {
+			Plugin.severe(Config.getModuleString("LiveMapModule", "world")+" does not exist! Shutting down");
+			getServer().getPluginManager().disablePlugin(this);
+			return;
 		}
-		workingDirectory = folder.getAbsolutePath();
 
-		logger.info("Materials: " + Material.values().length);
-		logger.info("Biomes: " + Biome.values().length);
+
+		//logger.info("Materials: " + Material.values().length);
+		//logger.info("Biomes: " + Biome.values().length);
 
 		try{
 			LiveKit.getInstance().onEnable();
@@ -94,11 +98,6 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 		}catch(Exception ex){ex.printStackTrace();}
 	}
 
-	private boolean setupPermissions() {
-        RegisteredServiceProvider<Permission> rsp = getServer().getServicesManager().getRegistration(Permission.class);
-        perms = rsp.getProvider();
-        return perms != null;
-    }
 
 	static ChatColor pluginColor = ChatColor.BLUE;
 	static String chatPrefix = pluginColor+"[livekit] "+ChatColor.WHITE;
@@ -126,40 +125,50 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 				if(args[0].equalsIgnoreCase("claim")) {
 					if(sender instanceof Player) {
 						Player player = (Player) sender;
-						if(perms.playerHas(player, "livekit.basics.weathertime")) {
-							player.sendMessage(PlayerAuth.get(player.getUniqueId().toString()).generateClaimPin());
-						} else {
-							player.sendMessage("Permission denied!");
-						}
+						if(!checkPerm(player, "livekit.basics.claim")) return true;
+
+						player.sendMessage(prefix+"Pin: "+PlayerAuth.get(player.getUniqueId().toString()).generateClaimPin()+" (valid for 2 mins)");
+					}
+					else 
+					{
+						sender.sendMessage(prefixError+"Only players can be claimed!");
 					}
 				}
 				if(args[0].equalsIgnoreCase("permreload")) {
 					if(sender instanceof Player) {
 						Player player = (Player) sender;
-						if(perms.playerHas(player, "livekit.admin.permreload")) {
-							
-							LiveKit.getInstance().reloadPermissions();
-							player.sendMessage("Permissions reloaded");
+						if(!checkPerm(player, "livekit.admin.permreload")) return true;
+					}
 
-						} else {
-							player.sendMessage("Permission denied!");
-						}
+					if(sender instanceof Player || sender.isOp()) {
+						LiveKit.getInstance().commandReloadPermissions();
+						sender.sendMessage(prefix+"Permissions will reload");
 					}
 				}
 				if(args[0].equalsIgnoreCase("identity")) {
 					if(sender instanceof Player) {
 						Player player = (Player) sender;
-						if(perms.playerHas(player, "livekit.basics.identity")) {
-							Identity identity = LiveKit.getInstance().getIdentity(player.getUniqueId().toString());
+						if(!checkPerm(player, "livekit.basics.claim")) return true;
+
+						Identity identity = LiveKit.getInstance().getIdentity(player.getUniqueId().toString());
+						player.sendMessage(prefix+"Identity");
+						if(identity != null) {
 							player.sendMessage("Name: "+identity.getName());
 							player.sendMessage("Permissions: ");
 							for(String perm : identity.getPermissions()) {
 								player.sendMessage(perm);
 							}
-
 						} else {
-							player.sendMessage("Permission denied!");
+							player.sendMessage("No clients connected");
 						}
+						PlayerAuth auth = PlayerAuth.get(player.getUniqueId().toString());
+						if(auth != null) {
+							player.sendMessage("Active Sessions: "+auth.getSessionKeys().length);
+						}
+					}
+					else
+					{
+						sender.sendMessage(prefixError+"Only players can have an identity!");
 					}
 				}
 				if(args[0].equalsIgnoreCase("modules")) {
@@ -201,5 +210,27 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 			}
 		}
 		return true;
+	}
+
+	private boolean checkPerm(Player player, String permission) {
+		boolean access = Permissions.has(player, permission);
+		if(!access) player.sendMessage(prefixError+"You need "+permission+" permission to access this command!");
+		return access;
+	}
+
+	public static Plugin getInstance() {
+		return instance;
+	}
+
+	public static void log(String message) {
+		logger.info(message);
+	}
+
+	public static void severe(String message) {
+		logger.severe(message);
+	}
+
+	public static void debug(String message) {
+		logger.severe(message);
 	}
 }

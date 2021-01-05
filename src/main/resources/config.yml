@@ -1,0 +1,26 @@
+server.port: 8123
+server.name: 'My Minecraft Server'
+server.tickrate: 8
+
+#allow app clients to view livemap/online players without claiming an account
+anonymous:
+  allow: true
+  permissions:
+    - livemap.basics.map
+    - livemap.basics.players
+
+#wether to use permissions (Vault) or if use==false, use default permissions for every player
+permissions:
+  use: true
+  default:
+    - livemap.basics.claim
+    - livemap.basics.map
+    - livemap.basics.players
+
+#which modules to enable
+modules:
+  LiveMapModule:
+    enabled: true
+    world: 'world'
+  PlayerModule:
+    enabled: true

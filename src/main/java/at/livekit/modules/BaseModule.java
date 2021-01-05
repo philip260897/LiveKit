@@ -39,7 +39,7 @@ public abstract class BaseModule
         this.active = defaultActive;
         //this.enabled = defaultEnabled;
     }
-    
+
     public void onEnable() {
         enabled = true;
         if(listener != null) listener.onFullUpdate(getType());

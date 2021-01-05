@@ -1,5 +1,6 @@
 package at.livekit.livekit;
 
+import at.livekit.plugin.Plugin;
 import at.livekit.utils.Utils;
 
 import java.io.File;
@@ -77,8 +78,8 @@ public class PlayerAuth
     private static Map<String, PlayerAuth> auth = new HashMap<String, PlayerAuth>();
 
     public static void initialize() throws Exception {
-        if((new File(System.getProperty("user.dir")+"/plugins/LiveKit/sessions.json")).exists()) {
-            String jsonText = new String(Files.readAllBytes(Paths.get(System.getProperty("user.dir")+"/plugins/LiveKit/sessions.json")), StandardCharsets.UTF_8);
+        if((new File(Plugin.getInstance().getDataFolder().getAbsolutePath()+"/sessions.json")).exists()) {
+            String jsonText = new String(Files.readAllBytes(Paths.get(Plugin.getInstance().getDataFolder().getAbsolutePath()+"/sessions.json")), StandardCharsets.UTF_8);
             JSONObject root = new JSONObject(jsonText);
             JSONArray array = root.getJSONArray("sessions");
             for(int i = 0; i < array.length(); i++) {
@@ -95,6 +96,8 @@ public class PlayerAuth
     }
 
     public static void save() throws Exception {
+        if(auth.size() == 0) return;
+
         JSONObject root = new JSONObject();
         JSONArray sessions = new JSONArray();
         root.put("sessions", sessions);
@@ -105,7 +108,7 @@ public class PlayerAuth
             userEntry.put("sessionKeys", entry.getValue().sessionKeys);
             sessions.put(userEntry);    
         }
-        Files.write(Paths.get(System.getProperty("user.dir")+"/plugins/LiveKit/sessions.json"), root.toString().getBytes(), new OpenOption[] { StandardOpenOption.CREATE, StandardOpenOption.WRITE });
+        Files.write(Paths.get(Plugin.getInstance().getDataFolder().getAbsolutePath()+"/sessions.json"), root.toString().getBytes(), new OpenOption[] { StandardOpenOption.CREATE, StandardOpenOption.WRITE });
     }
 
     public static PlayerAuth get(String uuid) {

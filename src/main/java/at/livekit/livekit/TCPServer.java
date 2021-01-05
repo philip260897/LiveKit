@@ -13,6 +13,7 @@ import org.json.JSONObject;
 import at.livekit.packets.AuthorizationPacket;
 import at.livekit.packets.IPacket;
 import at.livekit.packets.RequestPacket;
+import at.livekit.plugin.Plugin;
 
 public class TCPServer implements Runnable {
     private ServerSocket socket;
@@ -42,7 +43,7 @@ public class TCPServer implements Runnable {
     }
 
     public void close() {
-        System.out.println("Shutting down LiveKit Server");
+        Plugin.log("Shutting down LiveKit Server");
         abort = true;
 
         try{
@@ -96,17 +97,17 @@ public class TCPServer implements Runnable {
                 }
             }
         }
-        System.out.println("Broadcasted to "+count+" clients!");
+        Plugin.debug("Broadcasted to "+count+" clients!");
     }
 
     @Override
     public void run() {
         try{
-            System.out.println("[Server] Starting server...");
+            Plugin.log("Starting LiveKit server, accepting incoming connections on port "+port);
             socket = new ServerSocket(port);
             while(!abort) {
                 try{
-                    System.out.println("[Server] Listening for incoming connection on port "+port);
+                    //System.out.println("[Server] Listening for incoming connection on port "+port);
                     Socket cs = socket.accept();
                     try{
                         LiveKitClient client = new LiveKitClient(cs, new RemoteClientListener(){
@@ -122,7 +123,6 @@ public class TCPServer implements Runnable {
 
                             @Override
                             public void onDataReceived(RemoteClient sender, String data) {
-                                System.out.println("RECEIVED: "+data);
                                 if(listener != null) {
                                     JSONObject json = new JSONObject(data);
                                     int packetId = json.getInt("packet_id");
@@ -208,7 +208,7 @@ public class TCPServer implements Runnable {
 
         @Override
         public void run() {
-            System.out.println("[LiveKitClient] Connection opened. Listening");
+            Plugin.debug("[LiveKitClient] Connection opened. Listening");
 
             while(!abort) {
                 try{
@@ -218,7 +218,7 @@ public class TCPServer implements Runnable {
                 }catch(IOException ex){abort = true;}
             }
 
-            System.out.println("[LiveKitClient] Connection closed");
+            Plugin.debug("[LiveKitClient] Connection closed");
 
             if(listener != null) listener.onDisconnect(this);
         }

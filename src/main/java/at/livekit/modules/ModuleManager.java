@@ -16,6 +16,7 @@ import at.livekit.livekit.Identity;
 import at.livekit.modules.BaseModule.ModuleListener;
 import at.livekit.modules.BaseModule.ModulesAvailablePacket;
 import at.livekit.packets.StatusPacket;
+import at.livekit.plugin.Config;
 import at.livekit.plugin.Plugin;
 import at.livekit.packets.IPacket;
 
@@ -44,17 +45,18 @@ public class ModuleManager
     public void onEnable() {
         this.registerModule(new SettingsModule(listener));
         this.registerModule(new PlayerModule(listener));
-        this.registerModule(new LiveMapModule("world", listener));
-        this.registerModule(new WeatherTimeModule("world", listener));
+        this.registerModule(new LiveMapModule(Config.getModuleString("LiveMapModule", "world"), listener));
+        this.registerModule(new WeatherTimeModule(Config.getModuleString("LiveMapModule", "world"), listener));
 
         this.settings = (SettingsModule) _modules.get("SettingsModule");
         this.settings.onEnable();
         for(BaseModule m : _modules.values()) {
             if(!(m instanceof SettingsModule)) {
-                this.settings.registerModule(m.getType(), m.moduleInfo());
-
-                if(this.settings.modules.get(m.getType()).getBoolean("active")) {
+                
+                if(Config.moduleEnabled(m.getType())) {
+                    Plugin.log("Enabling "+m.getType());
                     m.onEnable();
+                    this.settings.registerModule(m.getType(), m.moduleInfo());
                 }
             }
         }
@@ -216,7 +218,7 @@ public class ModuleManager
     }
 
     public Future<Void> updateModules() {
-        return Bukkit.getScheduler().callSyncMethod(Plugin.instance, new Callable<Void>(){
+        return Bukkit.getScheduler().callSyncMethod(Plugin.getInstance(), new Callable<Void>(){
 			@Override
 			public Void call() throws Exception {
                 for(BaseModule module : getModules()) {

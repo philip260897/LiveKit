@@ -116,7 +116,7 @@ public class LiveMapModule extends BaseModule implements Listener
                 updateChunk(c, false);
             }
         }
-        Bukkit.getServer().getPluginManager().registerEvents(this, Plugin.instance);
+        Bukkit.getServer().getPluginManager().registerEvents(this, Plugin.getInstance());
 
         super.onEnable();
     }
@@ -228,7 +228,7 @@ public class LiveMapModule extends BaseModule implements Listener
     private IPacket update(Offset chunk) throws Exception {
         if(chunk.onlyIfAbsent && loadedChunkExists(chunk)) return null;
 
-        System.out.println("[LiveKit] Updating chunk " + chunk.x + " " + chunk.z);
+        Plugin.debug("[LiveKit] Updating chunk " + chunk.x + " " + chunk.z);
         int regionX = (int) Math.floor(((double) chunk.x / 32.0));
         int regionZ = (int) Math.floor(((double) chunk.z / 32.0));
         String key = regionX + "_" + regionZ;
@@ -350,7 +350,7 @@ public class LiveMapModule extends BaseModule implements Listener
                 _regions.put(key, Base64.getDecoder().decode(json.getString(key)));
                 boundingBox.update(Integer.parseInt(key.split("_")[0]), Integer.parseInt(key.split("_")[1]));
             }
-            System.out.println("Loaded LiveKit '"+world+"' from file. "+_regions.size()+" regions!");
+            Plugin.log("Loaded LiveKit '"+world+"' from file. "+_regions.size()+" regions!");
         }
     }
 
@@ -557,7 +557,6 @@ public class LiveMapModule extends BaseModule implements Listener
         for(BlockState bd : event.getBlocks()) {
             if(!chunks.contains(bd.getChunk())) {
                 chunks.add(bd.getChunk());
-                System.out.println("Something has grown: Queing chunk "+bd.getChunk().getX() + " " + bd.getChunk().getZ());
                 updateChunk(bd.getChunk(), false);
             }
         }

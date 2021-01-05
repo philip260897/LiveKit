@@ -16,6 +16,8 @@ import org.json.JSONObject;
 import org.jsoup.Jsoup;
 import org.jsoup.Connection.Response;
 
+import at.livekit.plugin.Plugin;
+
 public class HeadLibrary implements Runnable
 {
     private static final String SKIN_URL = "https://sessionserver.mojang.com/session/minecraft/profile";
@@ -111,7 +113,7 @@ public class HeadLibrary implements Runnable
                 }
 
                 try{
-                    System.out.println("[MineKit] resolving head for "+uuid);
+                    Plugin.log("resolving head for "+uuid);
                     resolveHead(uuid);
 
                     if(listener != null) listener.onHeadResolved(uuid, playerHeads.get(uuid));
