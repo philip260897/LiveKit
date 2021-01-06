@@ -2,6 +2,7 @@ package at.livekit.modules;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
@@ -113,7 +114,7 @@ public class LiveMapModule extends BaseModule implements Listener
             World world = Bukkit.getWorld(this.world);
             Chunk[] chunks = world.getLoadedChunks(); 
             for(Chunk c : chunks) {
-                updateChunk(c, false);
+                updateChunk(c, true);
             }
         }
         Bukkit.getServer().getPluginManager().registerEvents(this, Plugin.getInstance());
@@ -228,7 +229,7 @@ public class LiveMapModule extends BaseModule implements Listener
     private IPacket update(Offset chunk) throws Exception {
         if(chunk.onlyIfAbsent && loadedChunkExists(chunk)) return null;
 
-        Plugin.debug("[LiveKit] Updating chunk " + chunk.x + " " + chunk.z);
+        Plugin.debug("Updating chunk " + chunk.x + " " + chunk.z);
         int regionX = (int) Math.floor(((double) chunk.x / 32.0));
         int regionZ = (int) Math.floor(((double) chunk.z / 32.0));
         String key = regionX + "_" + regionZ;
@@ -245,6 +246,7 @@ public class LiveMapModule extends BaseModule implements Listener
 
         if (regionData != null) {
             byte[] chunkData = new byte[16*16*4];
+            boolean unload = !Bukkit.getWorld(world).isChunkLoaded(chunk.x, chunk.z);
             Chunk c = Bukkit.getWorld(world).getChunkAt(chunk.x, chunk.z);
             for (int z = 0; z < 16; z++) {
                 for (int x = 0; x < 16; x++) {
@@ -264,6 +266,7 @@ public class LiveMapModule extends BaseModule implements Listener
                     }
                 }
             }
+            if(unload) Bukkit.getWorld(world).unloadChunk(chunk.x, chunk.z, false);
 
             return new ChunkPacket(c.getX(), c.getZ(), chunkData);
         } else {
@@ -343,32 +346,38 @@ public class LiveMapModule extends BaseModule implements Listener
     }
 
     private void load() throws Exception{
-        File file = new File(System.getProperty("user.dir") + "/plugins/LiveKit/"+world+".json");
-        if(file.exists()) {
-            JSONObject json = new JSONObject(new String(Files.readAllBytes(Paths.get(System.getProperty("user.dir") + "/plugins/LiveKit/"+world+".json"))));
-            for(String key : json.keySet()) {
-                _regions.put(key, Base64.getDecoder().decode(json.getString(key)));
-                boundingBox.update(Integer.parseInt(key.split("_")[0]), Integer.parseInt(key.split("_")[1]));
+        File folder = getDir();
+        if(!folder.exists()) folder.mkdirs();
+
+        for(File file : folder.listFiles()) {
+            if(file.isFile() && file.getName().endsWith(".region")) {
+                try{
+                    synchronized(_regions) {
+                        int regionX = Integer.parseInt(file.getName().split("_")[0]);
+                        int regionZ = Integer.parseInt(file.getName().split("_")[1].replace(".region", ""));
+                        _regions.put(regionX+"_"+regionZ, Files.readAllBytes(file.toPath()));
+                    }
+                }catch(Exception ex){ex.printStackTrace();}
             }
-            Plugin.log("Loaded LiveKit '"+world+"' from file. "+_regions.size()+" regions!");
+        }
+        Plugin.log("LiveMapModule loaded "+_regions.size()+" regions for "+world);
+    }
+
+    private void save() throws FileNotFoundException, IOException { 
+        synchronized(_regions) {
+            for(Entry<String, byte[]> entry : _regions.entrySet()) {
+                File file = new File(getDir(), entry.getKey()+".region");
+                if(!file.exists()) file.createNewFile();
+
+                try (FileOutputStream fos = new FileOutputStream(file)) {
+                    fos.write(entry.getValue());
+                }
+            }
         }
     }
 
-    private void save() throws FileNotFoundException, IOException {
-        File file = new File(System.getProperty("user.dir") + "/plugins/LiveKit/"+world+".json");
-        if(!file.exists()) file.createNewFile();
-
-        JSONObject json = new JSONObject();
-        synchronized(_regions) {
-            for(Entry<String, byte[]> entry : _regions.entrySet()) {
-            json.put(entry.getKey(), Base64.getEncoder().encodeToString(entry.getValue()));
-            }
-        }
-
-        PrintWriter writer = new PrintWriter(file);
-        writer.write(json.toString());
-        writer.flush();
-        writer.close();
+    private File getDir() {
+        return new File(Plugin.getInstance().getDataFolder(), "map/"+world);
     }
 
     private static class Offset {

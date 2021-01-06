@@ -67,16 +67,10 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 			return;
 		}
 
-
 		//logger.info("Materials: " + Material.values().length);
 		//logger.info("Biomes: " + Biome.values().length);
 
-		try{
-			LiveKit.getInstance().onEnable();
-		}catch(Exception ex){ex.printStackTrace();}
-
-
-
+		HeadLibrary.load();
 		HeadLibrary.setHeadLibraryListener(new HeadLibraryEvent(){
 			@Override
 			public void onHeadResolved(String uuid, String base64) {
@@ -87,6 +81,10 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 				}
 			}
 		});
+
+		try{
+			LiveKit.getInstance().onEnable();
+		}catch(Exception ex){ex.printStackTrace();}
     }
     
     @Override
@@ -231,6 +229,6 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 	}
 
 	public static void debug(String message) {
-		logger.severe(message);
+		logger.warning(message);
 	}
 }

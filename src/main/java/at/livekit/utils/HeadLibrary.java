@@ -2,12 +2,17 @@ package at.livekit.utils;
 
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.PrintWriter;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import javax.imageio.ImageIO;
 
@@ -22,12 +27,37 @@ public class HeadLibrary implements Runnable
 {
     private static final String SKIN_URL = "https://sessionserver.mojang.com/session/minecraft/profile";
     public static final String DEFAULT_HEAD = "iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAM0lEQVR4XmNgYGD4TwBjCKBjDAF0jCGAin0+af3XucL1H0TDBNHEsOhCxRgC6BhDAAUDAADgR3U7WfxJAAAAAElFTkSuQmCC";
-    private static Map<String,String> playerHeads = new HashMap<String,String>();    
-    
+    private static Map<String,String> playerHeads = new HashMap<String,String>(); 
     private static List<String> queue = new ArrayList<String>();
     private static Thread thread = null;
 
     private static HeadLibraryEvent listener;
+
+    public static void load() {
+        File heads = new File(Plugin.getInstance().getDataFolder(), "heads");
+        if(!heads.exists()) heads.mkdir();
+        for(File file : heads.listFiles()) {
+            try{
+                UUID uuid = UUID.fromString(file.getName().replace(".txt", ""));
+                synchronized(playerHeads) {
+                    playerHeads.put(uuid.toString(), new String(Files.readAllBytes(Paths.get(file.getAbsolutePath()))));
+                }
+            }catch(Exception ex){ex.printStackTrace();}
+        }
+    }
+
+    private static void save(String uuid, String head) {
+        try{
+            File headFile = new File(Plugin.getInstance().getDataFolder(), "heads/"+uuid+".txt");
+            if(!headFile.exists()) {
+                headFile.createNewFile();
+            }
+            PrintWriter writer = new PrintWriter(headFile);
+            writer.write(head);
+            writer.flush();
+            writer.close();
+        }catch(Exception ex){ex.printStackTrace();}
+    }
 
     public static void setHeadLibraryListener(HeadLibraryEvent listener) {
         HeadLibrary.listener = listener;
@@ -97,14 +127,16 @@ public class HeadLibrary implements Runnable
                         ImageIO.write(image, "png", os);
                         String head = Base64.getEncoder().encodeToString(os.toByteArray());
                         playerHeads.put(uuid, head);
-
+                        save(uuid, head);
                     }
                 }
-            }catch(Exception ex){ex.printStackTrace(); playerHeads.put(uuid, DEFAULT_HEAD);}
+            }catch(Exception ex){/*ex.printStackTrace(); /*playerHeads.put(uuid, DEFAULT_HEAD);*/Plugin.debug("HeadLibrary error "+ex.getMessage());}
     }
 
     @Override
     public void run() {
+        
+
         while(true) {
             while(!queue.isEmpty()) {
                 String uuid;

@@ -340,10 +340,12 @@ public class PlayerModule extends BaseModule implements Listener
             p.firstPlayed = player.getFirstPlayed();
             p.online = player.isOnline();
 
-            if(!HeadLibrary.has(player.getUniqueId().toString())) { 
-                HeadLibrary.resolveAsync(player.getUniqueId().toString());
-            } 
-            p.updateHead(HeadLibrary.get(player.getUniqueId().toString()));
+            if(p.online) {
+                if(!HeadLibrary.has(player.getUniqueId().toString())) { 
+                    HeadLibrary.resolveAsync(player.getUniqueId().toString());
+                } 
+                p.updateHead(HeadLibrary.get(player.getUniqueId().toString()));
+            }
 
             if(player.getPlayer() != null) {
                 Player online = player.getPlayer();

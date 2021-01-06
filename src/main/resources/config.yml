@@ -6,16 +6,17 @@ server.tickrate: 8
 anonymous:
   allow: true
   permissions:
-    - livemap.basics.map
-    - livemap.basics.players
+    - livekit.basics.map
+    - livekit.basics.players
 
 #wether to use permissions (Vault) or if use==false, use default permissions for every player
 permissions:
   use: true
   default:
-    - livemap.basics.claim
-    - livemap.basics.map
-    - livemap.basics.players
+    - livekit.basics.claim
+    - livekit.basics.map
+    - livekit.basics.players
+    - livekit.basics.weathertime
 
 #which modules to enable
 modules:

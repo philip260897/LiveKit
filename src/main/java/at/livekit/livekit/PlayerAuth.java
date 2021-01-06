@@ -34,7 +34,9 @@ public class PlayerAuth
     }
 
     public String[] getSessionKeys() {
-        return sessionKeys.toArray(new String[sessionKeys.size()]);
+        synchronized(sessionKeys) {
+            return sessionKeys.toArray(new String[sessionKeys.size()]);
+        }
     }
 
     public String generateClaimPin() {
@@ -44,7 +46,9 @@ public class PlayerAuth
     }
 
     public boolean isValidSession(String authorization) {
-        return sessionKeys.contains(authorization);
+        synchronized(sessionKeys) {
+            return sessionKeys.contains(authorization);
+        }
     }
 
     public boolean isValidClaim(String claim) {
@@ -62,17 +66,25 @@ public class PlayerAuth
     }
 
     public void removeSession(String sessionKey) {
-        sessionKeys.remove(sessionKey);
+        synchronized(sessionKey) {
+            sessionKeys.remove(sessionKey);
+        }
     }
 
     public void clearSessionKeys() {
-        sessionKeys.clear();
+        synchronized(sessionKeys) {
+            sessionKeys.clear();
+        }
     }
 
     public String generateSessionKey() {
         String key = Utils.generateRandom(128);
-        sessionKeys.add(key);
-        return key;
+
+        synchronized(sessionKeys) {
+            sessionKeys.add(key);
+            while(sessionKeys.size() > 5) sessionKeys.remove(0);
+            return key;
+        }
     }
 
     private static Map<String, PlayerAuth> auth = new HashMap<String, PlayerAuth>();
@@ -102,26 +114,32 @@ public class PlayerAuth
         JSONArray sessions = new JSONArray();
         root.put("sessions", sessions);
 
-        for(Entry<String, PlayerAuth> entry : auth.entrySet()) {
-            JSONObject userEntry = new JSONObject();
-            userEntry.put("playerId", entry.getKey());
-            userEntry.put("sessionKeys", entry.getValue().sessionKeys);
-            sessions.put(userEntry);    
+        synchronized(auth) {
+            for(Entry<String, PlayerAuth> entry : auth.entrySet()) {
+                JSONObject userEntry = new JSONObject();
+                userEntry.put("playerId", entry.getKey());
+                userEntry.put("sessionKeys", entry.getValue().sessionKeys);
+                sessions.put(userEntry);    
+            }
         }
         Files.write(Paths.get(Plugin.getInstance().getDataFolder().getAbsolutePath()+"/sessions.json"), root.toString().getBytes(), new OpenOption[] { StandardOpenOption.CREATE, StandardOpenOption.WRITE });
     }
 
     public static PlayerAuth get(String uuid) {
-        if(auth.containsKey(uuid)) return auth.get(uuid);
-        PlayerAuth playerAuth = new PlayerAuth(uuid, new ArrayList<String>());
-        auth.put(uuid, playerAuth);
-        return playerAuth;
+        synchronized(auth) {
+            if(auth.containsKey(uuid)) return auth.get(uuid);
+            PlayerAuth playerAuth = new PlayerAuth(uuid, new ArrayList<String>());
+            auth.put(uuid, playerAuth);
+            return playerAuth;
+        }
     }
 
     public static PlayerAuth validateClaim(String pin) {
-        for(Entry<String,PlayerAuth> entry : auth.entrySet() ) {
-            if(entry.getValue().isValidClaim(pin)) {
-                return entry.getValue();
+        synchronized(auth) {
+            for(Entry<String,PlayerAuth> entry : auth.entrySet() ) {
+                if(entry.getValue().isValidClaim(pin)) {
+                    return entry.getValue();
+                }
             }
         }
         return null;
