@@ -1,6 +1,8 @@
 server.port: 8123
 server.name: 'My Minecraft Server'
 server.tickrate: 8
+#password protect access to LiveKit
+server.password: null
 
 #allow app clients to view livemap/online players without claiming an account
 anonymous:

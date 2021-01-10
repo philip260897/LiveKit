@@ -7,6 +7,8 @@ public class AuthorizationPacket extends RequestPacket {
     private String pin;
     private String uuid;
     private String authorization;
+    private String password;
+    private boolean anonymous;
 
     public boolean isPin() {
         return pin != null;
@@ -14,6 +16,10 @@ public class AuthorizationPacket extends RequestPacket {
 
     public boolean isAuthorization() {
         return authorization != null;
+    }
+
+    public boolean isAnonymous() {
+        return anonymous;
     }
 
     public String getValue() {
@@ -24,6 +30,10 @@ public class AuthorizationPacket extends RequestPacket {
         return uuid;
     }
 
+    public String getPassword() {
+        return password;
+    }
+
     @Override
     public IPacket fromJson(String json) {
         super.fromJson(json);
@@ -31,6 +41,8 @@ public class AuthorizationPacket extends RequestPacket {
         this.pin = o.has("pin")&&!o.isNull("pin") ? o.getString("pin") : null;
         this.authorization = o.has("auth")&&!o.isNull("auth") ? o.getString("auth") : null;
         this.uuid = o.has("uuid")&&!o.isNull("uuid") ? o.getString("uuid") : null;
+        this.anonymous = o.has("anonymous")&&!o.isNull("anonymous") ? o.getBoolean("anonymous") : false;
+        this.password = o.has("password")&&!o.isNull("password")?o.getString("password"):null;
         return this;
     }
 
@@ -41,6 +53,7 @@ public class AuthorizationPacket extends RequestPacket {
         json.put("auth", authorization);
         json.put("uuid", uuid);
         json.put("packet_id", PACKETID);
+        json.put("anonymous", anonymous);
         return json;
     }
 }

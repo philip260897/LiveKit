@@ -7,8 +7,8 @@ import java.util.UUID;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 
+import at.livekit.plugin.Config;
 import at.livekit.plugin.Permissions;
-import at.livekit.plugin.Plugin;
 
 public class Identity 
 {
@@ -21,6 +21,7 @@ public class Identity
     
     public Identity(String uuid) {
         this.uuid = uuid;
+        this.anonymous = this.uuid == null;
     }
 
     public Identity() {
@@ -66,8 +67,9 @@ public class Identity
                 }
             }catch(Exception ex){};
         } else {
-            permissions.add("livekit.basics.livemap");
-            permissions.add("livekit.basics.map");
+            op = false;
+            name = "Anonymous";
+            permissions.addAll(Config.getAnonymousPermissions());
         }
     }
 }

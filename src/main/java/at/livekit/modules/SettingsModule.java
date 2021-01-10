@@ -19,6 +19,7 @@ public class SettingsModule extends BaseModule
     public String serverName;
     public int liveMapTickRate;
     public boolean needsIdentity;
+    public boolean needsPassword;
     public Map<String, JSONObject> modules = new HashMap<String, JSONObject>();
 
     public SettingsModule(ModuleListener listener) {
@@ -33,6 +34,7 @@ public class SettingsModule extends BaseModule
         serverName = Config.getServerName();
         liveMapTickRate = Config.getTickRate();
         needsIdentity = !Config.allowAnonymous();
+        needsPassword = Config.getPassword() != null;
     }
 
     public void registerModule(String type, JSONObject moduleInfo) {

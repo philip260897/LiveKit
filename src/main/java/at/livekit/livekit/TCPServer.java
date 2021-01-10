@@ -13,6 +13,7 @@ import org.json.JSONObject;
 import at.livekit.packets.AuthorizationPacket;
 import at.livekit.packets.IPacket;
 import at.livekit.packets.RequestPacket;
+import at.livekit.packets.StatusPacket;
 import at.livekit.plugin.Plugin;
 
 public class TCPServer implements Runnable {
@@ -127,6 +128,13 @@ public class TCPServer implements Runnable {
                                     JSONObject json = new JSONObject(data);
                                     int packetId = json.getInt("packet_id");
                                     int requestId = json.getInt("request_id");
+
+                                    LiveKitClient client = (LiveKitClient) sender;
+                                    if(!client.hasIdentity() && packetId != AuthorizationPacket.PACKETID) {
+                                        sender.sendPacket(new StatusPacket(0, "Not Authorized").setRequestId(requestId));
+                                        client.close();
+                                        return;
+                                    }
                                     
                                     RequestPacket response = null;
                                     if(packetId == AuthorizationPacket.PACKETID) {

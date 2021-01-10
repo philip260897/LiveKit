@@ -16,6 +16,7 @@ import at.livekit.packets.IdentityPacket;
 import at.livekit.packets.RequestPacket;
 import at.livekit.packets.ServerSettingsPacket;
 import at.livekit.packets.StatusPacket;
+import at.livekit.plugin.Config;
 import at.livekit.plugin.Plugin;
 import at.livekit.livekit.TCPServer.ServerListener;
 import at.livekit.utils.HeadLibrary;
@@ -104,6 +105,7 @@ public class LiveKit implements ModuleListener, Runnable {
                 serverSettings.put("liveKitTickRate", _modules.getSettings().liveMapTickRate);
                 serverSettings.put("needsIdentity", _modules.getSettings().needsIdentity);
                 serverSettings.put("serverName", _modules.getSettings().serverName);
+                serverSettings.put("needsPassword", _modules.getSettings().needsPassword);
 
                 client.sendPacket(new ServerSettingsPacket(serverSettings));
             }
@@ -249,28 +251,57 @@ public class LiveKit implements ModuleListener, Runnable {
         if(packet instanceof AuthorizationPacket) {
             AuthorizationPacket auth = (AuthorizationPacket)packet;
             PlayerAuth identity = null;
-            if(auth.isPin()) {
-                identity = PlayerAuth.validateClaim(auth.getValue());
-            } else {
-                identity = PlayerAuth.get(auth.getUUID());
-                if(identity.isValidSession(auth.getValue())) {
-                    identity.removeSession(auth.getValue());
-                } else {
-                    identity = null;
+
+            if(_modules.getSettings().needsPassword) {
+                if(!Config.getPassword().equals(auth.getPassword())) {
+                    return new StatusPacket(0, "Invalid server password!");
                 }
             }
-            if(identity != null) {
-                client.setIdentity(identity.getUUID());
+
+            if(_modules.getSettings().needsIdentity) {
+                if(auth.isAnonymous()) {
+                    return new StatusPacket(0, "Identity required!");
+                }
+            }
+
+            if(!auth.isAnonymous()) {
+                if(auth.isPin()) {
+                    identity = PlayerAuth.validateClaim(auth.getValue());
+                } else {
+                    identity = PlayerAuth.get(auth.getUUID());
+                    if(identity.isValidSession(auth.getValue())) {
+                        identity.removeSession(auth.getValue());
+                    } else {
+                        identity = null;
+                    }
+                }
+                if(identity != null) {
+                    client.setIdentity(identity.getUUID());
+                    client.getIdentity().loadPermissionsAsync();
+                
+                    try{
+                        client.sendPacket(_modules.modulesAvailableAsync(client.getIdentity()));
+                        client.sendPackets(_modules.onJoinAsync(client.getIdentity()));
+                    }catch(Exception ex){ex.printStackTrace();}
+
+                
+                    return new IdentityPacket(identity.getUUID(), client.getIdentity().getName(), HeadLibrary.get(identity.getUUID()), identity.generateSessionKey());
+                }
+                
+            } 
+            else
+            {
+                client.setAnonymous();
                 client.getIdentity().loadPermissionsAsync();
-            
+
                 try{
                     client.sendPacket(_modules.modulesAvailableAsync(client.getIdentity()));
                     client.sendPackets(_modules.onJoinAsync(client.getIdentity()));
                 }catch(Exception ex){ex.printStackTrace();}
 
-            
-                return new IdentityPacket(identity.getUUID(), client.getIdentity().getName(), HeadLibrary.get(identity.getUUID()), identity.generateSessionKey());
+                return new IdentityPacket(null, client.getIdentity().getName(), null, null);
             }
+
             return new StatusPacket(0, "Invalid authentication credentials!");
         }
 

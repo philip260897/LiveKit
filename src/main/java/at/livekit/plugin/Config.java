@@ -55,6 +55,10 @@ public class Config
         return config.getBoolean("modules."+name+".enabled");
     }
 
+    public static String getPassword() {
+        return config.getString("server.password");
+    }
+
     public static String getModuleString(String name, String setting) {
         return config.getString("modules."+name+"."+setting);
     }
