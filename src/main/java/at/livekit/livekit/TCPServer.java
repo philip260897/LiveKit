@@ -1,5 +1,6 @@
 package at.livekit.livekit;
 
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -10,8 +11,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.json.JSONObject;
+
+import at.livekit.modules.LiveMapModule;
 import at.livekit.packets.AuthorizationPacket;
 import at.livekit.packets.IPacket;
+import at.livekit.packets.RawPacket;
+import at.livekit.packets.RegionRequest;
 import at.livekit.packets.RequestPacket;
 import at.livekit.packets.StatusPacket;
 import at.livekit.plugin.Plugin;
@@ -140,6 +145,22 @@ public class TCPServer implements Runnable {
                                     if(packetId == AuthorizationPacket.PACKETID) {
                                         response = listener.onPacketReceived((LiveKitClient)sender, (AuthorizationPacket) new AuthorizationPacket().fromJson(data)); 
                                     }
+                                    if(packetId == RegionRequest.PACKETID) {
+                                        RegionRequest request = (RegionRequest) new RegionRequest().fromJson(data);
+
+                                        LiveMapModule module = (LiveMapModule) LiveKit.getInstance().getModuleManager().getModule("LiveMapModule");
+
+                                        if(module != null) {
+                                            byte[] d = module.getRegionData(request.x, request.z);
+                                            if(d != null) {
+                                                response = new RawPacket(d);
+                                            }
+                                        }
+                                        else
+                                        {
+                                            response = new StatusPacket(0, "Region "+request.x+" "+request.z+" in "+request.world+" not found!");
+                                        }
+                                    }
                                     /*if(packetId == LiveMapSubscriptionPacket.PACKETID) {
                                         response = listener.onPacketReceived((LiveKitClient)sender, (LiveMapSubscriptionPacket) new LiveMapSubscriptionPacket().fromJson(data));    
                                     }*/
@@ -171,7 +192,8 @@ public class TCPServer implements Runnable {
     public static class RemoteClient implements Runnable 
     {
         private Socket socket;
-        private PrintWriter writer;
+        //private PrintWriter writer;
+        private BufferedOutputStream out;
         private BufferedReader reader;
 
         private boolean abort;
@@ -182,7 +204,8 @@ public class TCPServer implements Runnable {
 
         public RemoteClient(Socket socket, RemoteClientListener listener) throws IOException {
             this.socket = socket;
-            this.writer = new PrintWriter(socket.getOutputStream());
+            //this.writer = new PrintWriter(socket.getOutputStream());
+            this.out = new BufferedOutputStream(socket.getOutputStream());
             this.reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
             this.listener = listener;
@@ -195,7 +218,7 @@ public class TCPServer implements Runnable {
             abort = true;
             thread.interrupt();
 
-            try{this.writer.close();}catch(Exception ex){}
+            try{this.out.close();}catch(Exception ex){}
             try{this.reader.close();}catch(Exception ex){}
             try{this.socket.close();}catch(Exception ex){}
 
@@ -209,9 +232,26 @@ public class TCPServer implements Runnable {
 
         public void sendPacket(IPacket packet) {
             if(packet == null) return;
-            
-            writer.println(packet.toJson().toString());
-            writer.flush();
+            try{
+
+                if(packet instanceof RawPacket) {
+                    
+                        long mini = System.currentTimeMillis();
+                        byte[] data = ((RawPacket)packet).getRawPacket();
+                        System.out.println("converting: "+(System.currentTimeMillis()-mini));
+                        long mini2 = System.currentTimeMillis();
+                        out.write(data);
+                        System.out.println("Writing: "+(System.currentTimeMillis()-mini2));
+                        out.flush();
+                    
+                    return;
+                }
+
+                out.write((packet.toJson().toString()+"\n").getBytes());
+                //writer.println(packet.toJson().toString());
+                out.flush();
+
+            }catch(Exception ex){ex.printStackTrace();}
         }
 
         @Override

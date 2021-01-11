@@ -8,11 +8,15 @@ import java.util.stream.Collectors;
 import org.json.JSONObject;
 
 import at.livekit.modules.BaseModule;
+import at.livekit.modules.LiveMapModule;
 import at.livekit.modules.ModuleManager;
 
 import at.livekit.modules.BaseModule.ModuleListener;
 import at.livekit.packets.AuthorizationPacket;
 import at.livekit.packets.IdentityPacket;
+import at.livekit.packets.RawPacket;
+import at.livekit.packets.RegionPacket;
+import at.livekit.packets.RegionRequest;
 import at.livekit.packets.RequestPacket;
 import at.livekit.packets.ServerSettingsPacket;
 import at.livekit.packets.StatusPacket;
@@ -203,14 +207,18 @@ public class LiveKit implements ModuleListener, Runnable {
             
 
             synchronized(_packetsIncoming) {
-                while(_packetsIncoming.size() > 0) {
+                while(_packetsIncoming.size() > 0 && (System.currentTimeMillis()-start < tickTime)) {
                     RequestPacket packet = (RequestPacket) _packetsIncoming.remove(0);
                     RequestPacket response = handlePacket(packet.client, packet);
+                    long mini = System.currentTimeMillis();
                     if(response != null) packet.client.sendPacket(response.setRequestId(packet.requestId));
+                    System.out.println("Sending: "+(System.currentTimeMillis()-mini));
                 }
             }
+            
 
-            long delta = start - System.currentTimeMillis();
+            long delta = System.currentTimeMillis() - start;
+            Plugin.debug("TICK "+delta+"ms "+tickTime+"ms");
             if(delta >= tickTime) Plugin.severe("LiveKit tick can't keep up");
             else {
                 try{
@@ -303,6 +311,20 @@ public class LiveKit implements ModuleListener, Runnable {
             }
 
             return new StatusPacket(0, "Invalid authentication credentials!");
+        }
+
+        if(packet instanceof RegionRequest) {
+            RegionRequest request = (RegionRequest)packet;
+
+            LiveMapModule module = (LiveMapModule) _modules.getModule("LiveMapModule");
+
+            if(module != null) {
+                byte[] data = module.getRegionData(request.x, request.z);
+                if(data != null) {
+                    return new RawPacket(data);
+                }
+            }
+            return new StatusPacket(0, "Region "+request.x+" "+request.z+" in "+request.world+" not found!");
         }
 
         /*if(packet instanceof LiveMapSubscriptionPacket) {

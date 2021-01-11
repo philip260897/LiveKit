@@ -141,16 +141,20 @@ public class LiveMapModule extends BaseModule implements Listener
     public IPacket onJoinAsync(Identity identity) {
         JSONObject json = new JSONObject();
         json.put("world", world);
-        JSONArray syncable = new JSONArray();
-        JSONObject regions = new JSONObject();
+        //JSONArray syncable = new JSONArray();
+        JSONArray regions = new JSONArray();
         json.put("regions", regions);
-        json.put("syncables", syncable);
+        //json.put("syncables", syncable);
+       
         //json.put("boundingBox", )
 
-        synchronized(_regions) {
+        /*synchronized(_regions) {
             for(Entry<String,byte[]> entry : _regions.entrySet()) {
                 regions.put(entry.getKey(), Base64.getEncoder().encodeToString(entry.getValue()));
             }
+        }*/
+        synchronized(_regions) {
+            for(String s : _regions.keySet()) regions.put(s);
         }
 
        /* synchronized(_syncables) {
@@ -343,6 +347,20 @@ public class LiveMapModule extends BaseModule implements Listener
             }
         }
         return 0;
+    }
+
+    public byte[] getRegionData(int x, int z) {
+        return _regions.get(x+"_"+z);
+    }
+
+    public static byte[] loadRegion(int x, int z, String world) {
+        File file = new File(Plugin.getInstance().getDataFolder(), "map/"+world+"/"+x+"_"+z+".region");
+        if(!file.exists()) return null;
+
+        try{
+            return Files.readAllBytes(file.toPath());
+        }catch(Exception ex){ex.printStackTrace();}
+        return null;
     }
 
     private void load() throws Exception{
