@@ -36,8 +36,18 @@ public class ActionPacket extends RequestPacket
         JSONObject json = new JSONObject(data);
         this.module = json.getString("module");
         this.action = json.getString("action");
-        this.data = json.getJSONObject("data");
+        this.data = json.has("data") && !json.isNull("data") ? json.getJSONObject("data") : null;
         return this;
+    }
+
+    @Override
+    public JSONObject toJson() {
+        JSONObject json = super.toJson();
+        json.put("module", module);
+        json.put("action", action);
+        json.put("data", data);
+        json.put("packet_id", PACKETID);
+        return json;
     }
 
     public ActionPacket response(JSONObject data) {

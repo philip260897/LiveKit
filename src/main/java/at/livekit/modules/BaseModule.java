@@ -101,7 +101,7 @@ public abstract class BaseModule
 
                             @Override
                             public IPacket call() throws Exception {
-                                return (IPacket) method.invoke(this, action);
+                                return (IPacket) method.invoke(BaseModule.this, action);
                             }
                             
                         }).get();

@@ -80,6 +80,7 @@ public class AdminModule extends BaseModule
             p.put("uuid", player.getUniqueId().toString());
             p.put("name", player.getName() );
             p.put("head", HeadLibrary.get(player.getUniqueId().toString()));
+            array.put(p);
         }
         data.put("players", array);
 
