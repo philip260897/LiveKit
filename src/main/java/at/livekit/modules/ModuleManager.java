@@ -80,6 +80,7 @@ public class ModuleManager
     public IPacket invokeActionSync(Identity identity, ActionPacket action) {
         BaseModule module = getModule(action.getModuleType());
         if(module == null) return new StatusPacket(0, "Invalid module "+action.getModuleType()+" specified.");
+        if(!module.isEnabled()) return new StatusPacket(0, "Requested module is not enabled!");
         if(!module.hasAccess(identity)) return new StatusPacket(0, "Permission denied!");
         
         IPacket response = module.invokeActionSync(identity, action);

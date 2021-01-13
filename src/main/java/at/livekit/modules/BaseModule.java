@@ -16,6 +16,7 @@ import org.json.JSONObject;
 import at.livekit.livekit.Identity;
 import at.livekit.packets.ActionPacket;
 import at.livekit.packets.IPacket;
+import at.livekit.packets.StatusPacket;
 import at.livekit.plugin.Plugin;
 
 public abstract class BaseModule 
@@ -101,11 +102,14 @@ public abstract class BaseModule
 
                             @Override
                             public IPacket call() throws Exception {
-                                return (IPacket) method.invoke(BaseModule.this, action);
+                                try{
+                                    return (IPacket) method.invoke(BaseModule.this, identity, action);
+                                }catch(Exception ex){ex.printStackTrace();}
+                                return new StatusPacket(0, "An error occured!");
                             }
                             
                         }).get();
-                    }catch(Exception ex){ex.printStackTrace();}
+                    }catch(Exception ex){ex.printStackTrace(); return new StatusPacket(0, "An error occured!");}
                 }
             }
         }
