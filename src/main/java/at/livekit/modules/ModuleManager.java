@@ -18,7 +18,9 @@ import at.livekit.modules.BaseModule.ModulesAvailablePacket;
 import at.livekit.packets.StatusPacket;
 import at.livekit.plugin.Config;
 import at.livekit.plugin.Plugin;
+import at.livekit.packets.ActionPacket;
 import at.livekit.packets.IPacket;
+import at.livekit.packets.RequestPacket;
 
 public class ModuleManager 
 {
@@ -47,6 +49,7 @@ public class ModuleManager
         this.registerModule(new PlayerModule(listener));
         this.registerModule(new LiveMapModule(Config.getModuleString("LiveMapModule", "world"), listener));
         this.registerModule(new WeatherTimeModule(Config.getModuleString("LiveMapModule", "world"), listener));
+        this.registerModule(new AdminModule(listener));
 
         this.settings = (SettingsModule) _modules.get("SettingsModule");
         this.settings.onEnable();
@@ -72,6 +75,17 @@ public class ModuleManager
 
     private void registerModule(BaseModule module) {
         _modules.put(module.getType(), module);
+    }
+
+    public IPacket invokeActionSync(Identity identity, ActionPacket action) {
+        BaseModule module = getModule(action.getModuleType());
+        if(module == null) return new StatusPacket(0, "Invalid module "+action.getModuleType()+" specified.");
+        if(!module.hasAccess(identity)) return new StatusPacket(0, "Permission denied!");
+        
+        IPacket response = module.invokeActionSync(identity, action);
+        if(response == null)response = new StatusPacket(0, "Action "+action.getActionName()+" not found in module "+action.getModuleType());
+
+        return response;
     }
 
     public void disableModule(String moduleType) /*throws Exception */{

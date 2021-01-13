@@ -64,6 +64,10 @@ public class LiveMapModule extends BaseModule implements Listener
         this.world = world;
     }
 
+    public String getWorld() {
+        return world;
+    }
+
     public void updateBlock(Block block) {
         int regionX = (int) Math.floor(((double) block.getX() / 512.0));
         int regionZ = (int) Math.floor(((double) block.getZ() / 512.0));

@@ -24,6 +24,7 @@ public class Permissions
 		permissions.add("livekit.basics.weathertime");
 		permissions.add("livekit.players.other");
 		permissions.add("livekit.admin.settings");
+        permissions.add("livekit.admin.myadmin");
 
         if(use) {
             if(Bukkit.getPluginManager().getPlugin("Vault") == null) {

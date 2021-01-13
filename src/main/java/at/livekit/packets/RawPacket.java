@@ -5,12 +5,16 @@ import org.json.JSONObject;
 public class RawPacket extends RequestPacket {
     
     public static int PACKETID = 16;
-    private byte[] data;
+    protected byte[] data;
 
     public RawPacket(byte[] data) {
         this.data = data;
     }
     
+    public int getDataSize() {
+        return data.length;
+    }
+
     @Override
     public JSONObject toJson() {
         throw new UnsupportedOperationException();

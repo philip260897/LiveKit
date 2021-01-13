@@ -8,13 +8,16 @@ import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import org.json.JSONObject;
 
 import at.livekit.modules.LiveMapModule;
+import at.livekit.packets.ActionPacket;
 import at.livekit.packets.AuthorizationPacket;
 import at.livekit.packets.IPacket;
+import at.livekit.packets.MultiPartRawPacket;
 import at.livekit.packets.RawPacket;
 import at.livekit.packets.RegionRequest;
 import at.livekit.packets.RequestPacket;
@@ -145,6 +148,9 @@ public class TCPServer implements Runnable {
                                     if(packetId == AuthorizationPacket.PACKETID) {
                                         response = listener.onPacketReceived((LiveKitClient)sender, (AuthorizationPacket) new AuthorizationPacket().fromJson(data)); 
                                     }
+                                    if(packetId == ActionPacket.PACKETID) {
+                                        response = (RequestPacket) LiveKit.getInstance().getModuleManager().invokeActionSync(((LiveKitClient)sender).getIdentity(), (ActionPacket)new ActionPacket().fromJson(data));
+                                    }
                                     if(packetId == RegionRequest.PACKETID) {
                                         RegionRequest request = (RegionRequest) new RegionRequest().fromJson(data);
 
@@ -153,7 +159,15 @@ public class TCPServer implements Runnable {
                                         if(module != null) {
                                             byte[] d = module.getRegionData(request.x, request.z);
                                             if(d != null) {
-                                                response = new RawPacket(d);
+                                                try{
+                                                    MultiPartRawPacket multi = new MultiPartRawPacket(d, 16);
+                                                    multi.setRequestId(requestId);
+                                                    while(multi.nextPart()) 
+                                                    {
+                                                        Thread.sleep(15);
+                                                        sender.sendPacket(multi);
+                                                    }
+                                                }catch(Exception ex){ex.printStackTrace();}
                                             }
                                         }
                                         else
@@ -236,12 +250,12 @@ public class TCPServer implements Runnable {
 
                 if(packet instanceof RawPacket) {
                     
-                        long mini = System.currentTimeMillis();
+                        //long mini = System.currentTimeMillis();
                         byte[] data = ((RawPacket)packet).getRawPacket();
-                        System.out.println("converting: "+(System.currentTimeMillis()-mini));
-                        long mini2 = System.currentTimeMillis();
+                        //System.out.println("converting: "+(System.currentTimeMillis()-mini));
+                        //long mini2 = System.currentTimeMillis();
                         out.write(data);
-                        System.out.println("Writing: "+(System.currentTimeMillis()-mini2));
+                        //System.out.println("Writing: "+(System.currentTimeMillis()-mini2));
                         out.flush();
                     
                     return;

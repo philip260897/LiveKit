@@ -212,14 +212,14 @@ public class LiveKit implements ModuleListener, Runnable {
                     RequestPacket response = handlePacket(packet.client, packet);
                     long mini = System.currentTimeMillis();
                     if(response != null) packet.client.sendPacket(response.setRequestId(packet.requestId));
-                    System.out.println("Sending: "+(System.currentTimeMillis()-mini));
+                   // System.out.println("Sending: "+(System.currentTimeMillis()-mini));
                 }
             }
             
 
             long delta = System.currentTimeMillis() - start;
-            Plugin.debug("TICK "+delta+"ms "+tickTime+"ms");
-            if(delta >= tickTime) Plugin.severe("LiveKit tick can't keep up");
+            if( delta > 1) Plugin.debug("TICK "+delta+"ms "+tickTime+"ms");
+            if(delta >= tickTime) Plugin.severe("LiveKit tick can't keep up ("+delta+"ms/"+tickTime+"ms)");
             else {
                 try{
                     Thread.sleep(tickTime-delta);
@@ -318,7 +318,7 @@ public class LiveKit implements ModuleListener, Runnable {
 
             LiveMapModule module = (LiveMapModule) _modules.getModule("LiveMapModule");
 
-            if(module != null) {
+            if(module != null && module.getWorld().equals(request.world)) {
                 byte[] data = module.getRegionData(request.x, request.z);
                 if(data != null) {
                     return new RawPacket(data);

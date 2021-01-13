@@ -1,12 +1,22 @@
 package at.livekit.modules;
 
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+
+import org.bukkit.Bukkit;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import at.livekit.livekit.Identity;
+import at.livekit.packets.ActionPacket;
 import at.livekit.packets.IPacket;
+import at.livekit.plugin.Plugin;
 
 public abstract class BaseModule 
 {
@@ -75,7 +85,32 @@ public abstract class BaseModule
 
     public Map<Identity, IPacket> onUpdateAsync(List<Identity> identities){return null;}
 
-    public IPacket onChangeAsync(Identity identity, IPacket packet){return null;}
+    public IPacket onChangeAsync(Identity identity, IPacket packet){
+        return null;
+    }
+
+    public IPacket invokeActionSync(Identity identity, ActionPacket packet) {
+        ActionPacket action = (ActionPacket) packet;
+        Method[] methods = this.getClass().getDeclaredMethods();
+        for(Method method : methods) {
+            if(method.isAnnotationPresent(Action.class)) {
+                Action a = method.getAnnotation(Action.class);
+                if(a.name().equals(action.getActionName())) {
+                    try{
+                        return Bukkit.getScheduler().callSyncMethod(Plugin.getInstance(), new Callable<IPacket>(){
+
+                            @Override
+                            public IPacket call() throws Exception {
+                                return (IPacket) method.invoke(this, action);
+                            }
+                            
+                        }).get();
+                    }catch(Exception ex){ex.printStackTrace();}
+                }
+            }
+        }
+        return null;
+    }
 
     public boolean hasAccess(Identity identity) {
         return identity.hasPermission(permission);
@@ -193,5 +228,11 @@ public abstract class BaseModule
             return json;
         }
 
+    }
+
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target(ElementType.METHOD)
+    public @interface Action {
+        public String name() default "";
     }
 }

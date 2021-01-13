@@ -153,7 +153,7 @@ public class PlayerModule extends BaseModule implements Listener
     @EventHandler
     public void onPlayerInteractEvent(PlayerInteractEvent event) {
         if(!isEnabled()) return;
-        if(event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+        if(event.getAction() != org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK) return;
 
         
 

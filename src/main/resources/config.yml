@@ -13,7 +13,7 @@ anonymous:
 
 #wether to use permissions (Vault) or if use==false, use default permissions for every player
 permissions:
-  use: true
+  use: false
   default:
     - livekit.basics.claim
     - livekit.basics.map
@@ -26,4 +26,8 @@ modules:
     enabled: true
     world: 'world'
   PlayerModule:
+    enabled: true
+  WeatherTimeModule:
+    enabled: true
+  AdminModule:
     enabled: true
