@@ -313,19 +313,19 @@ public class LiveKit implements ModuleListener, Runnable {
             return new StatusPacket(0, "Invalid authentication credentials!");
         }
 
-        if(packet instanceof RegionRequest) {
+        /*if(packet instanceof RegionRequest) {
             RegionRequest request = (RegionRequest)packet;
 
             LiveMapModule module = (LiveMapModule) _modules.getModule("LiveMapModule");
 
             if(module != null && module.getWorld().equals(request.world)) {
-                byte[] data = module.getRegionData(request.x, request.z);
+                byte[] data = module.getRegionData(request.x, request.z).getData();
                 if(data != null) {
                     return new RawPacket(data);
                 }
             }
             return new StatusPacket(0, "Region "+request.x+" "+request.z+" in "+request.world+" not found!");
-        }
+        }*/
 
         /*if(packet instanceof LiveMapSubscriptionPacket) {
             if(hasAccess(client, "livekit.livemap.subscription")) {

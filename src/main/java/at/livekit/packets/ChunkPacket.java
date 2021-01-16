@@ -11,16 +11,18 @@ public class ChunkPacket implements IPacket{
     private int x;
     private int z;
     private String data;
+    private long timestamp;
 
-    public ChunkPacket(int x, int z, byte[] data) {
+    public ChunkPacket(int x, int z, byte[] data, long timestamp) {
         this.x = x;
         this.z = z;
         this.data = Base64.getEncoder().encodeToString(data);
+        this.timestamp = timestamp;
     }
 
-    public static RegionPacket fromMapEntry(String key, byte[] data) {
+    /*public static RegionPacket fromMapEntry(String key, byte[] data) {
         return new RegionPacket(Integer.parseInt(key.split("_")[0]), Integer.parseInt(key.split("_")[1]), data);
-    }
+    }*/
 
     @Override
     public IPacket fromJson(String json) {
@@ -33,6 +35,7 @@ public class ChunkPacket implements IPacket{
         json.put("data", data);
         json.put("x", x);
         json.put("z", z);
+        json.put("timestamp", timestamp);
         json.put("packet_id", PACKETID);
         return json;
     }

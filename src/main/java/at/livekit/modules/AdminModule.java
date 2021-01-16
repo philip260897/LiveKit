@@ -25,6 +25,7 @@ public class AdminModule extends BaseModule
     private List<String> _worlds = new ArrayList<String>();
     private boolean whitelist = false;
 
+
     public AdminModule(ModuleListener listener) {
         super(1, "My Admin", "livekit.admin.myadmin", UpdateRate.ONCE_PERSEC, listener);
     }
@@ -57,8 +58,7 @@ public class AdminModule extends BaseModule
     public IPacket onJoinAsync(Identity identity) {
         JSONObject data = new JSONObject();
         JSONArray w = new JSONArray();
-        w.put(_worlds);
-        data.put("worlds", w);
+        data.put("worlds", _worlds);
         data.put("whitelist", whitelist);
 
         return new ModuleUpdatePacket(this, data, true);
@@ -91,6 +91,27 @@ public class AdminModule extends BaseModule
         return packet.response(data);
     }
 
+    @Action(name="SetWhitelist")
+    protected IPacket actionEnableWhitelist(Identity identity, ActionPacket packet) {
+        boolean enable = packet.getData().getBoolean("enable");
+        Bukkit.getServer().setWhitelist(enable);
+        notifyChange();
+        
+        return new StatusPacket(1);
+    }
+
+    @Action(name="WhitelistPlayer")
+    protected IPacket actionWhitelistPlayer(Identity identity, ActionPacket packet) {
+        String uuid = packet.getData().getString("uuid");
+        boolean enable = packet.getData().getBoolean("enable");
+
+        OfflinePlayer player = Bukkit.getOfflinePlayer(UUID.fromString(uuid));
+        if(player == null) return new StatusPacket(0);
+            
+        player.setWhitelisted(enable);
+        return new StatusPacket(1);
+    }
+
     @Action(name="SetWeater")
     protected IPacket actionWeather(Identity identity, ActionPacket packet) {
         String world = packet.getData().getString("world");
@@ -118,6 +139,33 @@ public class AdminModule extends BaseModule
         return new StatusPacket(1, "Weather set to "+weather);
     }
 
+    @Action(name="SetTime")
+    protected IPacket actionSetTime(Identity identity, ActionPacket packet) {
+        String world = packet.getData().getString("world");
+        String time = packet.getData().getString("time");
+
+        World w = Bukkit.getWorld(world);
+        if(w == null) return new StatusPacket(0, "World "+world+" is not available!");
+
+        switch(time) {
+            case "day": 
+                w.setTime(1000);
+                break;
+            case "midnight":
+                w.setTime(18000);
+                break;
+            case "night":
+                w.setTime(13000);
+                break;
+            case "noon":
+                w.setTime(6000);
+                break;
+            default:
+                return new StatusPacket(0, "Invalid time "+time);
+        }
+        return new StatusPacket(1, "Time set to "+time);
+    }
+
     @Action(name="KickPlayer")
     protected IPacket actionKick(Identity identity, ActionPacket packet) {
         String uuid = packet.getData().getString("uuid");
@@ -131,15 +179,32 @@ public class AdminModule extends BaseModule
         return new StatusPacket(1, "Player has been kicked!");
     }
 
+    @Action(name="ListBannedPlayers")
+    protected IPacket bannedPlayers(Identity identity, ActionPacket packet) {
+        JSONObject data = new JSONObject();
+        JSONArray array = new JSONArray();
+        for(OfflinePlayer player : Bukkit.getBannedPlayers()) {
+            JSONObject p = new JSONObject();
+            p.put("uuid", player.getUniqueId().toString());
+            p.put("name", player.getName() );
+            p.put("head", HeadLibrary.get(player.getUniqueId().toString()));
+            array.put(p);
+        }
+        data.put("players", array);
+
+        return packet.response(data);
+    }
+
     @Action(name="BanPlayer")
     protected IPacket actionBan(Identity identity, ActionPacket packet) {
         String uuid = packet.getData().getString("uuid");
-        String message = packet.getData().getString("message");
+        String message = packet.getData().has("message")&&!packet.getData().isNull("message") ? packet.getData().getString("message") : null;
 
         OfflinePlayer player = Bukkit.getServer().getOfflinePlayer(UUID.fromString(uuid));
         if(player == null) return new StatusPacket(0, "Player not found!"); 
 
         Bukkit.getBanList(BanList.Type.NAME).addBan(player.getUniqueId().toString(), message, null, null);
+        if(player.isOnline())player.getPlayer().kickPlayer(message);
 
         return new StatusPacket(1, "Player has been kicked!");
     }

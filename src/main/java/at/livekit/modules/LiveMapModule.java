@@ -53,7 +53,7 @@ public class LiveMapModule extends BaseModule implements Listener
 
     private String world;
     private BoundingBox boundingBox;
-    private HashMap<String, byte[]> _regions = new HashMap<String, byte[]>();
+    private HashMap<String, RegionData> _regions = new HashMap<String, RegionData>();
     //private HashMap<String, LiveSyncable> _syncables = new HashMap<String, LiveSyncable>();
 
     private List<IPacket> _updates = new ArrayList<IPacket>();
@@ -74,7 +74,7 @@ public class LiveMapModule extends BaseModule implements Listener
         createRegion(regionX, regionZ);
         String key = regionX + "_" + regionZ;
 
-        byte[] regionData = _regions.get(key);
+        RegionData regionData = _regions.get(key);
         if(regionData == null) return;
 
         int localX = block.getX() % 512;
@@ -87,11 +87,13 @@ public class LiveMapModule extends BaseModule implements Listener
 
         byte[] blockData = getBlockData(block);
         for (int i = 0; i < blockData.length; i++) {
-            regionData[(localZ * 4) * 512 + (localX * 4) + i] = blockData[i];
+            regionData.data[8+(localZ * 4) * 512 + (localX * 4) + i] = blockData[i];
         }
 
+        regionData.invalidate();
+
         synchronized(_updates) {
-            _updates.add(new BlockPacket(block.getX(), block.getZ(), blockData));
+            _updates.add(new BlockPacket(block.getX(), block.getZ(), blockData, regionData.timestamp));
         }
         notifyChange();
     }
@@ -158,7 +160,13 @@ public class LiveMapModule extends BaseModule implements Listener
             }
         }*/
         synchronized(_regions) {
-            for(String s : _regions.keySet()) regions.put(s);
+            for(RegionData region : _regions.values()) {
+                JSONObject entry = new JSONObject();
+                entry.put("x", region.x);
+                entry.put("z", region.z);
+                entry.put("timestamp", region.timestamp);
+                regions.put(entry);
+            }
         }
 
        /* synchronized(_syncables) {
@@ -227,8 +235,8 @@ public class LiveMapModule extends BaseModule implements Listener
         String key = regionX + "_" + regionZ;
         synchronized (_regions) {
             if (!_regions.containsKey(key)) {
-                _regions.put(key, new byte[512 * 512 * 4]);
-                Arrays.fill(_regions.get(key), (byte) 0xFF);
+                _regions.put(key, new RegionData(regionX, regionZ, new byte[8 + 512 * 512 * 4]));
+                Arrays.fill(_regions.get(key).data, (byte) 0xFF);
                 boundingBox.update(regionX, regionZ);
             }
         }
@@ -242,11 +250,11 @@ public class LiveMapModule extends BaseModule implements Listener
         int regionZ = (int) Math.floor(((double) chunk.z / 32.0));
         String key = regionX + "_" + regionZ;
 
-        byte[] regionData;
+        RegionData regionData;
         synchronized (_regions) {
             if (!_regions.containsKey(key)) {
-                _regions.put(key, new byte[512 * 512 * 4]);
-                Arrays.fill(_regions.get(key), (byte) 0xFF);
+                _regions.put(key, new RegionData(regionX, regionZ, new byte[8 + 512 * 512 * 4]));
+                Arrays.fill(_regions.get(key).data, (byte) 0xFF);
                 boundingBox.update(regionX, regionZ);
             }
             regionData = _regions.get(key);
@@ -269,14 +277,15 @@ public class LiveMapModule extends BaseModule implements Listener
 
                     byte[] blockData = getBlockData(block);
                     for (int i = 0; i < blockData.length; i++) {
-                        regionData[(localZ * 4) * 512 + (localX * 4) + i] = blockData[i];
+                        regionData.data[8 + (localZ * 4) * 512 + (localX * 4) + i] = blockData[i];
                         chunkData[z * 4 * 16 + x*4 + i] = blockData[i];
                     }
                 }
             }
+            regionData.invalidate();
             if(unload) Bukkit.getWorld(world).unloadChunk(chunk.x, chunk.z, false);
 
-            return new ChunkPacket(c.getX(), c.getZ(), chunkData);
+            return new ChunkPacket(c.getX(), c.getZ(), chunkData, regionData.timestamp);
         } else {
             throw new Exception("Region null error!!!");
         }
@@ -298,7 +307,7 @@ public class LiveMapModule extends BaseModule implements Listener
             localZ += 512;
 
         for(int i = 0; i < 4; i++) {
-           if( _regions.get(key)[(localZ * 4 * 512) + (localX * 4) + i] != (byte)0xFF) return true;
+           if( _regions.get(key).data[8 + (localZ * 4 * 512) + (localX * 4) + i] != (byte)0xFF) return true;
         }
         return false;
     }
@@ -353,7 +362,7 @@ public class LiveMapModule extends BaseModule implements Listener
         return 0;
     }
 
-    public byte[] getRegionData(int x, int z) {
+    public RegionData getRegionData(int x, int z) {
         return _regions.get(x+"_"+z);
     }
 
@@ -373,13 +382,14 @@ public class LiveMapModule extends BaseModule implements Listener
 
         for(File file : folder.listFiles()) {
             if(file.isFile() && file.getName().endsWith(".region")) {
-                try{
+                /*try{
                     synchronized(_regions) {
                         int regionX = Integer.parseInt(file.getName().split("_")[0]);
-                        int regionZ = Integer.parseInt(file.getName().split("_")[1].replace(".region", ""));
-                        _regions.put(regionX+"_"+regionZ, Files.readAllBytes(file.toPath()));
-                    }
-                }catch(Exception ex){ex.printStackTrace();}
+                        int regionZ = Integer.parseInt(file.getName().split("_")[1].replace(".region", ""));*/
+                RegionData data =  new RegionData(file);
+                _regions.put(data.x+"_"+data.z, data);
+                    /*}
+                }catch(Exception ex){ex.printStackTrace();}*/
             }
         }
         Plugin.log("LiveMapModule loaded "+_regions.size()+" regions for "+world);
@@ -387,19 +397,72 @@ public class LiveMapModule extends BaseModule implements Listener
 
     private void save() throws FileNotFoundException, IOException { 
         synchronized(_regions) {
-            for(Entry<String, byte[]> entry : _regions.entrySet()) {
-                File file = new File(getDir(), entry.getKey()+".region");
+            for(Entry<String, RegionData> entry : _regions.entrySet()) {
+                entry.getValue().save(getDir());
+                /*File file = new File(getDir(), entry.getKey()+".region");
                 if(!file.exists()) file.createNewFile();
 
                 try (FileOutputStream fos = new FileOutputStream(file)) {
                     fos.write(entry.getValue());
-                }
+                }*/
             }
         }
     }
 
     private File getDir() {
         return new File(Plugin.getInstance().getDataFolder(), "map/"+world);
+    }
+
+    public static class RegionData {
+        protected int x;
+        protected int z;
+        protected byte[] data;
+        protected long timestamp = 0;
+
+        public RegionData(int x, int z, byte[] data) {
+            this.x = x;
+            this.z = z;
+            this.data = data;
+            invalidate();
+        }
+
+        public RegionData(File file) {
+            try{
+                x = Integer.parseInt(file.getName().split("_")[0]);
+                z = Integer.parseInt(file.getName().split("_")[1].replace(".region", ""));
+                data = Files.readAllBytes(file.toPath());
+                timestamp = 0;
+                for(int i = 0; i < 8; i++) {
+                    timestamp <<= 8;
+                    timestamp |= data[i];
+                }
+
+            }catch(Exception ex){ex.printStackTrace();}
+        }
+
+        public void invalidate() {
+            timestamp = System.currentTimeMillis();
+            for(int i = 0; i < 8; i++) {
+                data[i] = (byte)(0xFF & (timestamp >> (56-(i*8))));
+            }
+        }
+
+        public byte[] getData() {
+            return data;
+        }
+
+        public void save(File dir) {
+            try{
+                File file = new File(dir, x+"_"+z+".region");
+                if(!file.exists()) file.createNewFile();
+
+                try (FileOutputStream fos = new FileOutputStream(file)) {
+                    fos.write(data);
+                }
+            }catch(Exception ex){
+                ex.printStackTrace();
+            }
+        }
     }
 
     private static class Offset {

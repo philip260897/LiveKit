@@ -157,10 +157,10 @@ public class TCPServer implements Runnable {
                                         LiveMapModule module = (LiveMapModule) LiveKit.getInstance().getModuleManager().getModule("LiveMapModule");
 
                                         if(module != null) {
-                                            byte[] d = module.getRegionData(request.x, request.z);
+                                            byte[] d = module.getRegionData(request.x, request.z).getData();
                                             if(d != null) {
                                                 try{
-                                                    MultiPartRawPacket multi = new MultiPartRawPacket(d, 16);
+                                                    MultiPartRawPacket multi = new MultiPartRawPacket(d, 12);
                                                     multi.setRequestId(requestId);
                                                     while(multi.nextPart()) 
                                                     {
@@ -265,7 +265,7 @@ public class TCPServer implements Runnable {
                 //writer.println(packet.toJson().toString());
                 out.flush();
 
-            }catch(Exception ex){ex.printStackTrace();}
+            }catch(Exception ex){ex.printStackTrace(); close();}
         }
 
         @Override
