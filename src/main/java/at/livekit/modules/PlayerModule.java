@@ -20,7 +20,9 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -116,9 +118,33 @@ public class PlayerModule extends BaseModule implements Listener
 			HeadLibrary.resolveAsync(p.getUniqueId().toString());
 		} 
 		player.updateHead(HeadLibrary.get(p.getUniqueId().toString()));
+
+        ItemStack itemInHand = p.getInventory().getItemInMainHand();
+        if(itemInHand != null && itemInHand.getAmount() != 0) {
+            player.updateItemHeld(itemInHand.getType().name(), itemInHand.getAmount());
+        }
        // player.assets.add(new LAsset("asset-bank-amount", "Bank Amount", "0$"));
         //player.markDirty();
         notifyFull();
+    }
+
+    @EventHandler
+    public void onPlayerItemHeldEvent(PlayerItemHeldEvent event) {
+        
+        
+        if(_players.containsKey(event.getPlayer().getUniqueId().toString())) {
+            LPlayer player = _players.get(event.getPlayer().getUniqueId().toString());
+            
+            //ItemStack itemInHand = event.getPlayer().getInventory().getItemInMainHand();
+            ItemStack itemInHand = event.getPlayer().getInventory().getItem(event.getNewSlot());
+            if(itemInHand != null && itemInHand.getAmount() != 0) {
+                player.updateItemHeld(itemInHand.getType().name(), itemInHand.getAmount());
+                notifyChange();
+            } else {
+                player.updateItemHeld(null, 0);
+                notifyChange();
+            }
+        }
     }
     
     @EventHandler
@@ -228,7 +254,11 @@ public class PlayerModule extends BaseModule implements Listener
                 responses.put(identity, new ModuleUpdatePacket(this, json, false));
             //return new ModuleUpdatePacket(this, json);
            }
-           for(Syncable l : _players.values()) l.clearChanges();
+           for(LPlayer l : _players.values()) {
+                l.clearPlayerActions();
+                l.clearChanges();
+           }
+           
         }
         return responses;
     }
@@ -236,6 +266,43 @@ public class PlayerModule extends BaseModule implements Listener
     @Override
     public IPacket onChangeAsync(Identity identity, IPacket packet) {
         return null;
+    }
+
+    public static class LItem extends Syncable {
+        public int amount;
+        public String item;
+
+        public LItem(String uuid, String item, int amount) {
+            super(uuid);
+            this.item = item;
+            this.amount = amount;
+        }
+
+        public void updateItem(String item, int amount) {
+            if(this.item != item)markDirty("item");
+            this.item = item;
+
+            if(this.amount != amount)markDirty("amount");
+            this.amount = amount;
+        }
+    }
+
+    public static class LPlayerAction extends Syncable {
+        private int action;
+        private JSONObject data;
+        public LPlayerAction(int action, JSONObject data) {
+            super(null);
+            this.action = action;
+            this.data = data;
+        }
+
+        @Override
+        public JSONObject serialize(boolean full) {
+            JSONObject json = new JSONObject();
+            json.put("action", action);
+            json.put("data", data);
+            return json;
+        }
     }
 
     public static class LPlayer extends Syncable {
@@ -251,11 +318,37 @@ public class PlayerModule extends BaseModule implements Listener
         public double health = 0;
         public int armor = 0;
         public double exhaustion = 0;
+        public LItem itemHeld;
 
+        public List<LPlayerAction> actions = new ArrayList<LPlayerAction>();
+
+        //public List<LItem> items = new ArrayList<LItem>();
         public List<AssetGroup> assetGroups = new ArrayList<AssetGroup>();
 
         public LPlayer(String uuid) {
             super(uuid);
+        }
+
+        public void onBlockBreak(Material type) {
+            JSONObject data = new JSONObject();
+            data.put("item", type.name());
+            synchronized(actions) {                
+                actions.add(new LPlayerAction(0, data));
+            }
+        }
+
+        public void onBlockPlace(Material type) {
+            JSONObject data = new JSONObject();
+            data.put("item", type.name());
+            synchronized(actions) {                
+                actions.add(new LPlayerAction(1, data));
+            }
+        }
+
+        public void clearPlayerActions() {
+            synchronized(actions) {
+                actions.clear();
+            }
         }
 
         public PlayerAsset getAsset(String uuid) {
@@ -289,6 +382,14 @@ public class PlayerModule extends BaseModule implements Listener
             synchronized(assetGroups) {
                 assetGroups.add(group);
             }
+        }
+
+        public void updateItemHeld(String item, int amount) {
+            if(itemHeld == null) {
+                itemHeld = new LItem("inventory-item-held", item, amount);
+            }
+            itemHeld.updateItem(item, amount);
+            //this.markDirty("itemHeld");
         }
 
         private void updateLastOnline(long lastOnline, boolean online) {
@@ -354,6 +455,10 @@ public class PlayerModule extends BaseModule implements Listener
                 p.updateWorld(online.getLocation().getWorld().getName());
                 p.updateHealth(online.getHealthScale());
                 p.updateExhaustion(online.getExhaustion());
+                ItemStack itemInHand = online.getInventory().getItemInMainHand();
+                if(itemInHand != null && itemInHand.getAmount() != 0) {
+                    p.updateItemHeld(itemInHand.getType().name(), itemInHand.getAmount());
+                }
             }
 
             AssetGroup locations = new AssetGroup("Locations"); 

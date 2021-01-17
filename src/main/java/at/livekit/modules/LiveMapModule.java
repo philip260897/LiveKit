@@ -31,9 +31,9 @@ import org.bukkit.event.block.BlockFormEvent;
 import org.bukkit.event.block.BlockGrowEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.BlockSpreadEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
+/*import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerQuitEvent;*/
 import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.ChunkPopulateEvent;
 import org.bukkit.event.world.StructureGrowEvent;
@@ -494,62 +494,6 @@ public class LiveMapModule extends BaseModule implements Listener
           if(z >= maxZ) maxZ = z+1;
         }
     }
-
-
-    //events Players
-
-    @EventHandler
-	public void onPlayerJoin(PlayerJoinEvent event) 
-	{
-        /*if(!isEnabled()) return;
-		Player player = event.getPlayer();
-        if(!event.getPlayer().getWorld().getName().equals(world)) return;
-
-		LiveEntity entity = new LiveEntity(player.getUniqueId().toString(), player.getDisplayName(), null);
-		entity.updateLocation(player.getLocation().getX(), player.getLocation().getY(), player.getLocation().getZ());
-		entity.updateHealth(player.getHealthScale());
-		entity.updateExhaustion(player.getExhaustion());*/
-
-		/*if(!HeadLibrary.has(player.getUniqueId().toString())) { 
-			HeadLibrary.resolveAsync(player.getUniqueId().toString());
-		} 
-		entity.updateHead(HeadLibrary.get(player.getUniqueId().toString()));
-*/
-       /* synchronized(_syncables) {
-            _syncables.put(entity.getUUID(), entity);
-        }
-        notifyChange();*/
-	}
-	
-	@EventHandler
-	public void onPlayerQuit(PlayerQuitEvent event) 
-	{
-        /*if(!isEnabled()) return;
-        if(!event.getPlayer().getWorld().getName().equals(world)) return;
-
-        synchronized(_syncables) {
-            _syncables.remove(event.getPlayer().getUniqueId().toString());
-        }
-        notifyChange();*/
-	}
-
-	@EventHandler
-	public void onPlayerMove(PlayerMoveEvent event) {
-        /*if(!isEnabled()) return;
-		Player player = event.getPlayer();
-        if(!event.getPlayer().getWorld().getName().equals(world)) return;
-
-        synchronized(_syncables) {
-            LiveEntity entity = (LiveEntity) _syncables.get(player.getUniqueId().toString());
-            if(entity != null) {
-                entity.updateLocation(player.getLocation().getX(), player.getLocation().getY(), player.getLocation().getZ());
-            }
-        }
-
-        notifyChange();*/
-	}
-
-    //World events
 
     //BLOCK EVENTS
 

@@ -59,6 +59,10 @@ public class Syncable
                             }
                         }
                     }
+                    Object o = field.get(this);
+                    if(o instanceof Syncable) {
+                        if(((Syncable)o).hasChanges()) return true;
+                    }
                 }catch(Exception ex){}
             }
         }
@@ -79,6 +83,10 @@ public class Syncable
                             }
                         }
                     }
+                    Object o = field.get(this);
+                    if(o instanceof Syncable) {
+                        ((Syncable)o).clearChanges();
+                    }
                 }catch(Exception ex){}
             }
         }
@@ -95,7 +103,7 @@ public class Syncable
                 if(field.getName().startsWith("_")) continue;
 
                 try{
-
+                    Object fo = field.get(this);
                     if(Collection.class.isAssignableFrom(field.getType())) {
                         JSONArray array = new JSONArray();
                         Collection c = (Collection) field.get(this);
@@ -106,6 +114,9 @@ public class Syncable
                             }
                         }
                         json.put(field.getName(), array);
+                    } else if(fo instanceof Syncable) {
+                        JSONObject j = ((Syncable)fo).serialize(full);
+                        if(j != null) json.put(field.getName(), j);
                     } else if(full || _needsFullUpdate || _changes.contains(field.getName())) {
                         json.put(field.getName(), field.get(this));
                     }
