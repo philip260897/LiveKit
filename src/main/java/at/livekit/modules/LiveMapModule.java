@@ -299,23 +299,25 @@ public class LiveMapModule extends BaseModule implements Listener
                         _currentUpdate.data[8 + (localZ * 4) * 512 + (localX * 4) + i] = blockData[i];
                         _chunkData[z * 4 * 16 + x*4 + i] = blockData[i];
                     }
-                }
 
-                if(System.currentTimeMillis() - start > cpu_time) {
-                    _currentUpdate.renderingZ = z+1;
-                    _currentUpdate.renderingX = 0;
-                    return null;
-                };
+                    if(System.currentTimeMillis() - start > cpu_time) {
+                        _currentUpdate.renderingZ = z;
+                        _currentUpdate.renderingX = x+1;
+                        return null;
+                    }
+                }
+                _currentUpdate.renderingX = 0;
             }
             
+
+
+            if(unload) Bukkit.getWorld(world).unloadChunk(_chunk.x, _chunk.z, false);
 
             _currentUpdate.invalidate();
             _currentUpdate.rendering = false;
             long timestamp = _currentUpdate.timestamp;
             _currentUpdate = null;
             _chunk = null;
-
-            if(unload) Bukkit.getWorld(world).unloadChunk(_chunk.x, _chunk.z, false);
 
             return new ChunkPacket(c.getX(), c.getZ(), _chunkData, timestamp);
         } else {
