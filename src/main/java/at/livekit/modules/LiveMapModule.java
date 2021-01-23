@@ -214,13 +214,17 @@ public class LiveMapModule extends BaseModule implements Listener
         //only do chunk update, queue result packet
         try{
             Offset next = null;
-            synchronized(_queueChunks) {
-                if(_queueChunks.size() != 0) next = _queueChunks.remove(0);
+            if(_currentUpdate == null) { 
+                synchronized(_queueChunks) {
+                    if(_queueChunks.size() != 0) next = _queueChunks.remove(0);
+                }
+                if(next == null) return;
             }
-            if(next == null) return;
 
-            IPacket result = update(next);
-            if(result == null) update();
+            IPacket result = null;
+            if(_currentUpdate != null) result = update(null);
+            else result = update(next);
+            //if(result == null) update();
 
             if(result != null) {
                 synchronized(_updates) {
@@ -242,30 +246,45 @@ public class LiveMapModule extends BaseModule implements Listener
         }
     }
 
+    private int cpu_time = 30;
+    private Offset _chunk;
+    private RegionData _currentUpdate = null;
+    private byte[] _chunkData;
     private IPacket update(Offset chunk) throws Exception {
-        if(chunk.onlyIfAbsent && loadedChunkExists(chunk)) return null;
+        if(chunk != null && chunk.onlyIfAbsent && loadedChunkExists(chunk)) return null;
 
-        Plugin.debug("Updating chunk " + chunk.x + " " + chunk.z);
-        int regionX = (int) Math.floor(((double) chunk.x / 32.0));
-        int regionZ = (int) Math.floor(((double) chunk.z / 32.0));
-        String key = regionX + "_" + regionZ;
+        long start = System.currentTimeMillis();
 
-        RegionData regionData;
-        synchronized (_regions) {
-            if (!_regions.containsKey(key)) {
-                _regions.put(key, new RegionData(regionX, regionZ, new byte[8 + 512 * 512 * 4]));
-                Arrays.fill(_regions.get(key).data, (byte) 0xFF);
-                boundingBox.update(regionX, regionZ);
+        if(chunk != null) {
+            Plugin.debug("Updating chunk " + chunk.x + " " + chunk.z);
+            int regionX = (int) Math.floor(((double) chunk.x / 32.0));
+            int regionZ = (int) Math.floor(((double) chunk.z / 32.0));
+            String key = regionX + "_" + regionZ;
+
+            //RegionData _currentUpdate;
+            synchronized (_regions) {
+                if (!_regions.containsKey(key)) {
+                    _regions.put(key, new RegionData(regionX, regionZ, new byte[8 + 512 * 512 * 4]));
+                    Arrays.fill(_regions.get(key).data, (byte) 0xFF);
+                    boundingBox.update(regionX, regionZ);
+                }
+                _currentUpdate = _regions.get(key);
+                _chunk = chunk;
             }
-            regionData = _regions.get(key);
         }
 
-        if (regionData != null) {
-            byte[] chunkData = new byte[16*16*4];
-            boolean unload = !Bukkit.getWorld(world).isChunkLoaded(chunk.x, chunk.z);
-            Chunk c = Bukkit.getWorld(world).getChunkAt(chunk.x, chunk.z);
-            for (int z = 0; z < 16; z++) {
-                for (int x = 0; x < 16; x++) {
+        if (_currentUpdate != null) {
+            if(_currentUpdate.rendering == false) {
+                _currentUpdate.rendering = true;
+                _currentUpdate.renderingX = 0;
+                _currentUpdate.renderingZ = 0;
+                _chunkData = new byte[16*16*4];
+            }
+            
+            boolean unload = !Bukkit.getWorld(world).isChunkLoaded(_chunk.x, _chunk.z);
+            Chunk c = Bukkit.getWorld(world).getChunkAt(_chunk.x, _chunk.z);
+            for (int z = _currentUpdate.renderingZ; z < 16; z++) {
+                for (int x = _currentUpdate.renderingX; x < 16; x++) {
                     Block block = c.getWorld().getHighestBlockAt(c.getX() * 16 + x, c.getZ() * 16 + z);
                     int localX = block.getX() % 512;
                     if (localX < 0)
@@ -277,15 +296,28 @@ public class LiveMapModule extends BaseModule implements Listener
 
                     byte[] blockData = getBlockData(block);
                     for (int i = 0; i < blockData.length; i++) {
-                        regionData.data[8 + (localZ * 4) * 512 + (localX * 4) + i] = blockData[i];
-                        chunkData[z * 4 * 16 + x*4 + i] = blockData[i];
+                        _currentUpdate.data[8 + (localZ * 4) * 512 + (localX * 4) + i] = blockData[i];
+                        _chunkData[z * 4 * 16 + x*4 + i] = blockData[i];
                     }
                 }
-            }
-            regionData.invalidate();
-            if(unload) Bukkit.getWorld(world).unloadChunk(chunk.x, chunk.z, false);
 
-            return new ChunkPacket(c.getX(), c.getZ(), chunkData, regionData.timestamp);
+                if(System.currentTimeMillis() - start > cpu_time) {
+                    _currentUpdate.renderingZ = z+1;
+                    _currentUpdate.renderingX = 0;
+                    return null;
+                };
+            }
+            
+
+            _currentUpdate.invalidate();
+            _currentUpdate.rendering = false;
+            long timestamp = _currentUpdate.timestamp;
+            _currentUpdate = null;
+            _chunk = null;
+
+            if(unload) Bukkit.getWorld(world).unloadChunk(_chunk.x, _chunk.z, false);
+
+            return new ChunkPacket(c.getX(), c.getZ(), _chunkData, timestamp);
         } else {
             throw new Exception("Region null error!!!");
         }
@@ -418,6 +450,10 @@ public class LiveMapModule extends BaseModule implements Listener
         protected int z;
         protected byte[] data;
         protected long timestamp = 0;
+
+        protected boolean rendering = false;
+        protected int renderingX=0;
+        protected int renderingZ=0;
 
         public RegionData(int x, int z, byte[] data) {
             this.x = x;

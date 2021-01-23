@@ -236,11 +236,13 @@ public class ModuleManager
         return Bukkit.getScheduler().callSyncMethod(Plugin.getInstance(), new Callable<Void>(){
 			@Override
 			public Void call() throws Exception {
+                long start = System.currentTimeMillis();
                 for(BaseModule module : getModules()) {
                     if(module.canUpdate(getSettings().liveMapTickRate)) {
                         module.update();
                     }
                 }
+                System.out.println((System.currentTimeMillis()-start)+"ms");
 				return null;
 			}
         });

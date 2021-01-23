@@ -8,6 +8,7 @@ import java.util.UUID;
 
 import org.bukkit.BanList;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
@@ -91,6 +92,17 @@ public class AdminModule extends BaseModule
         return packet.response(data);
     }
 
+    @Action(name="SendMessage")
+    protected IPacket actionSendMessage(Identity identity, ActionPacket packet) {
+        String uuid = packet.getData().getString("uuid");
+        String message = packet.getData().getString("message");
+        OfflinePlayer player = Bukkit.getOfflinePlayer(UUID.fromString(uuid));
+        if(player == null) return new StatusPacket(0, "Player not found!");
+        if(player.getPlayer() == null) return new StatusPacket(0, "Player not online!");
+        player.getPlayer().sendMessage(ChatColor.GREEN+"["+ChatColor.WHITE+"LiveKit"+ChatColor.GREEN+":"+ChatColor.WHITE+identity.getName()+ChatColor.GREEN+"]"+ChatColor.WHITE+" "+message);
+        return new StatusPacket(1);
+    }
+
     @Action(name="SetWhitelist")
     protected IPacket actionEnableWhitelist(Identity identity, ActionPacket packet) {
         boolean enable = packet.getData().getBoolean("enable");
@@ -169,7 +181,7 @@ public class AdminModule extends BaseModule
     @Action(name="KickPlayer")
     protected IPacket actionKick(Identity identity, ActionPacket packet) {
         String uuid = packet.getData().getString("uuid");
-        String message = packet.getData().getString("message");
+        String message = packet.getData().has("message")&&!packet.getData().isNull("message") ? packet.getData().getString("message") : null;
 
         Player player = Bukkit.getServer().getPlayer(UUID.fromString(uuid));
         if(player == null || !player.isOnline()) return new StatusPacket(0, "Player is offline!"); 

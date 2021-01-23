@@ -23,8 +23,6 @@ import at.livekit.livekit.PlayerAuth;
 import at.livekit.modules.BaseModule;
 import at.livekit.modules.PlayerModule;
 import at.livekit.modules.PlayerModule.LPlayer;
-import at.livekit.modules.PlayerModule.PlayerAsset;
-import at.livekit.modules.PlayerModule.ValueAsset;
 import at.livekit.utils.HeadLibrary;
 import at.livekit.utils.HeadLibraryEvent;
 import net.md_5.bungee.api.ChatColor;
@@ -174,7 +172,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 						sender.sendMessage("["+module.getType()+"] Version: "+module.getVersion()+" Enabled: "+module.isEnabled());
 					}
 				}
-				if(args[0].equalsIgnoreCase("test")) {
+				/*if(args[0].equalsIgnoreCase("test")) {
 					if(sender instanceof Player) {
 						LPlayer player = ((PlayerModule)LiveKit.getInstance().getModuleManager().getModule("PlayerModule")).getPlayer(((Player)sender).getUniqueId().toString());
 						PlayerAsset asset = new ValueAsset("test", "Test", "test");
@@ -188,7 +186,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 						player.getAssetGroup("Locations").removePlayerAsset(player.getAsset("test"));
 						LiveKit.getInstance().notifyQueue("PlayerModule");
 					}
-				}
+				}*/
 			}
 			if(args.length == 3) {
 				if(args[0].equalsIgnoreCase("modules")) {

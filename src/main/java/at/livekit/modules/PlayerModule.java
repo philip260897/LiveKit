@@ -4,86 +4,70 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
-import org.bukkit.entity.Chicken;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import at.livekit.livekit.Identity;
+import at.livekit.modules.BaseModule.Action;
 import at.livekit.plugin.Plugin;
+import at.livekit.packets.ActionPacket;
 import at.livekit.packets.IPacket;
+import at.livekit.packets.StatusPacket;
 import at.livekit.utils.HeadLibrary;
-import at.livekit.utils.Utils;
 
 public class PlayerModule extends BaseModule implements Listener
 {
     private Map<String,LPlayer> _players = new HashMap<String, LPlayer>();
 
     public PlayerModule(ModuleListener listener) {
-        super(1, "Players", "livekit.basics.map", UpdateRate.NEVER, listener, true);
+        super(1, "Players", "livekit.basics.map", UpdateRate.HIGH, listener, true);
     }
-
-   /* @Override
-    public void update() {
-        boolean full = false;
-        //System.out.println(_players.size());
-        synchronized(_players) {
-            for(Entity e : Bukkit.getWorld("world").getEntities()) {
-                if(!(e instanceof LivingEntity)) continue;
-                LivingEntity living = (LivingEntity) e;
-                //if(e instanceof Chicken) {
-                   // System.out.println("Updating chickens");
-                   if(e.isDead() || living.isSleeping()) {
-                       if(_players.remove(e.getUniqueId().toString()) != null)
-                        full = true;
-                       continue;
-                       
-                   }
-                   
-                    LPlayer chicken = _players.get(e.getUniqueId().toString());
-                    if(chicken == null ) {
-                        if(_players.size() > 500) continue;
-                        chicken = new LPlayer(e.getUniqueId().toString());
-                        chicken.name = e.getType().name();
-                        chicken.online = true;
-                        chicken.updateWorld("world");
-                        chicken.updateHead(HeadLibrary.DEFAULT_HEAD);
-                        _players.put(e.getUniqueId().toString(), chicken);
-                        full = true;
-                    }
-                    chicken.updateLocation(e.getLocation().getX(), e.getLocation().getY(), e.getLocation().getZ());
-                //}
-            }
-        }
-        if(full) notifyFull(); else notifyChange();
-        super.update();
-    }*/
      
     public LPlayer getPlayer(String uuid) {
         return _players.get(uuid);
     }
 
     @Override
+    public void update() {
+        boolean needsUpdate = false;
+
+        for(LPlayer player : _players.values()) {
+            Player p = Bukkit.getPlayer(UUID.fromString(player.uuid));
+            if(p != null) {
+                if(p.getHealth() != player.health) needsUpdate = true;
+                if(p.getHealthScale() != player.healthMax) needsUpdate = true;
+                if(p.getExhaustion() != player.exhaustion) needsUpdate = true;
+
+                player.updateExhaustion(p.getExhaustion());
+                player.updateHealth(p.getHealth(), p.getHealthScale());
+            }
+        }
+        
+        if(needsUpdate) notifyChange();
+        super.update();
+    }
+
+    @Override
     public void onEnable() {
-        for(OfflinePlayer player : Bukkit.getOfflinePlayers()) {
-            
+        for(OfflinePlayer player : Bukkit.getOfflinePlayers()) {   
             _players.put(player.getUniqueId().toString(), LPlayer.fromOfflinePlayer(player));
         }
         /*for(Player player : Bukkit.getOnlinePlayers()) {
@@ -96,6 +80,7 @@ public class PlayerModule extends BaseModule implements Listener
     }
 
 
+
     @EventHandler
 	public void onPlayerJoin(PlayerJoinEvent event) 
 	{
@@ -106,18 +91,20 @@ public class PlayerModule extends BaseModule implements Listener
             player = _players.get(event.getPlayer().getUniqueId().toString());
         } else {
             player = LPlayer.fromOfflinePlayer(event.getPlayer());
-            _players.put(player.getUUID(), player);
+            _players.put(player.uuid, player);
         }
-        player.updateLastOnline(System.currentTimeMillis(), true);
+        //player.updateLastOnline(System.currentTimeMillis(), true);
         player.updateWorld(event.getPlayer().getLocation().getWorld().getName());
 		player.updateLocation(p.getLocation().getX(), p.getLocation().getY(), p.getLocation().getZ());
-		player.updateHealth(p.getHealthScale());
+		player.updateHealth(p.getHealth(), p.getHealthScale());
+        //player.updateArmor(p.getArmor);
 		player.updateExhaustion(p.getExhaustion());
 
         if(!HeadLibrary.has(p.getUniqueId().toString())) { 
 			HeadLibrary.resolveAsync(p.getUniqueId().toString());
 		} 
 		player.updateHead(HeadLibrary.get(p.getUniqueId().toString()));
+        player.updateOnline(true);
 
         ItemStack itemInHand = p.getInventory().getItemInMainHand();
         if(itemInHand != null && itemInHand.getAmount() != 0) {
@@ -125,7 +112,8 @@ public class PlayerModule extends BaseModule implements Listener
         }
        // player.assets.add(new LAsset("asset-bank-amount", "Bank Amount", "0$"));
         //player.markDirty();
-        notifyFull();
+        //notifyFull();
+        notifyChange();
     }
 
     @EventHandler
@@ -144,6 +132,24 @@ public class PlayerModule extends BaseModule implements Listener
                 player.updateItemHeld(null, 0);
                 notifyChange();
             }
+        }
+    }
+
+    @EventHandler
+    public void onBlockBreak(BlockBreakEvent event) {
+        if(_players.containsKey(event.getPlayer().getUniqueId().toString())) {
+            LPlayer player = _players.get(event.getPlayer().getUniqueId().toString());
+            player.onBlockBreak(event.getBlock().getType());
+            notifyChange();
+        }
+    }
+
+    @EventHandler
+    public void onBlockPlace(BlockPlaceEvent event) {
+        if(_players.containsKey(event.getPlayer().getUniqueId().toString())) {
+            LPlayer player = _players.get(event.getPlayer().getUniqueId().toString());
+            player.onBlockPlace(event.getBlock().getType());
+            notifyChange();
         }
     }
     
@@ -165,44 +171,17 @@ public class PlayerModule extends BaseModule implements Listener
         LPlayer player = null;
         if(_players.containsKey(event.getPlayer().getUniqueId().toString())) {
             player = _players.get(event.getPlayer().getUniqueId().toString());
-            player.updateLastOnline(System.currentTimeMillis(), false);
+            player.updateOnline(false);
+            //player.updateLastOnline(System.currentTimeMillis(), false);
 
             /*LAsset bank = player.getAsset("asset-bank-amount");
             bank.updateValue("5$");
             player.markDirty();*/
 
-            //notifyChange();
-            notifyFull();
+            notifyChange();
         } 
     }
 
-    @EventHandler
-    public void onPlayerInteractEvent(PlayerInteractEvent event) {
-        if(!isEnabled()) return;
-        if(event.getAction() != org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK) return;
-
-        
-
-       // System.out.println("right");
-        LPlayer player = getPlayer(event.getPlayer().getUniqueId().toString());
-        if(player != null) {
-            if(Utils.isBed(event.getClickedBlock().getType())) {
-               // System.out.println("is bed");
-                if(event.getPlayer().getBedSpawnLocation() != null) {
-                    MapAsset spawnloc = (MapAsset) player.getAsset("spawn-bed");
-                    if(spawnloc == null) {
-                        AssetGroup locations = player.getAssetGroup("Locations");
-                        spawnloc = new MapAsset("spawn-bed", "Bed Spawn", "Bed spawn location", null);
-                        locations.addPlayerAsset(spawnloc);
-                    }
-                   // System.out.println("spwn updated");
-                    spawnloc.updatePosition(event.getPlayer().getBedSpawnLocation());
-                    player.markDirty();
-                    notifyChange();
-                }
-            }
-        }
-    }
 
     @Override
     public void onDisable() {
@@ -217,13 +196,11 @@ public class PlayerModule extends BaseModule implements Listener
 
         synchronized(_players) {
             for(Entry<String,LPlayer> entry : _players.entrySet()) {
-                if(!entry.getValue().online) continue; //TODO: check for offline player permissions
+                if(!entry.getValue().online && !identity.hasPermission("livekit.admin.myadmin")) continue;
 
-                if(entry.getKey().equals(identity.getUuid()) || identity.hasPermission("livekit.players.other")) {
-                    players.put(entry.getValue().serialize(true));
-                } else {
-                    players.put(entry.getValue().censor(entry.getValue().serialize(true)));
-                }
+                JSONObject j = entry.getValue().toJson();
+                j.remove("actions");
+                players.put(j);
             }
         }
 
@@ -236,19 +213,22 @@ public class PlayerModule extends BaseModule implements Listener
     public Map<Identity,IPacket> onUpdateAsync(List<Identity> identities) {
         Map<Identity, IPacket> responses = new HashMap<Identity,IPacket>();
         synchronized(_players) {
-            for(Identity identity : identities) {
 
+            for(Identity identity : identities) {
                 JSONObject json = new JSONObject();
                 JSONArray players = new JSONArray();
-                for(Entry<String,LPlayer> entry : _players.entrySet()) {
-                    //if(!entry.getValue().hasChanges()) continue;
-                    if(!entry.getValue().online) continue; //TODO: check for offline player permissions
-
-                    if(entry.getKey().equals(identity.getUuid()) || identity.hasPermission("livekit.players.other")) {
-                        players.put(entry.getValue().serialize(false));
-                    } else {
-                        players.put(entry.getValue().censor(entry.getValue().serialize(false)));
+                for(LPlayer player : _players.values()) {
+                    if(!player.online && !identity.hasPermission("livekit.admin.myadmin")) continue; 
+                    
+                    JSONObject jp;
+                    if(player.isDirty()) jp = player.toJson();
+                    else {
+                        jp = new JSONObject();
+                        jp.put("uuid", player.uuid);
                     }
+                    if(!player.headDirty)jp.remove("head");
+                    
+                    players.put(jp);
                 }
                 json.put("players", players);
                 responses.put(identity, new ModuleUpdatePacket(this, json, false));
@@ -256,7 +236,8 @@ public class PlayerModule extends BaseModule implements Listener
            }
            for(LPlayer l : _players.values()) {
                 l.clearPlayerActions();
-                l.clearChanges();
+                l.clean();
+                //l.clearChanges();
            }
            
         }
@@ -268,81 +249,122 @@ public class PlayerModule extends BaseModule implements Listener
         return null;
     }
 
-    public static class LItem extends Syncable {
+    @Action(name = "GetPlayerInfo")
+    public IPacket actionPlayerInfo(Identity identity, ActionPacket packet) {
+        String uuid = packet.getData().getString("uuid");
+        OfflinePlayer player = Bukkit.getOfflinePlayer(UUID.fromString(uuid));
+        if(player == null) return new StatusPacket(0, "Player not found");
+        if(!player.isOnline() && !identity.hasPermission("livekit.admin.myadmin")) return new StatusPacket(0, "Permission denied");
+        
+        JSONObject response = new JSONObject();
+        if(identity.hasPermission("livekit.admin.myadmin") || uuid.equals(identity.getUuid())) {
+            response.put("firstPlayed", player.getFirstPlayed());
+            response.put("lastPlayed", player.getLastPlayed());
+            response.put("banned", player.isBanned());
+
+            JSONArray locationData = new JSONArray();
+            response.put("locations", locationData);
+            Location bedspawn = player.getBedSpawnLocation();
+            if(bedspawn != null) {
+                JSONObject bedlocation = new JSONObject();
+                bedlocation.put("type", "loc");
+                bedlocation.put("name", "Bed Spawn");
+                bedlocation.put("x", bedspawn.getBlockX());
+                bedlocation.put("y", bedspawn.getBlockY());
+                bedlocation.put("z", bedspawn.getBlockZ());
+                locationData.put(bedlocation);
+            }
+        }
+
+        return packet.response(response);
+    }
+
+    public static class LItem implements Serializable {
         public int amount;
         public String item;
 
-        public LItem(String uuid, String item, int amount) {
-            super(uuid);
+        public LItem(String item, int amount) {
             this.item = item;
             this.amount = amount;
         }
 
-        public void updateItem(String item, int amount) {
-            if(this.item != item)markDirty("item");
-            this.item = item;
-
-            if(this.amount != amount)markDirty("amount");
-            this.amount = amount;
+        @Override
+        public JSONObject toJson() {
+            JSONObject json = new JSONObject();
+            json.put("item", item);
+            json.put("amount", amount);
+            return json;
         }
     }
 
-    public static class LPlayerAction extends Syncable {
+    public static class PlayerAction implements Serializable {
         private int action;
-        private JSONObject data;
-        public LPlayerAction(int action, JSONObject data) {
-            super(null);
+        private Serializable data;
+        public PlayerAction(int action, Serializable data) {
             this.action = action;
             this.data = data;
         }
 
         @Override
-        public JSONObject serialize(boolean full) {
+        public JSONObject toJson() {
             JSONObject json = new JSONObject();
             json.put("action", action);
-            json.put("data", data);
+            json.put("data", data.toJson());
             return json;
         }
     }
 
-    public static class LPlayer extends Syncable {
-        public String head;
+    public static class LPlayer implements Serializable{
+        private boolean dirty = true;
+        private boolean headDirty = true;
+
+        public String uuid;
         public String name = "Unknown";
-        public long lastOnline = 0;
-        public long firstPlayed = 0;
+        public String head;
         public boolean online = false;
         public String world = "Unknown";
         public double x = 0;
         public double y = 0;
         public double z = 0;
-        public double health = 0;
-        public int armor = 0;
+
+        public double healthMax = 0;
+        public double health;
+        public double armor = 0;
         public double exhaustion = 0;
         public LItem itemHeld;
 
-        public List<LPlayerAction> actions = new ArrayList<LPlayerAction>();
+        public List<PlayerAction> actions = new ArrayList<PlayerAction>();
 
+       // public long lastOnline = 0;
+       // public long firstPlayed = 0;
         //public List<LItem> items = new ArrayList<LItem>();
-        public List<AssetGroup> assetGroups = new ArrayList<AssetGroup>();
+        //public List<AssetGroup> assetGroups = new ArrayList<AssetGroup>();
 
         public LPlayer(String uuid) {
-            super(uuid);
+            this.uuid = uuid;
         }
 
         public void onBlockBreak(Material type) {
             JSONObject data = new JSONObject();
             data.put("item", type.name());
             synchronized(actions) {                
-                actions.add(new LPlayerAction(0, data));
+                actions.add(new PlayerAction(0, new LItem(type.name(), 1)));
             }
+            dirty = true;
         }
 
         public void onBlockPlace(Material type) {
             JSONObject data = new JSONObject();
             data.put("item", type.name());
             synchronized(actions) {                
-                actions.add(new LPlayerAction(1, data));
+                actions.add(new PlayerAction(1, new LItem(type.name(), 1)));
             }
+            dirty = true;
+        }
+
+        public void updateOnline(boolean online) {
+            this.online = online;
+            this.dirty = true;
         }
 
         public void clearPlayerActions() {
@@ -351,7 +373,7 @@ public class PlayerModule extends BaseModule implements Listener
             }
         }
 
-        public PlayerAsset getAsset(String uuid) {
+        /*public PlayerAsset getAsset(String uuid) {
             synchronized(assetGroups) {
                 for(AssetGroup a : assetGroups) {
                     PlayerAsset asset = a.getAssetByUUID(uuid);
@@ -382,99 +404,113 @@ public class PlayerModule extends BaseModule implements Listener
             synchronized(assetGroups) {
                 assetGroups.add(group);
             }
-        }
+        }*/
 
         public void updateItemHeld(String item, int amount) {
-            if(itemHeld == null) {
-                itemHeld = new LItem("inventory-item-held", item, amount);
-            }
-            itemHeld.updateItem(item, amount);
-            //this.markDirty("itemHeld");
+            itemHeld = new LItem(item, amount);
+            dirty = true;
         }
 
-        private void updateLastOnline(long lastOnline, boolean online) {
+
+
+       /* private void updateLastOnline(long lastOnline, boolean online) {
             this.lastOnline = lastOnline;
             this.online = online;
             this.markDirty("lastOnline", "online");
-        }
+        }*/
 
         private void updateWorld(String world) {
             this.world = world;
-            this.markDirty("world");
+            this.dirty = true;
         }
         public void updateLocation(double x, double y, double z){
             this.x = x;
             this.y = y;
             this.z = z;
-            this.markDirty("x", "y", "z");
+            this.dirty = true;
         }
     
         public void updateHead(String head) {
             this.head = head;
-            this.markDirty("head");
+            this.dirty = true;
+            this.headDirty = true;
         }
     
-        public void updateArmor(int armor) {
+        public void updateArmor(double armor) {
             this.armor = armor;
-            this.markDirty("armor");
+            this.dirty = true;
         }
     
-        public void updateHealth(double health) {
+        public void updateHealth(double health, double healthMax) {
             this.health = health;
-            this.markDirty("health");
+            this.healthMax = healthMax;
+            this.dirty = true;
         }
     
         public void updateExhaustion(double exhaustion) {
             this.exhaustion = exhaustion;
-            this.markDirty("exhaustion");
-        }
-
-        private JSONObject censor(JSONObject json) {
-            json.remove("firstPlayed");
-            return json;
+            this.dirty = true;
         }
 
         private static LPlayer fromOfflinePlayer(OfflinePlayer player) {
             LPlayer p = new LPlayer(player.getUniqueId().toString());
             p.name = player.getName();
-            p.lastOnline = player.getLastPlayed();
-            p.firstPlayed = player.getFirstPlayed();
             p.online = player.isOnline();
-
-            if(p.online) {
-                if(!HeadLibrary.has(player.getUniqueId().toString())) { 
-                    HeadLibrary.resolveAsync(player.getUniqueId().toString());
-                } 
-                p.updateHead(HeadLibrary.get(player.getUniqueId().toString()));
-            }
+            if(!HeadLibrary.has(player.getUniqueId().toString())) { 
+                HeadLibrary.resolveAsync(player.getUniqueId().toString());
+            } 
+            p.updateHead(HeadLibrary.get(player.getUniqueId().toString()));
+            
 
             if(player.getPlayer() != null) {
                 Player online = player.getPlayer();
                 p.updateLocation(online.getLocation().getX(), online.getLocation().getY(), online.getLocation().getZ());
-                p.updateLastOnline(System.currentTimeMillis(), true);
                 p.updateWorld(online.getLocation().getWorld().getName());
-                p.updateHealth(online.getHealthScale());
+                p.updateHealth(online.getHealth(), online.getHealthScale());
                 p.updateExhaustion(online.getExhaustion());
                 ItemStack itemInHand = online.getInventory().getItemInMainHand();
                 if(itemInHand != null && itemInHand.getAmount() != 0) {
                     p.updateItemHeld(itemInHand.getType().name(), itemInHand.getAmount());
                 }
+                
             }
-
-            AssetGroup locations = new AssetGroup("Locations"); 
-            if(player.getBedSpawnLocation() != null) {
-                MapAsset bedspawn = new MapAsset("spawn-bed", "Bed Spawn", "Bed spawn location", null);
-                bedspawn.updatePosition(player.getBedSpawnLocation());
-                locations.addPlayerAsset(bedspawn);
-            }
-
-            p.assetGroups.add(locations);
 
             return p;
         }
+
+        public boolean isDirty() {
+            return dirty || headDirty;
+        }
+
+        public void clean() {
+            dirty = false;
+            headDirty = false;
+        }
+
+        public JSONObject toJson() {
+            JSONObject json = new JSONObject();
+            json.put("uuid", uuid);
+            json.put("name", name);
+            json.put("head", head);
+            json.put("online", online);
+            json.put("x", (float)x);
+            json.put("y", (float)y);
+            json.put("z", (float)z);
+            json.put("health", (float)health);
+            json.put("healthMax", (float)healthMax);
+            json.put("armor", armor);
+            json.put("exhaustion", exhaustion);
+            if(itemHeld != null) json.put("itemHeld", itemHeld.toJson());
+            if(actions != null) {
+                synchronized(actions) {
+                    json.put("actions", actions.stream().map(action->action.toJson()).collect(Collectors.toList()));
+                }
+            }
+            return json;
+        }
     }
 
-    public static class AssetGroup extends Syncable {
+    /*public static class AssetGroup extends Syncable {
         public String name;
         public List<PlayerAsset> assets = new ArrayList<PlayerAsset>();
 
@@ -552,5 +588,5 @@ public class PlayerModule extends BaseModule implements Listener
             this.z = z;
             markDirty("x", "y", "z");
         }
-    }
+    }*/
 }
