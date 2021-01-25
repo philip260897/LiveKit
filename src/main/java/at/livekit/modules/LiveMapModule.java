@@ -14,6 +14,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
@@ -49,7 +50,9 @@ import at.livekit.packets.IPacket;
 public class LiveMapModule extends BaseModule implements Listener
 {
     //private List<Offset> _queueBlocks = new ArrayList<Offset>();
+    private RenderingOptions _options;
     private List<Offset> _queueChunks = new ArrayList<Offset>();
+    private List<Offset> _queueRegions = new ArrayList<Offset>();
 
     private String world;
     private BoundingBox boundingBox;
@@ -62,6 +65,59 @@ public class LiveMapModule extends BaseModule implements Listener
     public LiveMapModule(String world, ModuleListener listener) {
         super(1, "Live Map", "livekit.basics.map", UpdateRate.MAX, listener);
         this.world = world;
+    }
+
+    public RenderingOptions getOptions() {
+        return _options;
+    }
+
+    public void setCPUTime(int ms) {
+        _options.cpuTime = ms;
+    }
+
+    public void setRenderingMode(RenderingMode mode) {
+        _options.mode = mode;
+        if(mode == RenderingMode.BOUNDS) {
+            if(_options.limits == null) {
+                _options.limits = BoundingBox.fromWorld(world);
+            }
+        }
+    }
+
+    public void fullRender() throws Exception{
+        if(_options.mode == RenderingMode.DISCOVER) throw new Exception("LiveMap in wrong rendering mode");
+
+        synchronized(_queueRegions) {
+            for(int z = _options.limits.minZ; z < _options.limits.maxZ; z++) {
+                for(int x = _options.limits.minX; x < _options.limits.maxX; x++) {
+                    _queueRegions.add(new Offset(x, z));
+                }
+            }
+        }
+    }
+
+    public void clearChunkQueue() {
+        synchronized(_queueChunks) {
+            _queueChunks.clear();
+        }
+    }
+
+    public void clearRegionQueue() {
+        synchronized(_queueRegions) {
+            _queueRegions.clear();
+        }
+    }
+
+    public int getChunkQueueSize() {
+        synchronized(_queueChunks) {
+            return _queueChunks.size();
+        }
+    }
+
+    public int getRegionQueueSize() {
+        synchronized(_queueRegions) {
+            return _queueRegions.size();
+        }
     }
 
     public String getWorld() {
@@ -98,7 +154,24 @@ public class LiveMapModule extends BaseModule implements Listener
         notifyChange();
     }
 
+    public void updateRegion(int x, int z) {
+        if(_options.mode == RenderingMode.BOUNDS) {
+            if(!_options.limits.regionInBounds(x, z)) {
+                return;
+            }
+        }
+        synchronized(_queueRegions) {
+            _queueRegions.add(new Offset(x, z));
+        }
+    }
+
     public void updateChunk(Chunk chunk, boolean isChunkLoadedEvent) {
+        if(_options.mode == RenderingMode.BOUNDS) {
+            if(isChunkLoadedEvent || !_options.limits.chunkInBounds(chunk.getX(), chunk.getZ())) {
+                return;
+            }
+        }
+
         Offset offset = new Offset();
         offset.x = chunk.getX();
         offset.z = chunk.getZ();
@@ -113,6 +186,7 @@ public class LiveMapModule extends BaseModule implements Listener
     public void onEnable() {
         try{
             boundingBox = new BoundingBox();
+            loadOptions();
             load();
         }catch(Exception ex){ex.printStackTrace();}
 
@@ -134,8 +208,10 @@ public class LiveMapModule extends BaseModule implements Listener
         try{
             save();
         }catch(Exception ex){ex.printStackTrace();}
+
+        saveOptions();
+
         _regions.clear();
-        //_syncables.clear();
         _updates.clear();
         _queueChunks.clear();
 
@@ -216,7 +292,21 @@ public class LiveMapModule extends BaseModule implements Listener
             Offset next = null;
             if(_currentUpdate == null) { 
                 synchronized(_queueChunks) {
+                    if(_queueChunks.size() == 0) {
+                        synchronized(_queueRegions) {
+                            if(_queueRegions.size() != 0) {
+                                Offset region = _queueRegions.remove(0);
+                                for(int z = 0; z < 32; z++) {
+                                    for(int x = 0; x < 32; x++) {
+                                        _queueChunks.add(new Offset(region.x*32 + x, region.z*32+z));
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     if(_queueChunks.size() != 0) next = _queueChunks.remove(0);
+                    
                 }
                 if(next == null) return;
             }
@@ -246,7 +336,8 @@ public class LiveMapModule extends BaseModule implements Listener
         }
     }
 
-    private int cpu_time = 30;
+    //multi frame rendering stuff
+    //private int cpu_time = 30;
     private Offset _chunk;
     private RegionData _currentUpdate = null;
     private byte[] _chunkData;
@@ -300,7 +391,7 @@ public class LiveMapModule extends BaseModule implements Listener
                         _chunkData[z * 4 * 16 + x*4 + i] = blockData[i];
                     }
 
-                    if(System.currentTimeMillis() - start > cpu_time) {
+                    if(System.currentTimeMillis() - start > _options.cpuTime) {
                         _currentUpdate.renderingZ = z;
                         _currentUpdate.renderingX = x+1;
                         return null;
@@ -410,20 +501,62 @@ public class LiveMapModule extends BaseModule implements Listener
         return null;
     }
 
+    private void saveOptions() {
+        try{
+            File file = new File(getDir(), "data.json");
+            if(!file.exists()) file.createNewFile();
+
+            JSONObject options = _options.toJson();
+            JSONArray chunks = new JSONArray(_queueChunks.stream().map(c->c.toJson()).collect(Collectors.toList()));
+            if(_chunk != null) chunks.put(_chunk.toJson());
+
+            options.put("chunk_queue", chunks);
+            options.put("region_queue", _queueRegions.stream().map(c->c.toJson()).collect(Collectors.toList()));
+
+            Files.write(file.toPath(), options.toString().getBytes());
+        }catch(Exception ex){ex.printStackTrace();}
+    }
+
+    private void loadOptions() {
+        try{
+            File folder = getDir();
+            if(folder.exists()) {
+                File optionsFile = new File(folder, "data.json");
+                if(optionsFile.exists()) {
+                    JSONObject data = new JSONObject(new String(Files.readAllBytes(optionsFile.toPath())));
+                    _options = RenderingOptions.fromJson(data);
+
+                    if(data.has("chunk_queue")) {
+                        JSONArray cqueue = data.getJSONArray("chunk_queue");
+                        for(int i = 0; i < cqueue.length(); i++) {
+                            _queueChunks.add(Offset.fromJson(cqueue.getJSONObject(i)));
+                        }
+                    }
+
+                    if(data.has("region_queue")) {
+                        JSONArray rqueue = data.getJSONArray("region_queue");
+                        for(int i = 0; i < rqueue.length(); i++) {
+                            _queueRegions.add(Offset.fromJson(rqueue.getJSONObject(i)));
+                        }
+                    }
+
+                    return;
+                }
+            }
+        }catch(Exception ex){ex.printStackTrace();}
+
+        Plugin.log("LiveMapModule using default options "+world);
+        if(_options==null) _options = new RenderingOptions();
+    }
+
     private void load() throws Exception{
         File folder = getDir();
         if(!folder.exists()) folder.mkdirs();
 
         for(File file : folder.listFiles()) {
             if(file.isFile() && file.getName().endsWith(".region")) {
-                /*try{
-                    synchronized(_regions) {
-                        int regionX = Integer.parseInt(file.getName().split("_")[0]);
-                        int regionZ = Integer.parseInt(file.getName().split("_")[1].replace(".region", ""));*/
                 RegionData data =  new RegionData(file);
                 _regions.put(data.x+"_"+data.z, data);
-                    /*}
-                }catch(Exception ex){ex.printStackTrace();}*/
             }
         }
         Plugin.log("LiveMapModule loaded "+_regions.size()+" regions for "+world);
@@ -503,13 +636,37 @@ public class LiveMapModule extends BaseModule implements Listener
         }
     }
 
-    private static class Offset {
+    private static class Offset implements Serializable {
         public int x;
         public int z;
         public boolean onlyIfAbsent;
+        
+        public Offset() {}
+
+        public Offset(int x, int z) {
+            this.x = x;
+            this.z = z;
+        }
+
+        public static Offset fromJson(JSONObject json) {
+            Offset offset = new Offset();
+            offset.x = json.getInt("x");
+            offset.z = json.getInt("z");
+            offset.onlyIfAbsent = (json.has("absent")&&!json.isNull("absent")?json.getBoolean("absent"):false);
+            return offset;
+        }
+
+        @Override
+        public JSONObject toJson() {
+            JSONObject json = new JSONObject();
+            json.put("x", x);
+            json.put("z", z);
+            if(onlyIfAbsent == true)json.put("absent", onlyIfAbsent);
+            return json;
+        }
     }
 
-    public static class BoundingBox {
+    public static class BoundingBox implements Serializable {
         public int minX = 0;
         public int minZ = 0;
         public int maxX = 0;
@@ -530,6 +687,64 @@ public class LiveMapModule extends BaseModule implements Listener
           if(x >= maxX) maxX = x+1;
           if(z < minZ) minZ = z;
           if(z >= maxZ) maxZ = z+1;
+        }
+
+        public boolean regionInBounds(int x, int z) {
+            if(x >= minX && x < maxX) {
+                if(z >= minZ && z < maxZ) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public boolean chunkInBounds(int x, int z) {
+            int regionX = (int) Math.floor(((double) x / 32.0));
+            int regionZ = (int) Math.floor(((double) z / 32.0));
+            return regionInBounds(regionX, regionZ);
+        }
+
+        public static BoundingBox fromJson(JSONObject json) {
+            BoundingBox box = new BoundingBox();
+            box.minX = json.getInt("minX");
+            box.maxX = json.getInt("maxX");
+            box.minZ = json.getInt("minZ");
+            box.maxZ = json.getInt("maxZ");
+            return box;
+        }
+
+        public static BoundingBox fromWorld(String world) {
+            BoundingBox box = new BoundingBox();
+
+            File worldFolder =  new File(Plugin.getInstance().getDataFolder(), "../../"+world+"/region");
+            if(worldFolder.exists()) {
+               for(File file : worldFolder.listFiles()) {
+                   if(file.isFile() && file.getName().endsWith(".mca")) {
+                       System.out.println(file.getName());
+                        int x = Integer.parseInt(file.getName().split("\\.")[1]);
+                        int z = Integer.parseInt(file.getName().split("\\.")[2]);
+                        Plugin.log("Region discovered "+x+" "+z);
+                        box.update(x, z);
+                   }
+               }
+            }
+
+            return box;
+        }
+
+        @Override
+        public JSONObject toJson() {
+            JSONObject json = new JSONObject();
+            json.put("minX", minX);
+            json.put("maxX", maxX);
+            json.put("minZ", minZ);
+            json.put("maxZ", maxZ);
+            return json;
+        }
+
+        @Override
+        public String toString() {
+            return "BoundingBox[x="+minX+"; z="+minZ+"; width="+(maxX-minX)+" ("+maxX+"); height="+(maxZ-minZ)+" ("+maxZ+")]";
         }
     }
 
@@ -613,7 +828,7 @@ public class LiveMapModule extends BaseModule implements Listener
         if(!isEnabled()) return;
         if(!event.getWorld().getName().equals(world)) return;
 
-        updateChunk(event.getChunk(), false);
+        updateChunk(event.getChunk(), true);
     }
 
     @EventHandler
@@ -637,4 +852,65 @@ public class LiveMapModule extends BaseModule implements Listener
             }
         }
     }
+
+    public static class RenderingOptions implements Serializable {
+        
+        private int cpuTime = 20;
+        private RenderingMode mode = RenderingMode.DISCOVER;
+        private BoundingBox limits = null;
+            
+        public int getCpuTime() {
+            return cpuTime;
+        }
+
+        public RenderingMode getMode() {
+            return mode;
+        }
+
+        public BoundingBox getLimits() {
+            return limits;
+        }
+
+        public static RenderingOptions fromJson(JSONObject json) {
+            RenderingOptions options = new RenderingOptions();
+            options.cpuTime = json.getInt("cpuTime");
+            options.mode = RenderingMode.fromValue(json.getInt("mode"));
+            options.limits = (json.has("limits")&&!json.isNull("limits")) ? BoundingBox.fromJson(json.getJSONObject("limits")) : null;
+            return options;
+        }
+
+        @Override
+        public JSONObject toJson() {
+            JSONObject json = new JSONObject();
+            json.put("cpuTime", cpuTime);
+            json.put("mode", mode.value());
+            if(limits != null)json.put("limits", limits.toJson());
+            return json;
+        }
+    }
+
+    public static enum RenderingMode {
+        DISCOVER(0), BOUNDS(1);
+    
+        private int value;
+
+        RenderingMode(int value) {
+            this.value = value;
+        }
+
+        int value() {
+            return value;
+        }
+
+        static RenderingMode fromValue(int value) {
+            for(RenderingMode m : RenderingMode.values()) {
+                if(m.value() == value) {
+                    return m;
+                }
+            }
+            return null;
+        }
+    }
 }
+
+

@@ -22,6 +22,8 @@ import at.livekit.livekit.LiveKit;
 import at.livekit.livekit.PlayerAuth;
 import at.livekit.modules.BaseModule;
 import at.livekit.modules.PlayerModule;
+import at.livekit.modules.LiveMapModule.*;
+import at.livekit.modules.LiveMapModule;
 import at.livekit.modules.PlayerModule.LPlayer;
 import at.livekit.utils.HeadLibrary;
 import at.livekit.utils.HeadLibraryEvent;
@@ -101,6 +103,8 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 	@Override
 	public boolean onCommand(CommandSender sender, Command command, String label, String[] args){
 		if(label.equalsIgnoreCase("livekit")) {
+			if(args.length >= 1 && args[0].equalsIgnoreCase("map")) return handleMapCommands(sender, command, label, args);
+
 			if(args.length == 1) {
 				if(args[0].equalsIgnoreCase("tp")) {
 					JSONObject object = new JSONObject();
@@ -172,20 +176,22 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 						sender.sendMessage("["+module.getType()+"] Version: "+module.getVersion()+" Enabled: "+module.isEnabled());
 					}
 				}
-				/*if(args[0].equalsIgnoreCase("test")) {
-					if(sender instanceof Player) {
-						LPlayer player = ((PlayerModule)LiveKit.getInstance().getModuleManager().getModule("PlayerModule")).getPlayer(((Player)sender).getUniqueId().toString());
-						PlayerAsset asset = new ValueAsset("test", "Test", "test");
-						player.getAssetGroup("Locations").addPlayerAsset(asset);
-						LiveKit.getInstance().notifyQueue("PlayerModule");
+				/*if(args[0].equalsIgnoreCase("loptions")) {
+					LiveMapModule module = ((LiveMapModule) LiveKit.getInstance().getModuleManager().getModule("LiveMapModule"));
+					RenderingOptions options = module.getOptions();
+					sender.sendMessage(prefix+"CPU-Time: "+options.getCpuTime()+"ms");
+					sender.sendMessage(prefix+"Mode: "+options.getMode().name());
+					sender.sendMessage(prefix+"Chunk Queue: "+module.getChunkQueueSize());
+					sender.sendMessage(prefix+"Region Queue: "+module.getRegionQueueSize());
+					if(options.getMode() == RenderingMode.BOUNDS) {
+						 sender.sendMessage(prefix+"Bounds: "+options.getLimits().toString());
 					}
-				}
-				if(args[0].equalsIgnoreCase("test2")) {
-					if(sender instanceof Player) {
-						LPlayer player = ((PlayerModule)LiveKit.getInstance().getModuleManager().getModule("PlayerModule")).getPlayer(((Player)sender).getUniqueId().toString());
-						player.getAssetGroup("Locations").removePlayerAsset(player.getAsset("test"));
-						LiveKit.getInstance().notifyQueue("PlayerModule");
-					}
+				}*/
+				/*if(args[0].equalsIgnoreCase("fullrender")) {
+					LiveMapModule module = ((LiveMapModule) LiveKit.getInstance().getModuleManager().getModule("LiveMapModule"));
+					try{
+						module.fullRender();
+					}catch(Exception ex){ex.printStackTrace();}
 				}*/
 			}
 			if(args.length == 3) {
@@ -201,6 +207,78 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 							LiveKit.getInstance().getModuleManager().disableModule(m.getType());
 						}
 						LiveKit.getInstance().notifyQueue("SettingsModule");
+					}
+				}
+			}
+		}
+		return true;
+	}
+
+	private boolean handleMapCommands(CommandSender sender, Command command, String label, String[] args) {
+		if(args.length >= 1) {
+			if(label.equalsIgnoreCase("livekit") && args[0].equalsIgnoreCase("map")) {
+				if(sender instanceof Player && !checkPerm((Player)sender, "livekit.admin")) return true;
+
+				LiveMapModule map = (LiveMapModule)LiveKit.getInstance().getModuleManager().getModule("LiveMapModule");
+				if(!map.isEnabled()) { sender.sendMessage(prefixError+" LiveMapModule not enabled."); return true;}
+
+				RenderingOptions options = map.getOptions();
+
+				if(args.length == 1) {
+					StringBuilder builder = new StringBuilder();
+					
+					builder.append("LiveMap Status:\n");
+					builder.append("world: "+map.getWorld()+"\n");
+					builder.append("mode: "+options.getMode().name()+"\n");
+					if(options.getMode() != RenderingMode.DISCOVER) builder.append("limits: "+options.getLimits().toString()+"\n");
+					builder.append("cpu-time: "+options.getCpuTime()+"ms / "+(int)(((float)options.getCpuTime()/50f)*100f)+"%"+"\n");
+					builder.append("queued chunks: "+map.getChunkQueueSize()+"\n");
+					builder.append("queued regions: "+map.getRegionQueueSize()+"\n");
+					
+					sender.sendMessage(prefix+builder.toString());
+				}
+				if(args.length == 2) {
+					if(args[1].equalsIgnoreCase("fullrender")) {
+						if(map.getRegionQueueSize() != 0) {
+							sender.sendMessage(prefixError+"Fullrender can only be startet if Region Queue is empty!");
+							return true;
+						}
+
+						try{
+							map.fullRender();
+							sender.sendMessage(prefix+"Fullrender started");
+						}catch(Exception ex){sender.sendMessage(prefixError+ex.getMessage()); return true;}
+					}
+					if(args[1].equalsIgnoreCase("abortrender")) {
+						map.clearChunkQueue();
+						map.clearRegionQueue();
+						sender.sendMessage(prefix+"Rendering queues cleared!");
+					}
+				}
+				if(args.length == 3) {
+					if(args[1].equalsIgnoreCase("mode")) {
+						RenderingMode mode = null;
+						if(args[2].equalsIgnoreCase("bounds")) mode = RenderingMode.BOUNDS;
+						if(args[2].equalsIgnoreCase("discover")) mode = RenderingMode.DISCOVER;
+						if(mode == null) {
+							sender.sendMessage(prefixError+"Mode "+args[2]+" is not a valid rendering mode! -> [BOUNDS|DISCOVER]");
+							return true;
+						}
+
+						map.setRenderingMode(mode);
+						sender.sendMessage(prefix+"Mode "+mode.name()+" set!"+(mode == RenderingMode.BOUNDS ? " Don't forget to check bounds and start full render!" : ""));
+					}
+					if(args[1].equalsIgnoreCase("cpu")) {
+						float percent = 20;
+						try{
+						percent = Float.parseFloat(args[2]);
+						}catch(Exception ex){sender.sendMessage(prefixError+args[2]+" is not a valid number! 0-100%"); return true;}
+
+						if(percent < 5) percent = 5;
+						if(percent > 100) percent = 100;
+
+						map.setCPUTime( (int)(percent*50f/100f));
+						sender.sendMessage(prefix+"CPU-Time set to "+options.getCpuTime()+"ms / "+(int)(((float)options.getCpuTime()/50f)*100f)+"%");
 					}
 				}
 			}
