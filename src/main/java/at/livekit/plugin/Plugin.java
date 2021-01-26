@@ -73,9 +73,9 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 		HeadLibrary.load();
 		HeadLibrary.setHeadLibraryListener(new HeadLibraryEvent(){
 			@Override
-			public void onHeadResolved(String uuid, String base64) {
+			public void onHeadResolved(String name, String base64) {
 				PlayerModule module = (PlayerModule)LiveKit.getInstance().getModuleManager().getModule("PlayerModule");
-				LPlayer player = module.getPlayer(uuid);
+				LPlayer player = module.getPlayerByName(name);
 				if(player != null) {
 					player.updateHead(base64);
 				}

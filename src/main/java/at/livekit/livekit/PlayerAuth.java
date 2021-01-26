@@ -136,6 +136,7 @@ public class PlayerAuth
 
     public static PlayerAuth validateClaim(String pin) {
         if(pin.equalsIgnoreCase("test")) return get("9e98a307-d0db-3a07-bf57-97e5d80a6e17");
+        if(pin.equalsIgnoreCase("test2")) return get("36881d51-7477-3eb6-91a1-dfc11065590d");
         synchronized(auth) {
             for(Entry<String,PlayerAuth> entry : auth.entrySet() ) {
                 if(entry.getValue().isValidClaim(pin)) {

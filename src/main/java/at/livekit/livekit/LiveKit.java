@@ -293,7 +293,7 @@ public class LiveKit implements ModuleListener, Runnable {
                     }catch(Exception ex){ex.printStackTrace();}
 
                 
-                    return new IdentityPacket(identity.getUUID(), client.getIdentity().getName(), HeadLibrary.get(identity.getUUID()), identity.generateSessionKey());
+                    return new IdentityPacket(identity.getUUID(), client.getIdentity().getName(), HeadLibrary.get(client.getIdentity().getName()), identity.generateSessionKey());
                 }
                 
             } 

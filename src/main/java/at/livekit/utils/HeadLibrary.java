@@ -16,6 +16,7 @@ import java.util.UUID;
 
 import javax.imageio.ImageIO;
 
+import org.bukkit.Bukkit;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.jsoup.Jsoup;
@@ -38,17 +39,17 @@ public class HeadLibrary implements Runnable
         if(!heads.exists()) heads.mkdir();
         for(File file : heads.listFiles()) {
             try{
-                UUID uuid = UUID.fromString(file.getName().replace(".txt", ""));
+                String name = file.getName().replace(".txt", "");
                 synchronized(playerHeads) {
-                    playerHeads.put(uuid.toString(), new String(Files.readAllBytes(Paths.get(file.getAbsolutePath()))));
+                    playerHeads.put(name, new String(Files.readAllBytes(Paths.get(file.getAbsolutePath()))));
                 }
             }catch(Exception ex){ex.printStackTrace();}
         }
     }
 
-    private static void save(String uuid, String head) {
+    private static void save(String name, String head) {
         try{
-            File headFile = new File(Plugin.getInstance().getDataFolder(), "heads/"+uuid+".txt");
+            File headFile = new File(Plugin.getInstance().getDataFolder(), "heads/"+name+".txt");
             if(!headFile.exists()) {
                 headFile.createNewFile();
             }
@@ -63,9 +64,9 @@ public class HeadLibrary implements Runnable
         HeadLibrary.listener = listener;
     }
 
-    public static void resolveAsync(String uuid) {
+    public static void resolveAsync(String name) {
         synchronized(queue) {
-            queue.add(uuid);
+            queue.add(name);
         }
         if(thread == null) {
             thread = new Thread(new HeadLibrary());
@@ -77,16 +78,16 @@ public class HeadLibrary implements Runnable
         }
     }
 
-    public static boolean has(String uuid) {
+    public static boolean has(String name) {
         synchronized(playerHeads) {
-            return playerHeads.containsKey(uuid);
+            return playerHeads.containsKey(name);
         }
     }
 
-    public static String get(String uuid) {
+    public static String get(String name) {
         synchronized(playerHeads) {
-            if(playerHeads.containsKey(uuid)) {
-                return playerHeads.get(uuid);
+            if(playerHeads.containsKey(name)) {
+                return playerHeads.get(name);
             }
         }
         return DEFAULT_HEAD;
@@ -101,7 +102,16 @@ public class HeadLibrary implements Runnable
         //todo: save heads
     }
 
-    private static void resolveHead(String uuid) throws Exception{
+    private static void resolveHeadByName(String name) throws Exception {
+        Response response = Jsoup.connect("https://api.mojang.com/users/profiles/minecraft/"+name)
+                            .ignoreContentType(true)
+                            .execute();
+        
+        JSONObject json = new JSONObject(response.body());
+        resolveHead(name, json.getString("id"));
+    }
+
+    private static void resolveHead(String name, String uuid) throws Exception{
         Response response  = Jsoup.connect(SKIN_URL+"/"+uuid.replaceAll("-", ""))
                                 .ignoreContentType(true)
                                 .execute();
@@ -126,8 +136,8 @@ public class HeadLibrary implements Runnable
 
                         ImageIO.write(image, "png", os);
                         String head = Base64.getEncoder().encodeToString(os.toByteArray());
-                        playerHeads.put(uuid, head);
-                        save(uuid, head);
+                        playerHeads.put(name, head);
+                        save(name, head);
                     }
                 }
             }catch(Exception ex){/*ex.printStackTrace(); /*playerHeads.put(uuid, DEFAULT_HEAD);*/Plugin.debug("HeadLibrary error "+ex.getMessage());}
@@ -139,23 +149,24 @@ public class HeadLibrary implements Runnable
 
         while(true) {
             while(!queue.isEmpty()) {
-                String uuid;
+                String name;
                 synchronized(queue) {
-                    uuid = queue.remove(0);
+                    name = queue.remove(0);
                 }
 
                 try{
-                    Plugin.log("resolving head for "+uuid);
-                    resolveHead(uuid);
+                    resolveHeadByName(name);
+                    Plugin.log("resolving head for "+name);
+                    
 
-                    if(listener != null) listener.onHeadResolved(uuid, playerHeads.get(uuid));
+                    if(listener != null) listener.onHeadResolved(name, playerHeads.get(name));
                 }catch(Exception ex) {
                     ex.printStackTrace();
                     synchronized(queue) {
-                        queue.add(0, uuid);
+                        queue.add(0, name);
                     }
                     try{
-                        Thread.sleep(30*1000);
+                        Thread.sleep(60*1000);
                     }catch(Exception exx){}
                 }
             }

@@ -84,7 +84,7 @@ public class AdminModule extends BaseModule
             JSONObject p = new JSONObject();
             p.put("uuid", player.getUniqueId().toString());
             p.put("name", player.getName() );
-            p.put("head", HeadLibrary.get(player.getUniqueId().toString()));
+            p.put("head", HeadLibrary.get(player.getName()));
             array.put(p);
         }
         data.put("players", array);
@@ -199,7 +199,7 @@ public class AdminModule extends BaseModule
             JSONObject p = new JSONObject();
             p.put("uuid", player.getUniqueId().toString());
             p.put("name", player.getName() );
-            p.put("head", HeadLibrary.get(player.getUniqueId().toString()));
+            p.put("head", HeadLibrary.get(player.getName()));
             array.put(p);
         }
         data.put("players", array);

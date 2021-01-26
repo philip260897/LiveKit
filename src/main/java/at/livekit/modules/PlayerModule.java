@@ -45,6 +45,15 @@ public class PlayerModule extends BaseModule implements Listener
         return _players.get(uuid);
     }
 
+    public LPlayer getPlayerByName(String name) {
+        synchronized(_players) {
+            for(LPlayer p : _players.values()) {
+                if(p.name.equalsIgnoreCase(name)) return p;
+            }
+        }
+        return null;
+    }
+
     @Override
     public void update() {
         boolean needsUpdate = false;
@@ -100,10 +109,10 @@ public class PlayerModule extends BaseModule implements Listener
         //player.updateArmor(p.getArmor);
 		player.updateExhaustion(p.getExhaustion());
 
-        if(!HeadLibrary.has(p.getUniqueId().toString())) { 
-			HeadLibrary.resolveAsync(p.getUniqueId().toString());
+        if(!HeadLibrary.has(p.getName())) { 
+			HeadLibrary.resolveAsync(p.getName());
 		} 
-		player.updateHead(HeadLibrary.get(p.getUniqueId().toString()));
+		player.updateHead(HeadLibrary.get(p.getName()));
         player.updateOnline(true);
 
         ItemStack itemInHand = p.getInventory().getItemInMainHand();
@@ -456,10 +465,10 @@ public class PlayerModule extends BaseModule implements Listener
             LPlayer p = new LPlayer(player.getUniqueId().toString());
             p.name = player.getName();
             p.online = player.isOnline();
-            if(!HeadLibrary.has(player.getUniqueId().toString())) { 
-                HeadLibrary.resolveAsync(player.getUniqueId().toString());
+            if(!HeadLibrary.has(player.getName())) { 
+                HeadLibrary.resolveAsync(player.getName());
             } 
-            p.updateHead(HeadLibrary.get(player.getUniqueId().toString()));
+            p.updateHead(HeadLibrary.get(player.getName()));
             
 
             if(player.getPlayer() != null) {
