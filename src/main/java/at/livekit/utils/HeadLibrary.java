@@ -27,7 +27,7 @@ import at.livekit.plugin.Plugin;
 public class HeadLibrary implements Runnable
 {
     private static final String SKIN_URL = "https://sessionserver.mojang.com/session/minecraft/profile";
-    public static final String DEFAULT_HEAD = "iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAM0lEQVR4XmNgYGD4TwBjCKBjDAF0jCGAin0+af3XucL1H0TDBNHEsOhCxRgC6BhDAAUDAADgR3U7WfxJAAAAAElFTkSuQmCC";
+    public static final String DEFAULT_HEAD = "iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAA1ElEQVR4XmPQV+D9ry3H+19fnv+/hgz3fxUJjv9qUlxgMS1Z3v8MIAYMG6sI/nfSEvpvryX6X0eOD6wBrGBbZ87/vX1F/49Na/i/t7sIyC75v6Ys6r+JqtB/hlW1af+3tOT+B9FrG3L/zymK+b+7s+j/nEwfMGYASYJAkG3n/63V6WBJEBsEQJoY5iS7/d9cnfR/e1PR/ywHAzDe15Hzf1GW+/+GYJP/DBPinP9Pi3f4X+5kioL74+z+NwZb/mfId9X5n+usBeaAcJWf8f/mUGswBrEBqAeFqNKFJtgAAAAASUVORK5CYII=";
     private static Map<String,String> playerHeads = new HashMap<String,String>(); 
     private static List<String> queue = new ArrayList<String>();
     private static Thread thread = null;
@@ -162,12 +162,12 @@ public class HeadLibrary implements Runnable
                     if(listener != null) listener.onHeadResolved(name, playerHeads.get(name));
                 }catch(Exception ex) {
                     ex.printStackTrace();
-                    synchronized(queue) {
+                    /*synchronized(queue) {
                         queue.add(0, name);
                     }
                     try{
                         Thread.sleep(60*1000);
-                    }catch(Exception exx){}
+                    }catch(Exception exx){}*/
                 }
             }
 

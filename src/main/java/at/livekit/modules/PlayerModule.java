@@ -20,6 +20,7 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.json.JSONArray;
@@ -127,8 +128,6 @@ public class PlayerModule extends BaseModule implements Listener
 
     @EventHandler
     public void onPlayerItemHeldEvent(PlayerItemHeldEvent event) {
-        
-        
         if(_players.containsKey(event.getPlayer().getUniqueId().toString())) {
             LPlayer player = _players.get(event.getPlayer().getUniqueId().toString());
             
@@ -141,6 +140,15 @@ public class PlayerModule extends BaseModule implements Listener
                 player.updateItemHeld(null, 0);
                 notifyChange();
             }
+        }
+    }
+
+    @EventHandler
+    public void onPlayerChangedWorldEvent(PlayerChangedWorldEvent event) {
+        if(_players.containsKey(event.getPlayer().getUniqueId().toString())) {
+            LPlayer player = _players.get(event.getPlayer().getUniqueId().toString());
+            player.updateWorld(event.getPlayer().getWorld().getName());
+            notifyChange();
         }
     }
 
@@ -505,6 +513,7 @@ public class PlayerModule extends BaseModule implements Listener
             json.put("x", (float)x);
             json.put("y", (float)y);
             json.put("z", (float)z);
+            json.put("world", world);
             json.put("health", (float)health);
             json.put("healthMax", (float)healthMax);
             json.put("armor", armor);

@@ -9,5 +9,3 @@ commands:
   livekit:
     description: LiveKit command
     usage: /livekit
-    permission: livekit.basics
-    permission-message: You don't have the livekit.basics permission.
