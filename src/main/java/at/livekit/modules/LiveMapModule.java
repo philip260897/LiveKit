@@ -306,7 +306,7 @@ public class LiveMapModule extends BaseModule implements Listener
 
             IPacket result = null;
             if(_currentUpdate != null) result = update(null);
-            else if(Bukkit.getWorld(world).isChunkGenerated(next.x, next.z) ) result = update(next);
+            else if(_options.mode == RenderingMode.FORCED || (_options.mode == RenderingMode.DISCOVER && Bukkit.getWorld(world).isChunkGenerated(next.x, next.z)) ) result = update(next);
             //if(result == null) update();
 
             if(result != null) {
