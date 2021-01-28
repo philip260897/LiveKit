@@ -77,15 +77,10 @@ public class LiveMapModule extends BaseModule implements Listener
 
     public void setRenderingMode(RenderingMode mode) {
         _options.mode = mode;
-        if(mode == RenderingMode.BOUNDS) {
-            if(_options.limits == null) {
-                _options.limits = BoundingBox.fromWorld(world);
-            }
-        }
     }
 
     public void fullRender() throws Exception{
-        if(_options.mode == RenderingMode.DISCOVER) throw new Exception("LiveMap in wrong rendering mode");
+        //if(_options.mode == RenderingMode.DISCOVER) throw new Exception("LiveMap in wrong rendering mode");
 
         synchronized(_queueRegions) {
             for(int z = _options.limits.minZ; z < _options.limits.maxZ; z++) {
@@ -155,22 +150,20 @@ public class LiveMapModule extends BaseModule implements Listener
     }
 
     public void updateRegion(int x, int z) {
-        if(_options.mode == RenderingMode.BOUNDS) {
-            if(!_options.limits.regionInBounds(x, z)) {
-                return;
-            }
+        if(!_options.limits.regionInBounds(x, z)) {
+            return;
         }
+        
         synchronized(_queueRegions) {
             _queueRegions.add(new Offset(x, z));
         }
     }
 
     public void updateChunk(Chunk chunk, boolean isChunkLoadedEvent) {
-        if(_options.mode == RenderingMode.BOUNDS) {
-            if(isChunkLoadedEvent || !_options.limits.chunkInBounds(chunk.getX(), chunk.getZ())) {
-                return;
-            }
+        if(isChunkLoadedEvent || !_options.limits.chunkInBounds(chunk.getX(), chunk.getZ())) {
+            return;
         }
+        
 
         Offset offset = new Offset();
         offset.x = chunk.getX();
@@ -313,7 +306,7 @@ public class LiveMapModule extends BaseModule implements Listener
 
             IPacket result = null;
             if(_currentUpdate != null) result = update(null);
-            else result = update(next);
+            else if(Bukkit.getWorld(world).isChunkGenerated(next.x, next.z) ) result = update(next);
             //if(result == null) update();
 
             if(result != null) {
@@ -374,6 +367,7 @@ public class LiveMapModule extends BaseModule implements Listener
             
             boolean unload = !Bukkit.getWorld(world).isChunkLoaded(_chunk.x, _chunk.z);
             Chunk c = Bukkit.getWorld(world).getChunkAt(_chunk.x, _chunk.z);
+            
             for (int z = _currentUpdate.renderingZ; z < 16; z++) {
                 for (int x = _currentUpdate.renderingX; x < 16; x++) {
                     Block block = c.getWorld().getHighestBlockAt(c.getX() * 16 + x, c.getZ() * 16 + z);
@@ -547,6 +541,7 @@ public class LiveMapModule extends BaseModule implements Listener
 
         Plugin.log("LiveMapModule using default options "+world);
         if(_options==null) _options = new RenderingOptions();
+        _options.limits = BoundingBox.fromWorld(world);
     }
 
     private void load() throws Exception{
@@ -890,7 +885,7 @@ public class LiveMapModule extends BaseModule implements Listener
     }
 
     public static enum RenderingMode {
-        DISCOVER(0), BOUNDS(1);
+        DISCOVER(0), FORCED(1);
     
         private int value;
 

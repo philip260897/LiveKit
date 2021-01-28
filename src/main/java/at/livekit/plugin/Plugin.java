@@ -103,10 +103,12 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 	@Override
 	public boolean onCommand(CommandSender sender, Command command, String label, String[] args){
 		if(label.equalsIgnoreCase("livekit")) {
-			if(args.length >= 1 && args[0].equalsIgnoreCase("map")) return handleMapCommands(sender, command, label, args);
+			handleUserCommands(sender, command, label, args);
+			handleMapCommands(sender, command, label, args);
+			handleAdminCommands(sender, command, label, args);
 
-			if(args.length == 1) {
-				if(args[0].equalsIgnoreCase("tp")) {
+			//if(args.length == 1) {
+				/*if(args[0].equalsIgnoreCase("tp")) {
 					JSONObject object = new JSONObject();
 					
 					for(int i = 0; i < Material.values().length; i++) {
@@ -121,61 +123,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 						writer.flush();
 						writer.close();
 					}catch(Exception ex){ex.printStackTrace();}
-				}
-				if(args[0].equalsIgnoreCase("claim")) {
-					if(sender instanceof Player) {
-						Player player = (Player) sender;
-						if(!checkPerm(player, "livekit.basics.claim")) return true;
-
-						player.sendMessage(prefix+"Pin: "+PlayerAuth.get(player.getUniqueId().toString()).generateClaimPin()+" (valid for 2 mins)");
-					}
-					else 
-					{
-						sender.sendMessage(prefixError+"Only players can be claimed!");
-					}
-				}
-				if(args[0].equalsIgnoreCase("permreload")) {
-					if(sender instanceof Player) {
-						Player player = (Player) sender;
-						if(!checkPerm(player, "livekit.admin.permreload")) return true;
-					}
-
-					if(sender instanceof Player || sender.isOp()) {
-						LiveKit.getInstance().commandReloadPermissions();
-						sender.sendMessage(prefix+"Permissions will reload");
-					}
-				}
-				if(args[0].equalsIgnoreCase("identity")) {
-					if(sender instanceof Player) {
-						Player player = (Player) sender;
-						if(!checkPerm(player, "livekit.basics.claim")) return true;
-
-						Identity identity = LiveKit.getInstance().getIdentity(player.getUniqueId().toString());
-						player.sendMessage(prefix+"Identity");
-						if(identity != null) {
-							player.sendMessage("Name: "+identity.getName());
-							player.sendMessage("Permissions: ");
-							for(String perm : identity.getPermissions()) {
-								player.sendMessage(perm);
-							}
-						} else {
-							player.sendMessage("No clients connected");
-						}
-						PlayerAuth auth = PlayerAuth.get(player.getUniqueId().toString());
-						if(auth != null) {
-							player.sendMessage("Active Sessions: "+auth.getSessionKeys().length);
-						}
-					}
-					else
-					{
-						sender.sendMessage(prefixError+"Only players can have an identity!");
-					}
-				}
-				if(args[0].equalsIgnoreCase("modules")) {
-					for(BaseModule module : LiveKit.getInstance().getModules()) {
-						sender.sendMessage("["+module.getType()+"] Version: "+module.getVersion()+" Enabled: "+module.isEnabled());
-					}
-				}
+				}*/
 				/*if(args[0].equalsIgnoreCase("loptions")) {
 					LiveMapModule module = ((LiveMapModule) LiveKit.getInstance().getModuleManager().getModule("LiveMapModule"));
 					RenderingOptions options = module.getOptions();
@@ -193,21 +141,53 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 						module.fullRender();
 					}catch(Exception ex){ex.printStackTrace();}
 				}*/
-			}
-			if(args.length == 3) {
-				if(args[0].equalsIgnoreCase("modules")) {
-					String module = args[1];
-					String action = args[2];
+			//}
 
-					BaseModule m = LiveKit.getInstance().getModuleManager().getModule(module);
-					if(m != null) {
-						if(action.equals("enable")) {
-							LiveKit.getInstance().getModuleManager().enableModule(m.getType());
-						} else {
-							LiveKit.getInstance().getModuleManager().disableModule(m.getType());
+		}
+		return true;
+	}
+
+	private boolean handleUserCommands(CommandSender sender, Command command, String label, String[] args) {
+		if(args.length == 1) {
+			if(args[0].equalsIgnoreCase("claim")) {
+				if(sender instanceof Player) 
+				{
+					Player player = (Player) sender;
+					if(!checkPerm(player, "livekit.basics.claim")) return true;
+
+					player.sendMessage(prefix+"Pin: "+PlayerAuth.get(player.getUniqueId().toString()).generateClaimPin()+" (valid for 2 mins)");
+				}
+				else 
+				{
+					sender.sendMessage(prefixError+"Only players can be claimed!");
+				}
+			}
+			if(args[0].equalsIgnoreCase("identity")) 
+			{
+				if(sender instanceof Player) 
+				{
+					Player player = (Player) sender;
+					if(!checkPerm(player, "livekit.basics.claim")) return true;
+
+					Identity identity = LiveKit.getInstance().getIdentity(player.getUniqueId().toString());
+					player.sendMessage(prefix+"Identity");
+					if(identity != null) {
+						player.sendMessage("Name: "+identity.getName());
+						player.sendMessage("Permissions: ");
+						for(String perm : identity.getPermissions()) {
+							player.sendMessage(perm);
 						}
-						LiveKit.getInstance().notifyQueue("SettingsModule");
+					} else {
+						player.sendMessage("No clients connected");
 					}
+					PlayerAuth auth = PlayerAuth.get(player.getUniqueId().toString());
+					if(auth != null) {
+						player.sendMessage("Active Sessions: "+auth.getSessionKeys().length);
+					}
+				}
+				else
+				{
+					sender.sendMessage(prefixError+"Only players can have an identity!");
 				}
 			}
 		}
@@ -215,9 +195,10 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 	}
 
 	private boolean handleMapCommands(CommandSender sender, Command command, String label, String[] args) {
+		if(!checkPerm(sender, "livekit.admin.commands")) return true;
+
 		if(args.length >= 1) {
 			if(label.equalsIgnoreCase("livekit") && args[0].equalsIgnoreCase("map")) {
-				if(sender instanceof Player && !checkPerm((Player)sender, "livekit.admin")) return true;
 
 				LiveMapModule map = (LiveMapModule)LiveKit.getInstance().getModuleManager().getModule("LiveMapModule");
 				if(!map.isEnabled()) { sender.sendMessage(prefixError+" LiveMapModule not enabled."); return true;}
@@ -230,7 +211,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 					builder.append("LiveMap Status:\n");
 					builder.append("world: "+map.getWorld()+"\n");
 					builder.append("mode: "+options.getMode().name()+"\n");
-					if(options.getMode() != RenderingMode.DISCOVER) builder.append("limits: "+options.getLimits().toString()+"\n");
+					builder.append("limits: "+options.getLimits().toString()+"\n");
 					builder.append("cpu-time: "+options.getCpuTime()+"ms / "+(int)(((float)options.getCpuTime()/50f)*100f)+"%"+"\n");
 					builder.append("queued chunks: "+map.getChunkQueueSize()+"\n");
 					builder.append("queued regions: "+map.getRegionQueueSize()+"\n");
@@ -258,7 +239,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 				if(args.length == 3) {
 					if(args[1].equalsIgnoreCase("mode")) {
 						RenderingMode mode = null;
-						if(args[2].equalsIgnoreCase("bounds")) mode = RenderingMode.BOUNDS;
+						if(args[2].equalsIgnoreCase("forced")) mode = RenderingMode.FORCED;
 						if(args[2].equalsIgnoreCase("discover")) mode = RenderingMode.DISCOVER;
 						if(mode == null) {
 							sender.sendMessage(prefixError+"Mode "+args[2]+" is not a valid rendering mode! -> [BOUNDS|DISCOVER]");
@@ -266,7 +247,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 						}
 
 						map.setRenderingMode(mode);
-						sender.sendMessage(prefix+"Mode "+mode.name()+" set!"+(mode == RenderingMode.BOUNDS ? " Don't forget to check bounds and start full render!" : ""));
+						sender.sendMessage(prefix+"Mode "+mode.name()+" set!"+(mode == RenderingMode.FORCED ? " Don't forget to check bounds and start full render!" : ""));
 					}
 					if(args[1].equalsIgnoreCase("cpu")) {
 						float percent = 20;
@@ -286,10 +267,51 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 		return true;
 	}
 
-	private boolean checkPerm(Player player, String permission) {
-		boolean access = Permissions.has(player, permission);
-		if(!access) player.sendMessage(prefixError+"You need "+permission+" permission to access this command!");
-		return access;
+	private boolean handleAdminCommands(CommandSender sender, Command command, String label, String[] args) {
+		if(!checkPerm(sender, "livekit.admin.commands")) return true;
+
+		if(args.length == 1) {
+			if(args[0].equalsIgnoreCase("permreload")) {
+				LiveKit.getInstance().commandReloadPermissions();
+				sender.sendMessage(prefix+"Permissions will reload");
+			}
+
+			if(args[0].equalsIgnoreCase("modules")) {
+				sender.sendMessage("Modules:");
+				for(BaseModule module : LiveKit.getInstance().getModules()) {
+					sender.sendMessage(module.getType()+"|Version: "+module.getVersion()+" Enabled: "+module.isEnabled());
+				}
+			}
+		}
+		if(args.length == 3) {
+			if(args[0].equalsIgnoreCase("modules")) {
+				String module = args[1];
+				String action = args[2];
+
+				BaseModule m = LiveKit.getInstance().getModuleManager().getModule(module);
+				if(m != null) {
+					if(action.equals("enable")) {
+						LiveKit.getInstance().getModuleManager().enableModule(m.getType());
+					} else {
+						LiveKit.getInstance().getModuleManager().disableModule(m.getType());
+					}
+					LiveKit.getInstance().notifyQueue("SettingsModule");
+				}
+			}
+		}
+		return true;
+	}
+
+	private boolean checkPerm(CommandSender sender, String permission) {
+		if(sender.isOp()) return true;
+
+		if(sender instanceof Player) {
+			Player player = (Player)sender;
+			boolean access = Permissions.has(player, permission);
+			if(!access) player.sendMessage(prefixError+"You need "+permission+" permission to access this command!");
+			return access;
+		}
+		return false;
 	}
 
 	public static Plugin getInstance() {
