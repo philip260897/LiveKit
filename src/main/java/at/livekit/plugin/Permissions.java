@@ -18,13 +18,12 @@ public class Permissions
 
     public static boolean initialize() {
         Permissions.use = Config.usePermissions();
-        permissions.add("livekit.basics.claim");
-		permissions.add("livekit.basics.map");
-		permissions.add("livekit.basics.players");
-		permissions.add("livekit.basics.weathertime");
-		permissions.add("livekit.players.other");
-		permissions.add("livekit.admin.settings");
-        permissions.add("livekit.admin.myadmin");
+        permissions.add("livekit.commands.admin");
+        permissions.add("livekit.commands.basic");
+		permissions.add("livekit.module.map");
+		permissions.add("livekit.module.players");
+		permissions.add("livekit.module.weathertime");
+        permissions.add("livekit.module.admin");
 
         if(use) {
             if(Bukkit.getPluginManager().getPlugin("Vault") == null) {

@@ -63,7 +63,7 @@ public class LiveMapModule extends BaseModule implements Listener
     
 
     public LiveMapModule(String world, ModuleListener listener) {
-        super(1, "Live Map", "livekit.basics.map", UpdateRate.MAX, listener);
+        super(1, "Live Map", "livekit.module.map", UpdateRate.MAX, listener);
         this.world = world;
     }
 
@@ -80,7 +80,7 @@ public class LiveMapModule extends BaseModule implements Listener
     }
 
     public void fullRender() throws Exception{
-        //if(_options.mode == RenderingMode.DISCOVER) throw new Exception("LiveMap in wrong rendering mode");
+        if(_options.mode == RenderingMode.DISCOVER) throw new Exception("Fullrender can only be started in FORCED mode!");
 
         synchronized(_queueRegions) {
             for(int z = _options.limits.minZ; z < _options.limits.maxZ; z++) {
@@ -122,6 +122,10 @@ public class LiveMapModule extends BaseModule implements Listener
     public void updateBlock(Block block) {
         int regionX = (int) Math.floor(((double) block.getX() / 512.0));
         int regionZ = (int) Math.floor(((double) block.getZ() / 512.0));
+        
+        if(!_options.limits.regionInBounds(regionX, regionZ)) return;
+        
+
         createRegion(regionX, regionZ);
         String key = regionX + "_" + regionZ;
 
@@ -160,7 +164,7 @@ public class LiveMapModule extends BaseModule implements Listener
     }
 
     public void updateChunk(Chunk chunk, boolean isChunkLoadedEvent) {
-        if(isChunkLoadedEvent || !_options.limits.chunkInBounds(chunk.getX(), chunk.getZ())) {
+        if(/*isChunkLoadedEvent ||*/ !_options.limits.chunkInBounds(chunk.getX(), chunk.getZ())) {
             return;
         }
         
@@ -278,44 +282,56 @@ public class LiveMapModule extends BaseModule implements Listener
         return response;
     }
 
+    long _frameStart = 0;
     @Override
     public void update() {
+        _frameStart = System.currentTimeMillis();
         //only do chunk update, queue result packet
-        try{
-            Offset next = null;
-            if(_currentUpdate == null) { 
-                synchronized(_queueChunks) {
-                    if(_queueChunks.size() == 0) {
-                        synchronized(_queueRegions) {
-                            if(_queueRegions.size() != 0) {
-                                Offset region = _queueRegions.remove(0);
-                                for(int z = 0; z < 32; z++) {
-                                    for(int x = 0; x < 32; x++) {
-                                        _queueChunks.add(new Offset(region.x*32 + x, region.z*32+z));
+        while(System.currentTimeMillis() - _frameStart < _options.cpuTime) {
+            try{
+                Offset next = null;
+                if(_currentUpdate == null) { 
+                    synchronized(_queueChunks) {
+                        if(_queueChunks.size() == 0) {
+                            synchronized(_queueRegions) {
+                                if(_queueRegions.size() != 0) {
+                                    Offset region = _queueRegions.remove(0);
+                                    for(int z = 0; z < 32; z++) {
+                                        for(int x = 0; x < 32; x++) {
+                                            _queueChunks.add(new Offset(region.x*32 + x, region.z*32+z));
+                                        }
                                     }
                                 }
                             }
                         }
+
+                        if(_queueChunks.size() != 0) next = _queueChunks.remove(0);
+                        
                     }
+                    if(next == null) return;
 
-                    if(_queueChunks.size() != 0) next = _queueChunks.remove(0);
-                    
+                    if(next.onlyIfAbsent) {
+                        if(this.loadedChunkExists(next)) {
+                            continue;
+                        }
+                    }
                 }
-                if(next == null) return;
-            }
 
-            IPacket result = null;
-            if(_currentUpdate != null) result = update(null);
-            else if(_options.mode == RenderingMode.FORCED || (_options.mode == RenderingMode.DISCOVER && Bukkit.getWorld(world).isChunkGenerated(next.x, next.z)) ) result = update(next);
-            //if(result == null) update();
+                IPacket result = null;
+                if(_currentUpdate != null) result = update(null);
+                else if(_options.mode == RenderingMode.FORCED || (_options.mode == RenderingMode.DISCOVER && Bukkit.getWorld(world).isChunkGenerated(next.x, next.z)) ) result = update(next);
+                //if(result == null) update();
 
-            if(result != null) {
-                synchronized(_updates) {
-                    _updates.add(result);
+                
+
+                if(result != null) {
+                    synchronized(_updates) {
+                        _updates.add(result);
+                    }
+                    notifyChange();
                 }
-                notifyChange();
-            }
-        }catch(Exception ex){ex.printStackTrace();}
+            }catch(Exception ex){ex.printStackTrace();}
+        }
     }
 
     private void createRegion(int regionX, int regionZ) {
@@ -337,7 +353,7 @@ public class LiveMapModule extends BaseModule implements Listener
     private IPacket update(Offset chunk) throws Exception {
         if(chunk != null && chunk.onlyIfAbsent && loadedChunkExists(chunk)) return null;
 
-        long start = System.currentTimeMillis();
+        //long start = System.currentTimeMillis();
 
         if(chunk != null) {
             Plugin.debug("Updating chunk " + chunk.x + " " + chunk.z);
@@ -385,7 +401,7 @@ public class LiveMapModule extends BaseModule implements Listener
                         _chunkData[z * 4 * 16 + x*4 + i] = blockData[i];
                     }
 
-                    if(System.currentTimeMillis() - start > _options.cpuTime) {
+                    if(System.currentTimeMillis() - _frameStart > _options.cpuTime) {
                         _currentUpdate.renderingZ = z;
                         _currentUpdate.renderingX = x+1;
                         return null;
@@ -425,8 +441,10 @@ public class LiveMapModule extends BaseModule implements Listener
         if (localZ < 0)
             localZ += 512;
 
+        RegionData data = _regions.get(key);
+
         for(int i = 0; i < 4; i++) {
-           if( _regions.get(key).data[8 + (localZ * 4 * 512) + (localX * 4) + i] != (byte)0xFF) return true;
+            if( data.data[8 + ((localZ+15) * 4 * 512) + ((localX+15) * 4) + i] != (byte)0xFF) return true;
         }
         return false;
     }
@@ -715,14 +733,15 @@ public class LiveMapModule extends BaseModule implements Listener
             if(worldFolder.exists()) {
                for(File file : worldFolder.listFiles()) {
                    if(file.isFile() && file.getName().endsWith(".mca")) {
-                       System.out.println(file.getName());
                         int x = Integer.parseInt(file.getName().split("\\.")[1]);
                         int z = Integer.parseInt(file.getName().split("\\.")[2]);
-                        Plugin.log("Region discovered "+x+" "+z);
+                        //Plugin.log("Region discovered "+x+" "+z);
                         box.update(x, z);
                    }
                }
             }
+            if(box.maxX == 0 && box.minX == 0) { box.minX = -1; box.maxX = 1;}
+            if(box.minZ == 0 && box.maxZ == 0) { box.minZ = -1; box.maxZ = 1;}
 
             return box;
         }
@@ -864,6 +883,10 @@ public class LiveMapModule extends BaseModule implements Listener
 
         public BoundingBox getLimits() {
             return limits;
+        }
+
+        public void setLimits(BoundingBox limits) {
+            this.limits = limits;
         }
 
         public static RenderingOptions fromJson(JSONObject json) {

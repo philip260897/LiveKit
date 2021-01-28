@@ -153,7 +153,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 				if(sender instanceof Player) 
 				{
 					Player player = (Player) sender;
-					if(!checkPerm(player, "livekit.basics.claim")) return true;
+					if(!checkPerm(player, "livekit.commands.basic")) return true;
 
 					player.sendMessage(prefix+"Pin: "+PlayerAuth.get(player.getUniqueId().toString()).generateClaimPin()+" (valid for 2 mins)");
 				}
@@ -161,13 +161,14 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 				{
 					sender.sendMessage(prefixError+"Only players can be claimed!");
 				}
+				return true;
 			}
 			if(args[0].equalsIgnoreCase("identity")) 
 			{
 				if(sender instanceof Player) 
 				{
 					Player player = (Player) sender;
-					if(!checkPerm(player, "livekit.basics.claim")) return true;
+					if(!checkPerm(player, "livekit.commands.basic")) return true;
 
 					Identity identity = LiveKit.getInstance().getIdentity(player.getUniqueId().toString());
 					player.sendMessage(prefix+"Identity");
@@ -182,23 +183,40 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 					}
 					PlayerAuth auth = PlayerAuth.get(player.getUniqueId().toString());
 					if(auth != null) {
-						player.sendMessage("Active Sessions: "+auth.getSessionKeys().length);
+						player.sendMessage("Active Session Tokens: "+auth.getSessionKeys().length);
 					}
 				}
 				else
 				{
 					sender.sendMessage(prefixError+"Only players can have an identity!");
 				}
+				return true;
+			}
+			if(args[0].equalsIgnoreCase("clearsessions")) {
+				if(sender instanceof Player) 
+				{
+					Player player = (Player) sender;
+					if(!checkPerm(player, "livekit.commands.basic")) return true;
+
+					PlayerAuth auth = PlayerAuth.get(player.getUniqueId().toString());
+					if(auth != null) {
+						auth.clearSessionKeys();
+						player.sendMessage(prefix+"Active Session Tokens: "+auth.getSessionKeys().length);
+					}
+				}
+				else
+				{
+					sender.sendMessage(prefixError+"Only players can clear their sessions!");
+				}
 			}
 		}
-		return true;
+		return false;
 	}
 
 	private boolean handleMapCommands(CommandSender sender, Command command, String label, String[] args) {
-		if(!checkPerm(sender, "livekit.admin.commands")) return true;
-
 		if(args.length >= 1) {
 			if(label.equalsIgnoreCase("livekit") && args[0].equalsIgnoreCase("map")) {
+				if(!checkPerm(sender, "livekit.commands.admin")) return true;
 
 				LiveMapModule map = (LiveMapModule)LiveKit.getInstance().getModuleManager().getModule("LiveMapModule");
 				if(!map.isEnabled()) { sender.sendMessage(prefixError+" LiveMapModule not enabled."); return true;}
@@ -235,6 +253,11 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 						map.clearRegionQueue();
 						sender.sendMessage(prefix+"Rendering queues cleared!");
 					}
+					if(args[1].equalsIgnoreCase("bounds")) {
+						BoundingBox world = BoundingBox.fromWorld(Bukkit.getWorld(map.getWorld()).getName());
+						sender.sendMessage(prefix+"Current: "+options.getLimits().toString());
+						sender.sendMessage(prefix+"World bounds: "+world.toString());
+					}
 				}
 				if(args.length == 3) {
 					if(args[1].equalsIgnoreCase("mode")) {
@@ -260,6 +283,19 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 
 						map.setCPUTime( (int)(percent*50f/100f));
 						sender.sendMessage(prefix+"CPU-Time set to "+options.getCpuTime()+"ms / "+(int)(((float)options.getCpuTime()/50f)*100f)+"%");
+
+						if(percent >= 80) {
+							sender.sendMessage(prefix+"WARNING: Setting cpu time above 80% might cause severe lag!");
+						}
+					}
+					if(args[1].equalsIgnoreCase("bounds")) {
+						if(args[2].equalsIgnoreCase("update")) {
+							BoundingBox world = BoundingBox.fromWorld(Bukkit.getWorld(map.getWorld()).getName());
+							if(world != null) {
+								options.setLimits(world);
+							}
+							sender.sendMessage(prefix+"Updated map bounds to "+world.toString());
+						}
 					}
 				}
 			}
@@ -268,23 +304,30 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 	}
 
 	private boolean handleAdminCommands(CommandSender sender, Command command, String label, String[] args) {
-		if(!checkPerm(sender, "livekit.admin.commands")) return true;
+		
 
 		if(args.length == 1) {
 			if(args[0].equalsIgnoreCase("permreload")) {
+				if(!checkPerm(sender, "livekit.commands.admin")) return true;
+
 				LiveKit.getInstance().commandReloadPermissions();
 				sender.sendMessage(prefix+"Permissions will reload");
 			}
 
 			if(args[0].equalsIgnoreCase("modules")) {
+				if(!checkPerm(sender, "livekit.commands.admin")) return true;
+
 				sender.sendMessage("Modules:");
 				for(BaseModule module : LiveKit.getInstance().getModules()) {
 					sender.sendMessage(module.getType()+"|Version: "+module.getVersion()+" Enabled: "+module.isEnabled());
 				}
 			}
+			return true;
 		}
 		if(args.length == 3) {
 			if(args[0].equalsIgnoreCase("modules")) {
+				if(!checkPerm(sender, "livekit.commands.admin")) return true;
+
 				String module = args[1];
 				String action = args[2];
 

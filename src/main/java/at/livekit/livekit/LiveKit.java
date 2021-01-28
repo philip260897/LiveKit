@@ -84,7 +84,7 @@ public class LiveKit implements ModuleListener, Runnable {
     public Identity getIdentity(String uuid) {
         if(_server != null) {
             for(LiveKitClient client : _server.getClients()) {
-                if(client.hasIdentity() && client.getIdentity().getUuid().equals(uuid)) {
+                if(client.hasIdentity() && !client.getIdentity().isAnonymous() && client.getIdentity().getUuid().equals(uuid)) {
                     return client.getIdentity();
                 }
             }

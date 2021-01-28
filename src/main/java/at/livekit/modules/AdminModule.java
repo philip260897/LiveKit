@@ -28,7 +28,7 @@ public class AdminModule extends BaseModule
 
 
     public AdminModule(ModuleListener listener) {
-        super(1, "My Admin", "livekit.admin.myadmin", UpdateRate.ONCE_PERSEC, listener);
+        super(1, "My Admin", "livekit.module.admin", UpdateRate.ONCE_PERSEC, listener);
     }
 
     public void update() {

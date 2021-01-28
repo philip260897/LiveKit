@@ -1,6 +1,6 @@
-server.port: 8123
+server.port: 4123
 server.name: 'My Minecraft Server'
-server.tickrate: 8
+server.tickrate: 20
 #password protect access to LiveKit
 server.password: null
 
@@ -8,17 +8,17 @@ server.password: null
 anonymous:
   allow: true
   permissions:
-    - livekit.basics.map
-    - livekit.basics.players
+    - livekit.module.map
+    - livekit.module.players
 
 #wether to use permissions (Vault) or if use==false, use default permissions for every player
 permissions:
   use: false
   default:
-    - livekit.basics.claim
-    - livekit.basics.map
-    - livekit.basics.players
-    - livekit.basics.weathertime
+    - livekit.commands.basic
+    - livekit.module.map
+    - livekit.module.players
+    - livekit.module.weathertime
 
 #which modules to enable
 modules:

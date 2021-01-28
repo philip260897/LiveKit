@@ -39,7 +39,7 @@ public class PlayerModule extends BaseModule implements Listener
     private Map<String,LPlayer> _players = new HashMap<String, LPlayer>();
 
     public PlayerModule(ModuleListener listener) {
-        super(1, "Players", "livekit.basics.map", UpdateRate.HIGH, listener, true);
+        super(1, "Players", "livekit.module.players", UpdateRate.HIGH, listener, true);
     }
      
     public LPlayer getPlayer(String uuid) {
@@ -213,7 +213,7 @@ public class PlayerModule extends BaseModule implements Listener
 
         synchronized(_players) {
             for(Entry<String,LPlayer> entry : _players.entrySet()) {
-                if(!entry.getValue().online && !identity.hasPermission("livekit.admin.myadmin")) continue;
+                if(!entry.getValue().online && !identity.hasPermission("livekit.module.admin")) continue;
 
                 JSONObject j = entry.getValue().toJson();
                 j.remove("actions");
@@ -235,7 +235,7 @@ public class PlayerModule extends BaseModule implements Listener
                 JSONObject json = new JSONObject();
                 JSONArray players = new JSONArray();
                 for(LPlayer player : _players.values()) {
-                    if(!player.online && !identity.hasPermission("livekit.admin.myadmin")) continue; 
+                    if(!player.online && !identity.hasPermission("livekit.module.admin")) continue; 
                     
                     JSONObject jp;
                     if(player.isDirty()) jp = player.toJson();
@@ -271,10 +271,10 @@ public class PlayerModule extends BaseModule implements Listener
         String uuid = packet.getData().getString("uuid");
         OfflinePlayer player = Bukkit.getOfflinePlayer(UUID.fromString(uuid));
         if(player == null) return new StatusPacket(0, "Player not found");
-        if(!player.isOnline() && !identity.hasPermission("livekit.admin.myadmin")) return new StatusPacket(0, "Permission denied");
+        if(!player.isOnline() && !identity.hasPermission("livekit.module.admin")) return new StatusPacket(0, "Permission denied");
         
         JSONObject response = new JSONObject();
-        if(identity.hasPermission("livekit.admin.myadmin") || uuid.equals(identity.getUuid())) {
+        if(identity.hasPermission("livekit.module.admin") || uuid.equals(identity.getUuid())) {
             response.put("firstPlayed", player.getFirstPlayed());
             response.put("lastPlayed", player.getLastPlayed());
             response.put("banned", player.isBanned());
