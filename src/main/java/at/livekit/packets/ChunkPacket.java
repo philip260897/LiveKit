@@ -5,7 +5,7 @@ import java.util.Base64;
 import org.apache.commons.lang.NotImplementedException;
 import org.json.JSONObject;
 
-public class ChunkPacket implements IPacket{
+public class ChunkPacket extends Packet{
     public static int PACKETID = 0x01;
 
     private int x;
@@ -24,10 +24,6 @@ public class ChunkPacket implements IPacket{
         return new RegionPacket(Integer.parseInt(key.split("_")[0]), Integer.parseInt(key.split("_")[1]), data);
     }*/
 
-    @Override
-    public IPacket fromJson(String json) {
-        throw new NotImplementedException();
-    }
 
     @Override
     public JSONObject toJson() {
@@ -39,4 +35,6 @@ public class ChunkPacket implements IPacket{
         json.put("packet_id", PACKETID);
         return json;
     }
+
+
 }

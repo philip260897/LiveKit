@@ -2,11 +2,13 @@ package at.livekit.packets;
 
 import org.json.JSONObject;
 
-import at.livekit.livekit.LiveKitClient;
+import at.livekit.livekit.Identity;
+import at.livekit.nio.NIOClient;
 
-public class RequestPacket implements IPacket {
+
+public class RequestPacket extends Packet {
     public int requestId = -1;
-    public LiveKitClient client;
+    public NIOClient<Identity> client;
 
     public RequestPacket() {
     }

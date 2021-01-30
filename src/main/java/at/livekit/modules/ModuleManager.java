@@ -20,6 +20,7 @@ import at.livekit.plugin.Config;
 import at.livekit.plugin.Plugin;
 import at.livekit.packets.ActionPacket;
 import at.livekit.packets.IPacket;
+import at.livekit.packets.Packet;
 import at.livekit.packets.RequestPacket;
 
 public class ModuleManager 

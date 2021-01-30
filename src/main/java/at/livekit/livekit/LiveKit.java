@@ -12,7 +12,12 @@ import at.livekit.modules.LiveMapModule;
 import at.livekit.modules.ModuleManager;
 
 import at.livekit.modules.BaseModule.ModuleListener;
+import at.livekit.nio.NIOClient;
+import at.livekit.nio.NIOServer;
+import at.livekit.nio.NIOServer.NIOServerEvent;
+import at.livekit.packets.ActionPacket;
 import at.livekit.packets.AuthorizationPacket;
+import at.livekit.packets.IPacket;
 import at.livekit.packets.IdentityPacket;
 import at.livekit.packets.RawPacket;
 import at.livekit.packets.RegionPacket;
@@ -25,18 +30,20 @@ import at.livekit.plugin.Plugin;
 import at.livekit.livekit.TCPServer.ServerListener;
 import at.livekit.utils.HeadLibrary;
 
-public class LiveKit implements ModuleListener, Runnable {
+public class LiveKit implements ModuleListener, NIOServerEvent<Identity>, Runnable {
 
     private static LiveKit instance;
+
     public static LiveKit getInstance() {
-        if(LiveKit.instance == null) {
+        if (LiveKit.instance == null) {
             LiveKit.instance = new LiveKit();
         }
         return LiveKit.instance;
     }
- 
+
     private Thread _thread;
-    private TCPServer _server;
+    // private TCPServer _server;
+    private NIOServer<Identity> _server;
     private ModuleManager _modules = new ModuleManager(this);
     private List<String> _moduleUpdates = new ArrayList<String>();
     private List<String> _moduleFull = new ArrayList<String>();
@@ -50,24 +57,24 @@ public class LiveKit implements ModuleListener, Runnable {
 
     @Override
     public void onFullUpdate(String moduleType) {
-        synchronized(_moduleFull) {
-            if(!_moduleFull.contains(moduleType)) {
+        synchronized (_moduleFull) {
+            if (!_moduleFull.contains(moduleType)) {
                 _moduleFull.add(moduleType);
             }
         }
     }
 
     protected void notifyCommand(String command) {
-        synchronized(_commands) {
-            if(!_commands.contains(command)) {
+        synchronized (_commands) {
+            if (!_commands.contains(command)) {
                 _commands.add(command);
             }
         }
     }
 
     public void notifyQueue(String moduleType) {
-        synchronized(_moduleUpdates) {
-            if(!_moduleUpdates.contains(moduleType)) {
+        synchronized (_moduleUpdates) {
+            if (!_moduleUpdates.contains(moduleType)) {
                 _moduleUpdates.add(moduleType);
             }
         }
@@ -82,27 +89,28 @@ public class LiveKit implements ModuleListener, Runnable {
     }
 
     public Identity getIdentity(String uuid) {
-        if(_server != null) {
-            for(LiveKitClient client : _server.getClients()) {
-                if(client.hasIdentity() && !client.getIdentity().isAnonymous() && client.getIdentity().getUuid().equals(uuid)) {
-                    return client.getIdentity();
+        if (_server != null) {
+            for (Identity identity : _server.getIdentifiers()) {
+                if (identity.isAnonymous() && identity.getUuid().equals(uuid)) {
+                    return identity;
                 }
             }
         }
         return null;
     }
 
-    public void onEnable() throws Exception{
+    public void onEnable() throws Exception {
         PlayerAuth.initialize();
 
         _modules.onEnable();
 
-
-        _server = new TCPServer(_modules.getSettings().liveKitPort);
-        _server.setServerListener(new ServerListener() {
+        _server = new NIOServer<Identity>(_modules.getSettings().liveKitPort);
+        _server.setServerListener(this);
+        _server.start();
+        /*_server.setServerListener(new NIOServerEvent<Identity>() {
 
             @Override
-            public void onConnect(LiveKitClient client) {
+            public void onClientConnect(NIOClient<Identity> client) {
                 //greet new client with current server settings
                 JSONObject serverSettings = new JSONObject();
                 serverSettings.put("liveKitVersion", _modules.getSettings().liveKitVersion);
@@ -126,8 +134,8 @@ public class LiveKit implements ModuleListener, Runnable {
                 return null;
             }
             
-        });
-        _server.open();
+        });*/
+        //_server.open();
 
         abort = false;
         _thread = new Thread(this);
@@ -155,7 +163,7 @@ public class LiveKit implements ModuleListener, Runnable {
             long module_dispatch = System.currentTimeMillis();
 
             String module = null;
-            List<Identity> clientUUIDs = _server.getConnectedUUIDs();
+            List<Identity> clientUUIDs = _server.getIdentifiers();
             do {
                 synchronized(_moduleUpdates) {
                     if(_moduleUpdates.size() > 0) {
@@ -166,12 +174,12 @@ public class LiveKit implements ModuleListener, Runnable {
                 }
                 if(module != null) {
                     BaseModule m = _modules.getModule(module);
-                    _server.broadcast(m.onUpdateAsync(clientUUIDs.stream().filter(identity->m.hasAccess(identity)).collect(Collectors.toList())));
+                    _server.send(m.onUpdateAsync(clientUUIDs.stream().filter(identity->m.hasAccess(identity)).collect(Collectors.toList())));
 
                     if(module.equals("SettingsModule")) {
-                        _server.broadcast(_modules.modulesAvailableAsync(clientUUIDs));
-                        for(LiveKitClient client : _server.getClients()) {
-                            client.sendPackets(_modules.onJoinAsync(client.getIdentity()));
+                        _server.send(_modules.modulesAvailableAsync(clientUUIDs));
+                        for(Identity identity : _server.getIdentifiers()) {
+                            _server.send(identity, _modules.onJoinAsync(identity));
                         }
                     }
                 }
@@ -190,10 +198,8 @@ public class LiveKit implements ModuleListener, Runnable {
                 }
                 if(module != null) {
                     BaseModule m = _modules.getModule(module);
-                    for(LiveKitClient client : _server.getClients()) {
-                        if(client.hasIdentity()) {
-                            client.sendPacket(m.onJoinAsync(client.getIdentity()));
-                        }
+                    for(Identity identity : _server.getIdentifiers()) {
+                        _server.send(identity, m.onJoinAsync(identity));
                     }
                 }
             }while(module != null);
@@ -218,7 +224,7 @@ public class LiveKit implements ModuleListener, Runnable {
                     RequestPacket packet = (RequestPacket) _packetsIncoming.remove(0);
                     RequestPacket response = handlePacket(packet.client, packet);
                     long mini = System.currentTimeMillis();
-                    if(response != null) packet.client.sendPacket(response.setRequestId(packet.requestId));
+                    if(response != null) _server.send(packet.client, response.setRequestId(packet.requestId));
                    // System.out.println("Sending: "+(System.currentTimeMillis()-mini));
                 }
             }
@@ -260,11 +266,11 @@ public class LiveKit implements ModuleListener, Runnable {
         }catch(Exception ex){ex.printStackTrace();}
         try{
             if(_server != null)
-                _server.close();
+                _server.stop();
         }catch(Exception ex){ex.printStackTrace();}
     }
     
-    private RequestPacket handlePacket(LiveKitClient client, RequestPacket packet) {
+    private RequestPacket handlePacket(NIOClient<Identity> client, RequestPacket packet) {
         if(packet instanceof AuthorizationPacket) {
             AuthorizationPacket auth = (AuthorizationPacket)packet;
             PlayerAuth identity = null;
@@ -293,30 +299,30 @@ public class LiveKit implements ModuleListener, Runnable {
                     }
                 }
                 if(identity != null) {
-                    client.setIdentity(identity.getUUID());
-                    client.getIdentity().loadPermissionsAsync();
+                    client.setIdentifier(new Identity(identity.getUUID()));
+                    client.getIdentifier().loadPermissionsAsync();
                 
                     try{
-                        client.sendPacket(_modules.modulesAvailableAsync(client.getIdentity()));
-                        client.sendPackets(_modules.onJoinAsync(client.getIdentity()));
+                        _server.send(client.getIdentifier(), _modules.modulesAvailableAsync(client.getIdentifier()));
+                        _server.send(client.getIdentifier(), _modules.onJoinAsync(client.getIdentifier()));
                     }catch(Exception ex){ex.printStackTrace();}
 
                 
-                    return new IdentityPacket(identity.getUUID(), client.getIdentity().getName(), HeadLibrary.get(client.getIdentity().getName()), identity.generateSessionKey());
+                    return new IdentityPacket(identity.getUUID(), client.getIdentifier().getName(), HeadLibrary.get(client.getIdentifier().getName()), identity.generateSessionKey());
                 }
                 
             } 
             else
             {
-                client.setAnonymous();
-                client.getIdentity().loadPermissionsAsync();
+                client.setIdentifier(new Identity(null));
+                client.getIdentifier().loadPermissionsAsync();
 
                 try{
-                    client.sendPacket(_modules.modulesAvailableAsync(client.getIdentity()));
-                    client.sendPackets(_modules.onJoinAsync(client.getIdentity()));
+                    _server.send(client.getIdentifier(), _modules.modulesAvailableAsync(client.getIdentifier()));
+                    _server.send(client.getIdentifier(), _modules.onJoinAsync(client.getIdentifier()));
                 }catch(Exception ex){ex.printStackTrace();}
 
-                return new IdentityPacket(null, client.getIdentity().getName(), null, null);
+                return new IdentityPacket(null, client.getIdentifier().getName(), null, null);
             }
 
             return new StatusPacket(0, "Invalid authentication credentials!");
@@ -355,18 +361,18 @@ public class LiveKit implements ModuleListener, Runnable {
     private void handleCommand(String command) {
         if(command.equalsIgnoreCase("permreload")) {
             //reload permissions for all connected clients
-            for(LiveKitClient client : _server.getClients()) {
-                if(client.hasIdentity()) {
-                    client.getIdentity().loadPermissionsAsync();
-                }
+            List<Identity> clientUUIDs = _server.getIdentifiers();
+
+            for(Identity identity : clientUUIDs) {
+                identity.loadPermissionsAsync();
             }
 
-            List<Identity> clientUUIDs = _server.getConnectedUUIDs();
+            
             //broadcast modules available for all clients
-            _server.broadcast(_modules.modulesAvailableAsync(clientUUIDs));
+            _server.send(_modules.modulesAvailableAsync(clientUUIDs));
             //give full update for all modules
-            for(LiveKitClient client : _server.getClients()) {
-                client.sendPackets(_modules.onJoinAsync(client.getIdentity()));
+            for(Identity identity : clientUUIDs) {
+                _server.send(identity, _modules.onJoinAsync(identity));
             }
         }
     }
@@ -399,6 +405,80 @@ public class LiveKit implements ModuleListener, Runnable {
 
     public Collection<BaseModule> getModules() {
         return _modules.getModules();
+    }
+
+    @Override
+    public void clientConnected(NIOClient<Identity> client) {
+        JSONObject serverSettings = new JSONObject();
+        serverSettings.put("liveKitVersion", _modules.getSettings().liveKitVersion);
+        serverSettings.put("liveKitTickRate", _modules.getSettings().liveMapTickRate);
+        serverSettings.put("needsIdentity", _modules.getSettings().needsIdentity);
+        serverSettings.put("serverName", _modules.getSettings().serverName);
+        serverSettings.put("needsPassword", _modules.getSettings().needsPassword);
+
+        _server.send(client, new ServerSettingsPacket(serverSettings));
+    }
+
+    @Override
+    public void clientDisconnected(NIOClient<Identity> client) {
+        // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    public void clientMessageReceived(NIOClient<Identity> client, String message) {
+        JSONObject json = new JSONObject(message);
+        int packetId = json.getInt("packet_id");
+        int requestId = json.getInt("request_id");
+
+        if(client.getIdentifier() == null && packetId != AuthorizationPacket.PACKETID) {
+            _server.send(client, new StatusPacket(0, "Not Authorized").setRequestId(requestId));
+            client.close();
+            return;
+        }
+        
+        RequestPacket response = null;
+        if(packetId == AuthorizationPacket.PACKETID) {
+            RequestPacket packet = (AuthorizationPacket) new AuthorizationPacket().fromJson(message); 
+            packet.client = client;
+            synchronized(_packetsIncoming) {
+                _packetsIncoming.add(packet);
+            }
+        }
+        if(packetId == ActionPacket.PACKETID) {
+            response = (RequestPacket) LiveKit.getInstance().getModuleManager().invokeActionSync(client.getIdentifier(), (ActionPacket)new ActionPacket().fromJson(message));
+        }
+        if(packetId == RegionRequest.PACKETID) {
+            RegionRequest request = (RegionRequest) new RegionRequest().fromJson(message);
+
+            LiveMapModule module = (LiveMapModule) LiveKit.getInstance().getModuleManager().getModule("LiveMapModule");
+
+            if(module != null) {
+                byte[] d = module.getRegionData(request.x, request.z).getData();
+                RawPacket raw = new RawPacket(d);
+                _server.send(client, raw);
+                /*if(d != null) {
+                    try{
+                        MultiPartRawPacket multi = new MultiPartRawPacket(d, 12);
+                        multi.setRequestId(requestId);
+                        while(multi.nextPart()) 
+                        {
+                            Thread.sleep(15);
+                            sender.sendPacket(multi);
+                        }
+                    }catch(Exception ex){ex.printStackTrace();}
+                }*/
+            }
+            else
+            {
+                response = new StatusPacket(0, "Region "+request.x+" "+request.z+" in "+request.world+" not found!");
+            }
+        }
+        /*if(packetId == LiveMapSubscriptionPacket.PACKETID) {
+            response = listener.onPacketReceived((LiveKitClient)sender, (LiveMapSubscriptionPacket) new LiveMapSubscriptionPacket().fromJson(data));    
+        }*/
+
+        if(response != null) _server.send(client, response.setRequestId(requestId));
     }
 
 

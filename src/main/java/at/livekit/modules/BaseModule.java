@@ -16,6 +16,7 @@ import org.json.JSONObject;
 import at.livekit.livekit.Identity;
 import at.livekit.packets.ActionPacket;
 import at.livekit.packets.IPacket;
+import at.livekit.packets.Packet;
 import at.livekit.packets.StatusPacket;
 import at.livekit.plugin.Plugin;
 
@@ -185,7 +186,7 @@ public abstract class BaseModule
         }
     }
 
-    public static class ModulesAvailablePacket implements IPacket {
+    public static class ModulesAvailablePacket extends Packet {
 
         public static int PACKET_ID = 16;
         private JSONArray modules;
@@ -206,7 +207,7 @@ public abstract class BaseModule
         }
     }
 
-    public static class ModulePacket implements IPacket {
+    public static class ModulePacket extends Packet {
 
         private String moduleType;
 

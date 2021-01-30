@@ -5,7 +5,7 @@ import java.util.Base64;
 import org.apache.commons.lang.NotImplementedException;
 import org.json.JSONObject;
 
-public class RegionPacket implements IPacket {
+public class RegionPacket extends Packet {
 
     public static int PACKETID = 0x00;
 

@@ -1,0 +1,22 @@
+package at.livekit.packets;
+
+import org.apache.commons.lang.NotImplementedException;
+import org.json.JSONObject;
+
+public class Packet implements IPacket {
+
+    @Override
+    public IPacket fromJson(String json) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public JSONObject toJson() {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public byte[] data() {
+        return toJson().toString().getBytes();
+    }
+}
