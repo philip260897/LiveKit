@@ -152,6 +152,7 @@ public class LiveKit implements ModuleListener, Runnable {
                 _futureModuleUpdates = _modules.updateModules();
             }
 
+            long module_dispatch = System.currentTimeMillis();
 
             String module = null;
             List<Identity> clientUUIDs = _server.getConnectedUUIDs();
@@ -175,6 +176,9 @@ public class LiveKit implements ModuleListener, Runnable {
                     }
                 }
             }while(module != null);
+
+            long module_updates = System.currentTimeMillis();
+
             module = null;
             do {
                 synchronized(_moduleFull) {
@@ -194,6 +198,8 @@ public class LiveKit implements ModuleListener, Runnable {
                 }
             }while(module != null);
 
+            long module_full = System.currentTimeMillis();
+
             String command = null;
             do{
                 synchronized(_commands) {
@@ -204,7 +210,8 @@ public class LiveKit implements ModuleListener, Runnable {
                     handleCommand(command);
                 }
             }while(command != null);
-            
+
+            long commands = System.currentTimeMillis();
 
             synchronized(_packetsIncoming) {
                 while(_packetsIncoming.size() > 0 && (System.currentTimeMillis()-start < tickTime)) {
@@ -215,10 +222,12 @@ public class LiveKit implements ModuleListener, Runnable {
                    // System.out.println("Sending: "+(System.currentTimeMillis()-mini));
                 }
             }
+
+            long packets = System.currentTimeMillis();
             
 
             long delta = System.currentTimeMillis() - start;
-            if( delta > 1) Plugin.debug("TICK "+delta+"ms "+tickTime+"ms");
+            if( delta > 1) Plugin.debug("TICK "+delta+"ms "+tickTime+"ms [cpackets="+(packets-commands)+"ms; cmds="+(commands-module_full)+"ms; mfull="+(module_full-module_updates)+"ms; mupdate="+(module_updates-module_dispatch)+"; dispatch="+(module_dispatch-start)+"]");
             if(delta >= tickTime) Plugin.severe("LiveKit tick can't keep up ("+delta+"ms/"+tickTime+"ms)");
             else {
                 try{
