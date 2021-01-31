@@ -17,6 +17,6 @@ public class Packet implements IPacket {
 
     @Override
     public byte[] data() {
-        return toJson().toString().getBytes();
+        return (toJson().toString()+"\n").getBytes();
     }
 }

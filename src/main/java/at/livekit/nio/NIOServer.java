@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import at.livekit.nio.NIOClient.NIOClientEvent;
+import at.livekit.plugin.Plugin;
 import at.livekit.nio.INIOPacket;
 
 public class NIOServer<T> implements Runnable, NIOClientEvent<T> {
@@ -39,7 +40,7 @@ public class NIOServer<T> implements Runnable, NIOClientEvent<T> {
         if(selector != null || server != null) throw new Exception("Server already started!");
         selector = Selector.open();
         server = ServerSocketChannel.open();
-        server.bind(new InetSocketAddress("localhost", port));
+        server.bind(new InetSocketAddress("0.0.0.0", port));
         server.configureBlocking(false);
         server.register(selector, SelectionKey.OP_ACCEPT);
 
@@ -56,11 +57,13 @@ public class NIOServer<T> implements Runnable, NIOClientEvent<T> {
         }
 
         try{
-            thread.interrupt();
+            selector.close();
         }catch(Exception ex){ex.printStackTrace();}
     }
 
     public void send(Map<T, ? extends INIOPacket> data) {
+        if(data.size() == 0) return;
+
         synchronized(clients) {
             for(NIOClient<T> client : clients.values()) {
                 if(client.getIdentifier() != null) {
@@ -74,6 +77,8 @@ public class NIOServer<T> implements Runnable, NIOClientEvent<T> {
     }
 
     public void send(T identifier, List<? extends INIOPacket> data) {
+        if(data.size() == 0) return;
+
         NIOClient<T> client = get(identifier);
         if(client != null) {
             client.queueAll(data);
@@ -114,15 +119,18 @@ public class NIOServer<T> implements Runnable, NIOClientEvent<T> {
     public void run() {
         try
         {
-            System.out.println("Server started");
+            Plugin.log("Server listening on "+port+" for incoming connections");
             boolean writable = false;
             while(!abort) {
 
                 if(!writable) {
                     selector.select();
+                    if(!selector.isOpen()) continue;
+                } else {
+                    Thread.sleep(20);
                 }
 
-                System.out.println("Selector working");
+                //System.out.println("Selector working");
 
                 Iterator<SelectionKey> iter = selector.selectedKeys().iterator();
                 while(iter.hasNext()) {
@@ -147,12 +155,17 @@ public class NIOServer<T> implements Runnable, NIOClientEvent<T> {
                     }
                 }
             }
-            System.out.println("Closing server");
         }
         catch(Exception ex)
         {
             ex.printStackTrace();
         }
+
+        try{
+            server.close();
+        }catch(Exception ex){ex.printStackTrace();}
+
+        Plugin.log("Server shutdown");
     }
 
     private void acceptIncoming() throws Exception {

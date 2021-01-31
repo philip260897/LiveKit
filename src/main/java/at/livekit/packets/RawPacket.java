@@ -35,4 +35,9 @@ public class RawPacket extends RequestPacket {
         System.arraycopy(data, 0, packet, 10, data.length);
         return packet;
     }
+
+    @Override
+    public byte[] data() {
+        return getRawPacket();
+    }
 }

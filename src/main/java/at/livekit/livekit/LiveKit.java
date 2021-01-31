@@ -409,6 +409,7 @@ public class LiveKit implements ModuleListener, NIOServerEvent<Identity>, Runnab
 
     @Override
     public void clientConnected(NIOClient<Identity> client) {
+        Plugin.log("Client connected");
         JSONObject serverSettings = new JSONObject();
         serverSettings.put("liveKitVersion", _modules.getSettings().liveKitVersion);
         serverSettings.put("liveKitTickRate", _modules.getSettings().liveMapTickRate);
@@ -421,8 +422,7 @@ public class LiveKit implements ModuleListener, NIOServerEvent<Identity>, Runnab
 
     @Override
     public void clientDisconnected(NIOClient<Identity> client) {
-        // TODO Auto-generated method stub
-
+        Plugin.log("Client disconnected");
     }
 
     @Override
@@ -456,7 +456,7 @@ public class LiveKit implements ModuleListener, NIOServerEvent<Identity>, Runnab
             if(module != null) {
                 byte[] d = module.getRegionData(request.x, request.z).getData();
                 RawPacket raw = new RawPacket(d);
-                _server.send(client, raw);
+                _server.send(client, raw.setRequestId(requestId));
                 /*if(d != null) {
                     try{
                         MultiPartRawPacket multi = new MultiPartRawPacket(d, 12);

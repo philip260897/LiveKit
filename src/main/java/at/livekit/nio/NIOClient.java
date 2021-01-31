@@ -1,5 +1,6 @@
 package at.livekit.nio;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
@@ -90,8 +91,10 @@ public class NIOClient<T> {
             }
         }
 
-        int written = channel.write(outputBuffer);
-        if(written == -1) {
+        try{
+            channel.write(outputBuffer);
+        }catch(IOException ex){
+            //ex.printStackTrace();
             close();
             if(listener != null) listener.connectionClosed(this);
             return false;
@@ -99,7 +102,10 @@ public class NIOClient<T> {
 
         if(outputBuffer.remaining() == 0) {
             outputBuffer = null;
-            write();
+            synchronized(outputQueue) {
+                if(outputQueue.size() > 0 ) return true;
+                return false;
+            }
         }
 
         return true;
