@@ -13,6 +13,7 @@ import org.bukkit.Bukkit;
 import org.json.JSONArray;
 
 import at.livekit.livekit.Identity;
+import at.livekit.modules.BaseModule.ActionMethod;
 import at.livekit.modules.BaseModule.ModuleListener;
 import at.livekit.modules.BaseModule.ModulesAvailablePacket;
 import at.livekit.packets.StatusPacket;
@@ -20,6 +21,7 @@ import at.livekit.plugin.Config;
 import at.livekit.plugin.Plugin;
 import at.livekit.packets.ActionPacket;
 import at.livekit.packets.IPacket;
+import at.livekit.packets.Packet;
 import at.livekit.packets.RequestPacket;
 
 public class ModuleManager 
@@ -44,7 +46,7 @@ public class ModuleManager
         }
     }
 
-    public void onEnable() {
+    public void onEnable(Map<String,ActionMethod> signatures) {
         this.registerModule(new SettingsModule(listener));
         this.registerModule(new PlayerModule(listener));
         this.registerModule(new LiveMapModule(Config.getModuleString("LiveMapModule", "world"), listener));
@@ -52,23 +54,23 @@ public class ModuleManager
         this.registerModule(new AdminModule(listener));
 
         this.settings = (SettingsModule) _modules.get("SettingsModule");
-        this.settings.onEnable();
+        this.settings.onEnable(signatures);
         for(BaseModule m : _modules.values()) {
             if(!(m instanceof SettingsModule)) {
                 
                 if(Config.moduleEnabled(m.getType())) {
                     Plugin.log("Enabling "+m.getType());
-                    m.onEnable();
+                    m.onEnable(signatures);
                     this.settings.registerModule(m.getType(), m.moduleInfo());
                 }
             }
         }
     }
 
-    public void onDisable() {
+    public void onDisable(Map<String,ActionMethod> signature) {
         for(BaseModule m : _modules.values()) {
             if(m.isEnabled()) {
-                m.onDisable();
+                m.onDisable(signature);
             }
         }
     }
@@ -77,7 +79,7 @@ public class ModuleManager
         _modules.put(module.getType(), module);
     }
 
-    public IPacket invokeActionSync(Identity identity, ActionPacket action) {
+    /*public IPacket invokeActionSync(Identity identity, ActionPacket action) {
         BaseModule module = getModule(action.getModuleType());
         if(module == null) return new StatusPacket(0, "Invalid module "+action.getModuleType()+" specified.");
         if(!module.isEnabled()) return new StatusPacket(0, "Requested module is not enabled!");
@@ -87,16 +89,16 @@ public class ModuleManager
         if(response == null)response = new StatusPacket(0, "Action "+action.getActionName()+" not found in module "+action.getModuleType());
 
         return response;
-    }
+    }*/
 
-    public void disableModule(String moduleType) /*throws Exception */{
+    public void disableModule(String moduleType, Map<String, ActionMethod> signatures) /*throws Exception */{
         /*Bukkit.getScheduler().callSyncMethod(Plugin.instance, new Callable<Void>(){
             @Override
             public Void call() throws Exception {*/
                 if(_modules.containsKey(moduleType)) {
                     BaseModule module = _modules.get(moduleType);
                     if(module.isEnabled()) {
-                        module.onDisable();
+                        module.onDisable(signatures);
                     }   
                 }
          /*       return null;
@@ -104,14 +106,14 @@ public class ModuleManager
         }).get();*/
     }
 
-    public void enableModule(String moduleType) /*throws Exception*/ {
+    public void enableModule(String moduleType, Map<String, ActionMethod> signatures) /*throws Exception*/ {
         /*Bukkit.getScheduler().callSyncMethod(Plugin.instance, new Callable<Void>(){
             @Override
             public Void call() throws Exception {*/
                 if(_modules.containsKey(moduleType)) {
                     BaseModule module = _modules.get(moduleType);
                     if(!module.isEnabled()) {
-                        module.onEnable();
+                        module.onEnable(signatures);
                     }
                 }
                /* return null;

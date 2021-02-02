@@ -25,9 +25,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.json.JSONArray;
 import org.json.JSONObject;
-
 import at.livekit.livekit.Identity;
-import at.livekit.modules.BaseModule.Action;
 import at.livekit.plugin.Plugin;
 import at.livekit.packets.ActionPacket;
 import at.livekit.packets.IPacket;
@@ -70,13 +68,49 @@ public class PlayerModule extends BaseModule implements Listener
                 player.updateHealth(p.getHealth(), p.getHealthScale());
             }
         }
+
+        /*synchronized(_players) {
+            //List<LivingEntity> living = ;
+            //System.out.println(living.size());
+            for(Entity e : Bukkit.getWorld("world").getEntities()) {
+                if(! (e instanceof Player) && (e instanceof LivingEntity)) {
+                    LivingEntity entity = (LivingEntity) e;
+
+                    if(entity.isDead()) {
+                        if(_players.containsKey(entity.getUniqueId().toString())) _players.remove(entity.getUniqueId().toString());
+                    } else {
+                        LPlayer player = null;
+                        if(!_players.containsKey(entity.getUniqueId().toString())) {
+                            if(_players.size() >= 500) continue;
+
+                            player = new LPlayer(entity.getUniqueId().toString());
+                            player.head = HeadLibrary.DEFAULT_HEAD;
+                            player.headDirty = true;
+                            player.name = entity.getType().name();
+                            player.online = true;
+                            player.updateWorld(entity.getWorld().getName());
+                            player.updateExhaustion(0);
+                            player.updateArmor(0);
+                            _players.put(entity.getUniqueId().toString(), player);
+                        } else {
+                            player = _players.get(entity.getUniqueId().toString());
+                        }
+                        if(player.health != entity.getHealth()) player.updateHealth(entity.getHealth(), entity.getMaxHealth());
+                        if(player.x != entity.getLocation().getX() || player.y != entity.getLocation().getY() || player.z != entity.getLocation().getZ())
+                            player.updateLocation(entity.getLocation().getX(), entity.getLocation().getY(), entity.getLocation().getZ());
+                        
+                        if(player.isDirty()) needsUpdate = true;
+                    }
+                }
+            }
+        }*/
         
         if(needsUpdate) notifyChange();
         super.update();
     }
 
     @Override
-    public void onEnable() {
+    public void onEnable(Map<String,ActionMethod> signature) {
         for(OfflinePlayer player : Bukkit.getOfflinePlayers()) {   
             _players.put(player.getUniqueId().toString(), LPlayer.fromOfflinePlayer(player));
         }
@@ -86,7 +120,8 @@ public class PlayerModule extends BaseModule implements Listener
             }
         }*/
         Bukkit.getServer().getPluginManager().registerEvents(this, Plugin.getInstance());
-        super.onEnable();
+        
+        super.onEnable(signature);
     }
 
 
@@ -201,9 +236,9 @@ public class PlayerModule extends BaseModule implements Listener
 
 
     @Override
-    public void onDisable() {
+    public void onDisable(Map<String,ActionMethod> signature) {
         _players.clear();
-        super.onDisable();
+        super.onDisable(signature);
     }
 
     @Override

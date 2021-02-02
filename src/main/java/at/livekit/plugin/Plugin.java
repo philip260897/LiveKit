@@ -163,27 +163,30 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 				}
 				return true;
 			}
-			if(args[0].equalsIgnoreCase("identity")) 
+			if(args[0].equalsIgnoreCase("info")) 
 			{
 				if(sender instanceof Player) 
 				{
 					Player player = (Player) sender;
 					if(!checkPerm(player, "livekit.commands.basic")) return true;
 
-					Identity identity = LiveKit.getInstance().getIdentity(player.getUniqueId().toString());
-					player.sendMessage(prefix+"Identity");
-					if(identity != null) {
-						player.sendMessage("Name: "+identity.getName());
+					List<Identity> identities = LiveKit.getInstance().getConnectedClients(player.getUniqueId().toString());
+					player.sendMessage(prefix+"Info for "+player.getName());
+					
+					PlayerAuth auth = PlayerAuth.get(player.getUniqueId().toString());
+					if(auth != null) {
+						player.sendMessage("Active Session Tokens: "+auth.getSessionKeys().length+" [/livekit clearsessions to clear]");
+					}
+					
+					if(identities != null && identities.size() > 0) {
+						player.sendMessage("Connected clients: "+identities.size());
+						Identity identity = identities.get(0);
 						player.sendMessage("Permissions: ");
 						for(String perm : identity.getPermissions()) {
 							player.sendMessage(perm);
 						}
 					} else {
-						player.sendMessage("No clients connected");
-					}
-					PlayerAuth auth = PlayerAuth.get(player.getUniqueId().toString());
-					if(auth != null) {
-						player.sendMessage("Active Session Tokens: "+auth.getSessionKeys().length);
+						player.sendMessage("No LiveKit client is connected");
 					}
 				}
 				else
@@ -317,14 +320,14 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 			if(args[0].equalsIgnoreCase("modules")) {
 				if(!checkPerm(sender, "livekit.commands.admin")) return true;
 
-				sender.sendMessage("Modules:");
+				sender.sendMessage(prefix+"Modules:");
 				for(BaseModule module : LiveKit.getInstance().getModules()) {
-					sender.sendMessage(module.getType()+"|Version: "+module.getVersion()+" Enabled: "+module.isEnabled());
+					sender.sendMessage(module.getType()+" Version: "+module.getVersion()+" Enabled: "+module.isEnabled());
 				}
 			}
 			return true;
 		}
-		if(args.length == 3) {
+		/*if(args.length == 3) {
 			if(args[0].equalsIgnoreCase("modules")) {
 				if(!checkPerm(sender, "livekit.commands.admin")) return true;
 
@@ -334,14 +337,14 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 				BaseModule m = LiveKit.getInstance().getModuleManager().getModule(module);
 				if(m != null) {
 					if(action.equals("enable")) {
-						LiveKit.getInstance().getModuleManager().enableModule(m.getType());
+						LiveKit.getInstance().enableModule(m.getType());
 					} else {
-						LiveKit.getInstance().getModuleManager().disableModule(m.getType());
+						LiveKit.getInstance().disableModule(m.getType());
 					}
 					LiveKit.getInstance().notifyQueue("SettingsModule");
 				}
 			}
-		}
+		}*/
 		return true;
 	}
 
@@ -370,6 +373,6 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 	}
 
 	public static void debug(String message) {
-		logger.warning(message);
+		//logger.warning(message);
 	}
 }

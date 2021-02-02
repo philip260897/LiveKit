@@ -5,19 +5,15 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.reflect.Method;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
-
-import org.bukkit.Bukkit;
+import java.util.Map.Entry;
 import org.json.JSONArray;
 import org.json.JSONObject;
-
 import at.livekit.livekit.Identity;
-import at.livekit.packets.ActionPacket;
 import at.livekit.packets.IPacket;
-import at.livekit.packets.StatusPacket;
-import at.livekit.plugin.Plugin;
+import at.livekit.packets.Packet;
 
 public abstract class BaseModule 
 {
@@ -51,13 +47,34 @@ public abstract class BaseModule
         //this.enabled = defaultEnabled;
     }
 
-    public void onEnable() {
+    public void onEnable(Map<String,ActionMethod> signature) {
+        Method[] methods = this.getClass().getDeclaredMethods();
+        String name = getType();
+
+        synchronized(signature) {
+            for(Method method : methods) {
+                if(method.isAnnotationPresent(Action.class)) {
+                    Action a = method.getAnnotation(Action.class);
+                    signature.put(name+":"+a.name(), new ActionMethod(method, a.sync()));
+                }
+            }
+        }
+        
         enabled = true;
         if(listener != null) listener.onFullUpdate(getType());
     }
 
-    public void onDisable() {
+    public void onDisable(Map<String,ActionMethod> signature) {
         enabled = false;
+        String name = getType();
+        synchronized(signature) {
+            Iterator<Entry<String,ActionMethod>> iterator = signature.entrySet().iterator();
+            while(iterator.hasNext()) {
+                if(iterator.next().getKey().startsWith(name+":")) {
+                    iterator.remove();
+                }
+            }
+        }
     }
 
     protected void notifyChange() {
@@ -90,7 +107,7 @@ public abstract class BaseModule
         return null;
     }
 
-    public IPacket invokeActionSync(Identity identity, ActionPacket packet) {
+    /*public IPacket invokeActionSync(Identity identity, ActionPacket packet) {
         ActionPacket action = (ActionPacket) packet;
         Method[] methods = this.getClass().getDeclaredMethods();
         for(Method method : methods) {
@@ -115,6 +132,21 @@ public abstract class BaseModule
         }
         return null;
     }
+
+    public IPacket invokeAction(Identity identity, ActionPacket packet, boolean sync) throws Exception {
+        ActionPacket action = (ActionPacket) packet;
+        Method[] methods = this.getClass().getDeclaredMethods();
+        for(Method method : methods) {
+            if(method.isAnnotationPresent(Action.class)) {
+                Action a = method.getAnnotation(Action.class);
+                if(a.sync() != sync) throw new Exception("Async/Sync invocation mismatch!");
+                if(a.name().equals(action.getActionName())) {
+                    return (IPacket) method.invoke(BaseModule.this, identity, action);
+                }
+            }
+        }
+        return null;
+    }*/
 
     public boolean hasAccess(Identity identity) {
         return identity.hasPermission(permission);
@@ -185,7 +217,7 @@ public abstract class BaseModule
         }
     }
 
-    public static class ModulesAvailablePacket implements IPacket {
+    public static class ModulesAvailablePacket extends Packet {
 
         public static int PACKET_ID = 16;
         private JSONArray modules;
@@ -206,7 +238,7 @@ public abstract class BaseModule
         }
     }
 
-    public static class ModulePacket implements IPacket {
+    public static class ModulePacket extends Packet {
 
         private String moduleType;
 
@@ -238,5 +270,25 @@ public abstract class BaseModule
     @Target(ElementType.METHOD)
     public @interface Action {
         public String name() default "";
+        public boolean sync() default true;
+    }
+
+    public static class ActionMethod {
+        private boolean sync;
+        private Method method;
+
+        public ActionMethod(Method method, boolean sync) {
+            this.method = method;
+            this.sync = sync;
+        }
+
+        public boolean sync() {
+            return sync;
+        }
+
+        public IPacket invoke(Object instance, boolean sync, Object ...parameters) throws Exception {
+            if(this.sync != sync) throw new Exception("Async/Sync invokation mismatch!");
+            return (IPacket) method.invoke(instance, parameters);
+        }
     }
 }

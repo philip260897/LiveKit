@@ -14,6 +14,10 @@ public class AuthorizationPacket extends RequestPacket {
         return pin != null;
     }
 
+    public String getPin() {
+        return pin;
+    }
+
     public boolean isAuthorization() {
         return authorization != null;
     }

@@ -3,7 +3,7 @@ package at.livekit.packets;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-public class ModulesPacket implements IPacket
+public class ModulesPacket extends Packet
 {
     public static int PACKETID = 14;
 

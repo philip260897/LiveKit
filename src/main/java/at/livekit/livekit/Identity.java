@@ -17,15 +17,32 @@ public class Identity
     private boolean anonymous = false;
     private boolean op = false;
 
+    private boolean identified = false;
+
     private List<String> permissions = new ArrayList<String>();
-    
-    public Identity(String uuid) {
-        this.uuid = uuid;
-        this.anonymous = this.uuid == null;
+
+    private Identity() {
+
     }
 
-    public Identity() {
+    public void identify(String uuid) {
+        this.uuid =uuid;
+        this.anonymous = false;
+        this.identified = true;
+    }
+
+    public void setAnonymous() {
+        this.uuid = null;
         this.anonymous = true;
+        this.identified = true;
+    }
+
+    public static Identity unidentified() {
+        return new Identity();
+    }
+
+    public boolean isIdentified() {
+        return identified;
     }
 
     public String[] getPermissions() {
@@ -45,6 +62,7 @@ public class Identity
     }
 
     public boolean hasPermission(String permission) {
+        if(!isIdentified()) return false;
         if(uuid == null && anonymous == false) return false;
         if(op) return true;
         return permissions.contains(permission);

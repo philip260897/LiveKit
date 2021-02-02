@@ -38,10 +38,10 @@ public class LiveKitClient extends RemoteClient
     }
 
     protected void setIdentity(String uuid) {
-        this.identity = new Identity(uuid);
+        //this.identity = new Identity(uuid);
     }
 
     protected void setAnonymous() {
-        this.identity = new Identity(null);
+       // this.identity = new Identity(null);
     }
 }

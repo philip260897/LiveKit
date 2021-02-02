@@ -33,6 +33,7 @@ public class ActionPacket extends RequestPacket
 
     @Override
     public IPacket fromJson(String data) {
+        super.fromJson(data);
         JSONObject json = new JSONObject(data);
         this.module = json.getString("module");
         this.action = json.getString("action");

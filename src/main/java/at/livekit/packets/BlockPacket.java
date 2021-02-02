@@ -5,7 +5,7 @@ import org.apache.commons.lang.NotImplementedException;
 import org.json.JSONObject;
 
 
-public class BlockPacket implements IPacket{
+public class BlockPacket extends Packet{
     public static int PACKETID = 0x02;
 
     private int x;

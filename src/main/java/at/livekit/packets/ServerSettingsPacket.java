@@ -2,7 +2,7 @@ package at.livekit.packets;
 
 import org.json.JSONObject;
 
-public class ServerSettingsPacket implements IPacket {
+public class ServerSettingsPacket extends Packet {
     public static int PACKETID = 12;
 
     private JSONObject settings;
