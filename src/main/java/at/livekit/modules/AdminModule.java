@@ -40,19 +40,19 @@ public class AdminModule extends BaseModule
     }
 
     @Override
-    public void onEnable() {
+    public void onEnable(Map<String,ActionMethod> signature) {
         for(World world : Bukkit.getWorlds()) {
             _worlds.add(world.getName());
         }
         whitelist = Bukkit.hasWhitelist();
         
-        super.onEnable();
+        super.onEnable(signature);
     }
 
     @Override
-    public void onDisable() {
+    public void onDisable(Map<String,ActionMethod> signature) {
         _worlds.clear();
-        super.onDisable();
+        super.onDisable(signature);
     }
 
     @Override

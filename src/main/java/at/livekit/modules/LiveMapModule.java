@@ -42,10 +42,14 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import at.livekit.livekit.Identity;
+import at.livekit.modules.BaseModule.Action;
 import at.livekit.plugin.Plugin;
+import at.livekit.packets.ActionPacket;
 import at.livekit.packets.BlockPacket;
 import at.livekit.packets.ChunkPacket;
 import at.livekit.packets.IPacket;
+import at.livekit.packets.RawPacket;
+import at.livekit.packets.StatusPacket;
 
 public class LiveMapModule extends BaseModule implements Listener
 {
@@ -65,6 +69,16 @@ public class LiveMapModule extends BaseModule implements Listener
     public LiveMapModule(String world, ModuleListener listener) {
         super(1, "Live Map", "livekit.module.map", UpdateRate.MAX, listener);
         this.world = world;
+    }
+
+    @Action(name = "ResolveRegion", sync = false)
+    public IPacket actionResolveRegion(Identity identity, ActionPacket packet) {
+        int x = packet.getData().getInt("x");
+        int z = packet.getData().getInt("z");
+        String world = packet.getData().getString("world");
+        if(!world.equals(this.world)) return new StatusPacket(0, "World mismatch!");
+
+        return new RawPacket(getRegionData(x, z).getData());
     }
 
     public RenderingOptions getOptions() {
@@ -180,7 +194,7 @@ public class LiveMapModule extends BaseModule implements Listener
     }
 
     @Override
-    public void onEnable() {
+    public void onEnable(Map<String,ActionMethod> signature) {
         try{
             boundingBox = new BoundingBox();
             loadOptions();
@@ -196,11 +210,11 @@ public class LiveMapModule extends BaseModule implements Listener
         }
         Bukkit.getServer().getPluginManager().registerEvents(this, Plugin.getInstance());
 
-        super.onEnable();
+        super.onEnable(signature);
     }
        
     @Override
-    public void onDisable() {
+    public void onDisable(Map<String,ActionMethod> signature) {
         
         try{
             save();
@@ -213,7 +227,7 @@ public class LiveMapModule extends BaseModule implements Listener
         _queueChunks.clear();
 
 
-        super.onDisable();
+        super.onDisable(signature);
     }
 
     @Override
@@ -557,7 +571,7 @@ public class LiveMapModule extends BaseModule implements Listener
             }
         }catch(Exception ex){ex.printStackTrace();}
 
-        Plugin.log("LiveMapModule using default options "+world);
+        Plugin.debug("LiveMapModule using default options "+world);
         if(_options==null) _options = new RenderingOptions();
         _options.limits = BoundingBox.fromWorld(world);
     }

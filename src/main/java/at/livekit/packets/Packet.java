@@ -19,4 +19,14 @@ public class Packet implements IPacket {
     public byte[] data() {
         return (toJson().toString()+"\n").getBytes();
     }
+
+    @Override
+    public byte[] header() {
+        return null;
+    }
+
+    @Override
+    public boolean hasHeader() {
+        return false;
+    }
 }

@@ -1,5 +1,6 @@
 package at.livekit.nio;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -13,6 +14,7 @@ import java.util.stream.Collectors;
 
 import at.livekit.nio.NIOClient.NIOClientEvent;
 import at.livekit.plugin.Plugin;
+import at.livekit.livekit.Identity;
 import at.livekit.nio.INIOPacket;
 
 public class NIOServer<T> implements Runnable, NIOClientEvent<T> {
@@ -115,10 +117,17 @@ public class NIOServer<T> implements Runnable, NIOClientEvent<T> {
         }
     }
 
+    public List<T> getIdleIdentifiers() {
+        synchronized(clients) {
+            return clients.values().stream().filter(c->c.getIdentifier() != null && c.outputQueue.size() <= 5).map(c->c.getIdentifier()).collect(Collectors.toList());
+        }
+    }
+
     @Override
     public void run() {
         try
         {
+
             Plugin.log("Server listening on "+port+" for incoming connections");
             boolean writable = false;
             while(!abort) {
@@ -128,6 +137,7 @@ public class NIOServer<T> implements Runnable, NIOClientEvent<T> {
                     if(!selector.isOpen()) continue;
                 } else {
                     Thread.sleep(20);
+                    selector.selectNow();
                 }
 
                 //System.out.println("Selector working");
@@ -147,13 +157,23 @@ public class NIOServer<T> implements Runnable, NIOClientEvent<T> {
 
                     iter.remove();
                 }
+                
 
                 writable = false;
                 synchronized(clients) {
-                    for(NIOClient<T> client : clients.values()) {
-                        if(client.write()) writable = true;
+                    Iterator<NIOClient<T>> iterator = clients.values().iterator();
+                    while(iterator.hasNext()) {
+                        NIOClient<T> client = iterator.next();
+                        try{
+                            if(client.write()) writable = true;
+                        }catch(IOException ex){
+                            client.close();
+                            iterator.remove();
+                            //ex.printStackTrace();
+                        }
                     }
                 }
+                //printStats();
             }
         }
         catch(Exception ex)
@@ -168,6 +188,30 @@ public class NIOServer<T> implements Runnable, NIOClientEvent<T> {
         Plugin.log("Server shutdown");
     }
 
+    private long last = 0;
+    private void printStats() {
+        int max = 0;
+        int min = 100000;
+
+        int size = 0;
+        int clientss = 1;
+        
+        synchronized(clients) {
+            for(NIOClient<T> client : clients.values()) {
+                synchronized(client.outputQueue) {
+                    if(client.outputQueue.size() > max) max = client.outputQueue.size();
+                    if(client.outputQueue.size() < min) min = client.outputQueue.size();
+                    size += client.outputQueue.size();
+                }
+            }
+            if( clients.size() > 1) clientss = clients.size();
+            if(System.currentTimeMillis()-last > 1000) {
+                last = System.currentTimeMillis();
+                System.out.println("Avg: "+ (size/clientss)+" max: "+max+" min: "+min);
+            }
+        }
+    }
+
     private void acceptIncoming() throws Exception {
         SocketChannel client = server.accept();
         if(client != null) {
@@ -175,7 +219,10 @@ public class NIOServer<T> implements Runnable, NIOClientEvent<T> {
             SelectionKey key = client.register(selector, SelectionKey.OP_READ);
             NIOClient<T> nio = new NIOClient<T>(key, client);
             nio.setClientListener(this);
-            clients.put(key, nio);
+
+            synchronized(clients) {
+                clients.put(key, nio);
+            }
 
             if(listener != null) listener.clientConnected(nio);
         }

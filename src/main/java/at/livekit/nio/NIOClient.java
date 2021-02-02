@@ -2,6 +2,7 @@ package at.livekit.nio;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
@@ -18,7 +19,7 @@ public class NIOClient<T> {
     private StringBuilder builder;
     private int parseOffset = 0;
 
-    private List<byte[]> outputQueue;
+    protected List<byte[]> outputQueue;
     private ByteBuffer outputBuffer;
     private T identifier;
 
@@ -51,13 +52,18 @@ public class NIOClient<T> {
 
     protected void queueData(INIOPacket packet) {
         synchronized(outputQueue) {
+            if(packet.hasHeader()) outputQueue.add(packet.header());
             outputQueue.add(packet.data());
         }
     }
 
     protected void queueAll(List<? extends INIOPacket> packets) {
         synchronized(outputQueue) {
-            outputQueue.addAll(packets.stream().map(p->p.data()).collect(Collectors.toList()));
+            for(INIOPacket packet : packets) {
+                if(packet.hasHeader()) outputQueue.add(packet.header());
+                outputQueue.add(packet.data());
+            }
+            //outputQueue.addAll(packets.stream().map(p->p.data()).collect(Collectors.toList()));
         }
     }
 
@@ -65,11 +71,17 @@ public class NIOClient<T> {
         if(!channel.isConnected()) return;
 
         int read = 0;
-        while((read = channel.read(buffer)) > 0) {
-            builder.append(new String(buffer.array(), 0, read, "UTF-8"));
-            buffer.clear();
+        try{
+            while((read = channel.read(buffer)) > 0) {
+                builder.append(new String(buffer.array(), 0, read, "UTF-8"));
+                buffer.clear();
 
-            parsePackets();
+                parsePackets();
+            }
+        }catch(ClosedChannelException ex) {
+            read = -1;
+        }catch(IOException ex) {
+            read = -1;
         }
 
         if(read == -1 || builder.length() > 1024*1024) {
@@ -78,7 +90,7 @@ public class NIOClient<T> {
         }
     }
 
-    protected boolean write() throws Exception {
+    protected boolean write() throws IOException {
         if(!channel.isConnected()) return false;
 
         if(outputBuffer == null) {
@@ -91,14 +103,14 @@ public class NIOClient<T> {
             }
         }
 
-        try{
-            channel.write(outputBuffer);
-        }catch(IOException ex){
+        //try{
+        channel.write(outputBuffer);
+        /*}catch(IOException ex){
             //ex.printStackTrace();
             close();
             if(listener != null) listener.connectionClosed(this);
             return false;
-        }
+        }*/
 
         if(outputBuffer.remaining() == 0) {
             outputBuffer = null;

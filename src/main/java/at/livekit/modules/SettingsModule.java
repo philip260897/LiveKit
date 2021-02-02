@@ -28,8 +28,8 @@ public class SettingsModule extends BaseModule
 
     
     @Override
-    public void onEnable() {
-        super.onEnable();
+    public void onEnable(Map<String,ActionMethod> signature) {
+        super.onEnable(signature);
         liveKitPort = Config.getServerPort();
         serverName = Config.getServerName();
         liveMapTickRate = Config.getTickRate();
@@ -45,8 +45,8 @@ public class SettingsModule extends BaseModule
     }
 
     @Override
-    public void onDisable() {
-        super.onDisable();
+    public void onDisable(Map<String,ActionMethod> signature) {
+        super.onDisable(signature);
     }
 
     @Override

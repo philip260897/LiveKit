@@ -149,7 +149,7 @@ public class TCPServer implements Runnable {
                                         response = listener.onPacketReceived((LiveKitClient)sender, (AuthorizationPacket) new AuthorizationPacket().fromJson(data)); 
                                     }
                                     if(packetId == ActionPacket.PACKETID) {
-                                        response = (RequestPacket) LiveKit.getInstance().getModuleManager().invokeActionSync(((LiveKitClient)sender).getIdentity(), (ActionPacket)new ActionPacket().fromJson(data));
+                                        //response = (RequestPacket) LiveKit.getInstance().getModuleManager().invokeActionSync(((LiveKitClient)sender).getIdentity(), (ActionPacket)new ActionPacket().fromJson(data));
                                     }
                                     if(packetId == RegionRequest.PACKETID) {
                                         RegionRequest request = (RegionRequest) new RegionRequest().fromJson(data);
@@ -251,12 +251,12 @@ public class TCPServer implements Runnable {
                 if(packet instanceof RawPacket) {
                     
                         //long mini = System.currentTimeMillis();
-                        byte[] data = ((RawPacket)packet).getRawPacket();
+                        //byte[] data = ((RawPacket)packet).getRawPacket();
                         //System.out.println("converting: "+(System.currentTimeMillis()-mini));
                         //long mini2 = System.currentTimeMillis();
-                        out.write(data);
+                        //out.write(data);
                         //System.out.println("Writing: "+(System.currentTimeMillis()-mini2));
-                        out.flush();
+                        //out.flush();
                     
                     return;
                 }

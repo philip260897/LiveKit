@@ -30,7 +30,7 @@ public class MultiPartRawPacket extends RawPacket
         throw new UnsupportedOperationException();
     }
 
-    @Override
+    /*@Override
     public byte[] getRawPacket() {
         byte[] packet = new byte[18 + partSize];
         packet[0] = 0x54;
@@ -54,5 +54,5 @@ public class MultiPartRawPacket extends RawPacket
 
         System.arraycopy(data, currentPart * this.partSize, packet, 18, partSize);
         return packet;
-    }
+    }*/
 }
