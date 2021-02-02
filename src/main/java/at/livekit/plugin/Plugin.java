@@ -268,7 +268,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 						if(args[2].equalsIgnoreCase("forced")) mode = RenderingMode.FORCED;
 						if(args[2].equalsIgnoreCase("discover")) mode = RenderingMode.DISCOVER;
 						if(mode == null) {
-							sender.sendMessage(prefixError+"Mode "+args[2]+" is not a valid rendering mode! -> [BOUNDS|DISCOVER]");
+							sender.sendMessage(prefixError+"Mode "+args[2]+" is not a valid rendering mode! -> [FORCED | DISCOVER]");
 							return true;
 						}
 
