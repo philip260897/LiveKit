@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>LiveKit</groupId>
   <artifactId>LiveKit</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
+  <version>0.0.2-SNAPSHOT</version>
   <name>LiveKit</name>
   
 <build>
@@ -28,6 +28,8 @@
                 <descriptorRefs>
                     <descriptorRef>jar-with-dependencies</descriptorRef>
                 </descriptorRefs>
+                <finalName>LiveKit-${version}</finalName>
+                <appendAssemblyId>false</appendAssemblyId>
                 <archive>
                     <manifest>
                     <mainClass>com.philiplindner.main.App</mainClass>

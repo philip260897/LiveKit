@@ -1,11 +1,11 @@
 main: at.livekit.plugin.Plugin
 name: LiveKit
-version: 0.1
-author: Philip
-description: Server connector for something epic
+version: 0.2
+author: livekitapp@gmail.com
+description: Connector plugin for LiveKit. Allows LiveKit App to connect to server
 api-version: 1.16
 softdepend: [Vault]
 commands:
   livekit:
-    description: LiveKit command
+    description: LiveKit commands
     usage: /livekit
