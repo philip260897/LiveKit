@@ -9,6 +9,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import at.livekit.plugin.Plugin;
+
 public class NIOClient<T> {
 
     private NIOClientEvent<T> listener;
@@ -67,7 +69,7 @@ public class NIOClient<T> {
         }
     }
 
-    protected void read() throws Exception {
+    protected void read() {
         if(!channel.isConnected()) return;
 
         int read = 0;
@@ -82,6 +84,9 @@ public class NIOClient<T> {
             read = -1;
         }catch(IOException ex) {
             read = -1;
+        }catch(Exception ex) {
+            ex.printStackTrace();
+            Plugin.log("Disconnecting client!");
         }
 
         if(read == -1 || builder.length() > 1024*1024) {

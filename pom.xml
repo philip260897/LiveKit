@@ -28,7 +28,7 @@
                 <descriptorRefs>
                     <descriptorRef>jar-with-dependencies</descriptorRef>
                 </descriptorRefs>
-                <finalName>LiveKit-${version}</finalName>
+                <finalName>LiveKit-${project.version}</finalName>
                 <appendAssemblyId>false</appendAssemblyId>
                 <archive>
                     <manifest>
