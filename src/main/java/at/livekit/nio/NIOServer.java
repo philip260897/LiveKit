@@ -14,8 +14,6 @@ import java.util.stream.Collectors;
 
 import at.livekit.nio.NIOClient.NIOClientEvent;
 import at.livekit.plugin.Plugin;
-import at.livekit.livekit.Identity;
-import at.livekit.nio.INIOPacket;
 
 public class NIOServer<T> implements Runnable, NIOClientEvent<T> {
     

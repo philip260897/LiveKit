@@ -586,7 +586,7 @@ public class LiveMapModule extends BaseModule implements Listener
                 _regions.put(data.x+"_"+data.z, data);
             }
         }
-        Plugin.log("LiveMapModule loaded "+_regions.size()+" regions for "+world);
+        Plugin.debug("LiveMapModule loaded "+_regions.size()+" regions for "+world);
     }
 
     private void save() throws FileNotFoundException, IOException { 
