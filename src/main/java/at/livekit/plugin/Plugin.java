@@ -1,23 +1,15 @@
 package at.livekit.plugin;
 
-import java.io.File;
-import java.io.PrintWriter;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
-import org.bukkit.block.Biome;
+import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
-import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
-import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.json.JSONArray;
-import org.json.JSONObject;
 
 import at.livekit.livekit.Identity;
 import at.livekit.livekit.LiveKit;
@@ -29,7 +21,6 @@ import at.livekit.modules.LiveMapModule;
 import at.livekit.modules.PlayerModule.LPlayer;
 import at.livekit.utils.HeadLibrary;
 import at.livekit.utils.HeadLibraryEvent;
-import net.md_5.bungee.api.ChatColor;
 
 public class Plugin extends JavaPlugin implements CommandExecutor {
 

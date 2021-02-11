@@ -567,7 +567,7 @@ public class PlayerModule extends BaseModule implements Listener
             json.put("x", (float)x);
             json.put("y", (float)y);
             json.put("z", (float)z);
-            json.put("dir", (float)dir+180);
+            json.put("dir", (float)dir+180f);
             json.put("world", world);
             json.put("health", (float)health);
             json.put("healthMax", (float)healthMax);
