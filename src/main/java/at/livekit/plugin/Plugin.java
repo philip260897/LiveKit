@@ -12,9 +12,11 @@ import org.bukkit.block.Biome;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import at.livekit.livekit.Identity;
@@ -107,8 +109,8 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 			handleMapCommands(sender, command, label, args);
 			handleAdminCommands(sender, command, label, args);
 
-			//if(args.length == 1) {
-				/*if(args[0].equalsIgnoreCase("tp")) {
+			if(args.length == 1) {
+				if(args[0].equalsIgnoreCase("tp")) {
 					JSONObject object = new JSONObject();
 					
 					for(int i = 0; i < Material.values().length; i++) {
@@ -123,7 +125,22 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 						writer.flush();
 						writer.close();
 					}catch(Exception ex){ex.printStackTrace();}
-				}*/
+
+					JSONArray array = new JSONArray();
+					for(int i = 0; i < EntityType.values().length; i++) {
+						array.put(EntityType.values()[i].name());
+					}
+
+					try{
+						File file = new File( System.getProperty("user.dir") + "/plugins/LiveKit/entities.json" );
+						if(!file.exists()) file.createNewFile();
+
+						PrintWriter writer = new PrintWriter(file);
+						writer.write(array.toString());
+						writer.flush();
+						writer.close();
+					}catch(Exception ex){ex.printStackTrace();}
+				}
 				/*if(args[0].equalsIgnoreCase("loptions")) {
 					LiveMapModule module = ((LiveMapModule) LiveKit.getInstance().getModuleManager().getModule("LiveMapModule"));
 					RenderingOptions options = module.getOptions();
@@ -141,7 +158,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 						module.fullRender();
 					}catch(Exception ex){ex.printStackTrace();}
 				}*/
-			//}
+			}
 
 		}
 		return true;
@@ -236,6 +253,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 					builder.append("cpu-time: "+options.getCpuTime()+"ms / "+(int)(((float)options.getCpuTime()/50f)*100f)+"%"+"\n");
 					builder.append("queued chunks: "+map.getChunkQueueSize()+"\n");
 					builder.append("queued regions: "+map.getRegionQueueSize()+"\n");
+					builder.append("Chunks loaded: "+Bukkit.getWorld(map.getWorld()).getLoadedChunks().length);
 					
 					sender.sendMessage(prefix+builder.toString());
 				}
