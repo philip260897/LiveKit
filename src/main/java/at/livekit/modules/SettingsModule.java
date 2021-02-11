@@ -12,7 +12,7 @@ import at.livekit.packets.IPacket;
 
 public class SettingsModule extends BaseModule 
 {
-    public int liveKitVersion = 1;
+    public int liveKitVersion = 2;
     public int liveMapVersion = 1;
 
     public int liveKitPort;

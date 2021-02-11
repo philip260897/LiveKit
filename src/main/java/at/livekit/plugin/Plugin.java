@@ -110,7 +110,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 			handleAdminCommands(sender, command, label, args);
 
 			if(args.length == 1) {
-				if(args[0].equalsIgnoreCase("tp")) {
+				/*if(args[0].equalsIgnoreCase("tp")) {
 					JSONObject object = new JSONObject();
 					
 					for(int i = 0; i < Material.values().length; i++) {
@@ -140,7 +140,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 						writer.flush();
 						writer.close();
 					}catch(Exception ex){ex.printStackTrace();}
-				}
+				}*/
 				/*if(args[0].equalsIgnoreCase("loptions")) {
 					LiveMapModule module = ((LiveMapModule) LiveKit.getInstance().getModuleManager().getModule("LiveMapModule"));
 					RenderingOptions options = module.getOptions();
