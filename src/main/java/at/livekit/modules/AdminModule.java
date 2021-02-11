@@ -9,6 +9,7 @@ import java.util.UUID;
 import org.bukkit.BanList;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
@@ -16,6 +17,8 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import at.livekit.livekit.Identity;
+import at.livekit.livekit.LiveKit;
+import at.livekit.modules.BaseModule.Action;
 import at.livekit.packets.ActionPacket;
 import at.livekit.packets.IPacket;
 import at.livekit.packets.StatusPacket;
@@ -74,6 +77,28 @@ public class AdminModule extends BaseModule
             response.put(identity, packet);
         }
         return response;
+    }
+
+    @Action(name="Teleport")
+    protected IPacket teleportPlayer(Identity identity, ActionPacket packet) {
+        double x = packet.getData().getDouble("x");
+        double y = packet.getData().getDouble("y");
+        double z = packet.getData().getDouble("z");
+        String world = packet.getData().getString("world");
+        String target = packet.getData().getString("uuid");
+
+        World w = Bukkit.getWorld(world);
+        if(w == null) return new StatusPacket(0, "World does not exist");
+
+        OfflinePlayer player = Bukkit.getOfflinePlayer(UUID.fromString(target));
+        if(player == null || !player.isOnline()) return new StatusPacket(0, "Can't teleport offline player");
+
+        Player online = player.getPlayer();
+        online.teleport(new Location(w, x, y, z));
+
+        //PlayerModule playerModule = () LiveKit.getInstance().getModuleManager().getModule("PlayerModule");
+
+        return new StatusPacket(1);
     }
 
     @Action(name="ListWhitelist")

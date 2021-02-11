@@ -15,12 +15,15 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.json.JSONArray;
@@ -63,9 +66,11 @@ public class PlayerModule extends BaseModule implements Listener
                 if(p.getHealth() != player.health) needsUpdate = true;
                 if(p.getHealthScale() != player.healthMax) needsUpdate = true;
                 if(p.getExhaustion() != player.exhaustion) needsUpdate = true;
+                if(p.getLocation().getYaw() != player.dir) needsUpdate = true;
 
                 player.updateExhaustion(p.getExhaustion());
                 player.updateHealth(p.getHealth(), p.getHealthScale());
+                player.updateLocation(p.getLocation().getX(), p.getLocation().getY(), p.getLocation().getZ(), p.getLocation().getYaw() );
             }
         }
 
@@ -124,7 +129,16 @@ public class PlayerModule extends BaseModule implements Listener
         super.onEnable(signature);
     }
 
+    @EventHandler
+    public void onPlayerInteract(PlayerInteractEvent event) {
+        if(!isEnabled() || event.isCancelled()) return;
 
+        if(event.getHand() == EquipmentSlot.HAND) {
+            if(event.getAction() == org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK) {
+                //
+            }
+        }
+    }
 
     @EventHandler
 	public void onPlayerJoin(PlayerJoinEvent event) 
@@ -140,10 +154,11 @@ public class PlayerModule extends BaseModule implements Listener
         }
         //player.updateLastOnline(System.currentTimeMillis(), true);
         player.updateWorld(event.getPlayer().getLocation().getWorld().getName());
-		player.updateLocation(p.getLocation().getX(), p.getLocation().getY(), p.getLocation().getZ());
+		player.updateLocation(p.getLocation().getX(), p.getLocation().getY(), p.getLocation().getZ(), p.getLocation().getYaw() );
 		player.updateHealth(p.getHealth(), p.getHealthScale());
         //player.updateArmor(p.getArmor);
 		player.updateExhaustion(p.getExhaustion());
+        
 
         if(!HeadLibrary.has(p.getName())) { 
 			HeadLibrary.resolveAsync(p.getName());
@@ -211,7 +226,7 @@ public class PlayerModule extends BaseModule implements Listener
         LPlayer player = null;
         if(_players.containsKey(event.getPlayer().getUniqueId().toString())) {
             player = _players.get(event.getPlayer().getUniqueId().toString());
-            player.updateLocation(event.getPlayer().getLocation().getX(), event.getPlayer().getLocation().getY(), event.getPlayer().getLocation().getZ());
+            player.updateLocation(event.getPlayer().getLocation().getX(), event.getPlayer().getLocation().getY(), event.getPlayer().getLocation().getZ(), event.getPlayer().getLocation().getYaw());
             notifyChange();
         }
     }
@@ -321,9 +336,11 @@ public class PlayerModule extends BaseModule implements Listener
                 JSONObject bedlocation = new JSONObject();
                 bedlocation.put("type", "loc");
                 bedlocation.put("name", "Bed Spawn");
+                bedlocation.put("description", "Bed Spawn location of "+player.getName());
                 bedlocation.put("x", bedspawn.getBlockX());
                 bedlocation.put("y", bedspawn.getBlockY());
                 bedlocation.put("z", bedspawn.getBlockZ());
+                bedlocation.put("world", bedspawn.getWorld().getName());
                 locationData.put(bedlocation);
             }
         }
@@ -378,6 +395,7 @@ public class PlayerModule extends BaseModule implements Listener
         public double x = 0;
         public double y = 0;
         public double z = 0;
+        public double dir = 0;
 
         public double healthMax = 0;
         public double health;
@@ -475,10 +493,11 @@ public class PlayerModule extends BaseModule implements Listener
             this.world = world;
             this.dirty = true;
         }
-        public void updateLocation(double x, double y, double z){
+        public void updateLocation(double x, double y, double z, double dir){
             this.x = x;
             this.y = y;
             this.z = z;
+            this.dir = dir;
             this.dirty = true;
         }
     
@@ -516,7 +535,7 @@ public class PlayerModule extends BaseModule implements Listener
 
             if(player.getPlayer() != null) {
                 Player online = player.getPlayer();
-                p.updateLocation(online.getLocation().getX(), online.getLocation().getY(), online.getLocation().getZ());
+                p.updateLocation(online.getLocation().getX(), online.getLocation().getY(), online.getLocation().getZ(), online.getLocation().getYaw());
                 p.updateWorld(online.getLocation().getWorld().getName());
                 p.updateHealth(online.getHealth(), online.getHealthScale());
                 p.updateExhaustion(online.getExhaustion());
@@ -548,6 +567,7 @@ public class PlayerModule extends BaseModule implements Listener
             json.put("x", (float)x);
             json.put("y", (float)y);
             json.put("z", (float)z);
+            json.put("dir", (float)dir+180);
             json.put("world", world);
             json.put("health", (float)health);
             json.put("healthMax", (float)healthMax);
