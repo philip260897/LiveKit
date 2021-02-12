@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>LiveKit</groupId>
   <artifactId>LiveKit</artifactId>
-  <version>0.0.3-SNAPSHOT</version>
+  <version>0.0.4-SNAPSHOT</version>
   <name>LiveKit</name>
   
 <build>
@@ -28,7 +28,7 @@
                 <descriptorRefs>
                     <descriptorRef>jar-with-dependencies</descriptorRef>
                 </descriptorRefs>
-                <finalName>LiveKit-${project.version}</finalName>
+                <finalName>LiveKit-${project.version}-chat</finalName>
                 <appendAssemblyId>false</appendAssemblyId>
                 <archive>
                     <manifest>

@@ -19,6 +19,7 @@ permissions:
     - livekit.module.map
     - livekit.module.players
     - livekit.module.weathertime
+    - livekit.module.chat
 
 #which modules to enable
 modules:
@@ -30,4 +31,6 @@ modules:
   WeatherTimeModule:
     enabled: true
   AdminModule:
+    enabled: true
+  ChatModule:
     enabled: true
