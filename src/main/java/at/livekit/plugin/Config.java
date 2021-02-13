@@ -17,7 +17,7 @@ public class Config
             Plugin.getInstance().saveResource("config.yml", false);
         }
         config = YamlConfiguration.loadConfiguration(configFile);
-        
+        fixMissing();
     }    
 
     public static int getServerPort() {
@@ -61,5 +61,21 @@ public class Config
 
     public static String getModuleString(String name, String setting) {
         return config.getString("modules."+name+"."+setting);
+    }
+
+    private static void fixMissing() {
+        if(!config.contains("modules.chat.enabled")) {
+            config.set("modules.chat.enabled", true);
+            Plugin.log("Updating config with chat module");
+            if(!getDefaultPermissions().contains("livekit.modules.chat")) {
+                getDefaultPermissions().add("livekit.modules.chat");
+                if(usePermissions()) {
+                    Plugin.log("Friendly reminder, use livekit.modules.chat permission to enable chat in App!");
+                }
+            }
+        }
+        try{
+            config.save(configFile);
+        }catch(Exception ex){ex.printStackTrace();}
     }
 }
