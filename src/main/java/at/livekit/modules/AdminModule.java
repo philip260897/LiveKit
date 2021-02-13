@@ -12,6 +12,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
+import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -94,7 +95,7 @@ public class AdminModule extends BaseModule
         if(player == null || !player.isOnline()) return new StatusPacket(0, "Can't teleport offline player");
 
         Player online = player.getPlayer();
-        online.teleport(new Location(w, x, y, z));
+        online.teleport(Bukkit.getWorld(world).getHighestBlockAt((int)x, (int)z).getRelative(BlockFace.UP, 1).getLocation());
 
         //PlayerModule playerModule = () LiveKit.getInstance().getModuleManager().getModule("PlayerModule");
 

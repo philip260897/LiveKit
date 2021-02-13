@@ -19,7 +19,10 @@ import at.livekit.plugin.Plugin;
 
 public class ChatModule extends BaseModule implements Listener {
 
-    private List<ChatMessage> _chat = new ArrayList<ChatMessage>();
+    private static int CHAT_LOG_SIZE = 50;
+
+    private List<ChatMessage> _updates = new ArrayList<ChatMessage>();
+    private List<ChatMessage> _backlog = new ArrayList<ChatMessage>(CHAT_LOG_SIZE);
 
     public ChatModule(ModuleListener listener) {
         super(1, "Chat", "livekit.module.chat", UpdateRate.NEVER, listener);
@@ -48,9 +51,9 @@ public class ChatModule extends BaseModule implements Listener {
             return;
 
         ChatMessage message = new ChatMessage(event.getPlayer().getUniqueId().toString(), event.getFormat(), event.getMessage());
-
-        synchronized (_chat) {
-            _chat.add(message);
+        System.out.println(message.toString());
+        synchronized (_updates) {
+            _updates.add(message);
         }
 
         notifyChange();
@@ -61,11 +64,10 @@ public class ChatModule extends BaseModule implements Listener {
         JSONObject json = new JSONObject();
         JSONArray messages = new JSONArray();
 
-        synchronized(_chat) {
-            for(ChatMessage message : _chat) {
+        synchronized(_backlog) {
+            for(ChatMessage message : _backlog) {
                 messages.put(message.toJson());
             }
-            _chat.clear();
         }
 
         json.put("messages", messages);
@@ -76,14 +78,26 @@ public class ChatModule extends BaseModule implements Listener {
     @Override
     public Map<Identity,IPacket> onUpdateAsync(List<Identity> identities) {
         Map<Identity, IPacket> responses = new HashMap<Identity,IPacket>();
-        
-        if(identities.size() > 0) {
-            ModuleUpdatePacket response = (ModuleUpdatePacket) onJoinAsync(identities.get(0));
-            response.full = false;
-            for(Identity identity : identities) responses.put(identity, response);
+
+        JSONObject json = new JSONObject();
+        JSONArray messages = new JSONArray();
+    
+        synchronized(_updates) {
+            for(ChatMessage message : _updates) {
+                messages.put(message.toJson());
+            }
+
+            while(_updates.size() > 0) {
+                _backlog.add(_updates.remove(0));
+            }
+            while(_backlog.size() > CHAT_LOG_SIZE) {
+                _backlog.remove(0);
+            }
         }
+        json.put("messages", messages);
+        IPacket response =  new ModuleUpdatePacket(this, json, false);
 
-
+        for(Identity identity : identities) responses.put(identity, response);
 
         return responses;
     }
@@ -114,7 +128,7 @@ public class ChatModule extends BaseModule implements Listener {
 
         @Override
         public String toString() {
-            return "ChatMessage[sender="+sender+"; format="+format+"; message="+message+"]";
+            return "ChatMessage[sender="+sender+"; format="+format+"; message="+message+"; json="+toJson().toString()+"]";
         }
     }
 }
