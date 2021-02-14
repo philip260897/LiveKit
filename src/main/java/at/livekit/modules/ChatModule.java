@@ -41,7 +41,8 @@ public class ChatModule extends BaseModule implements Listener {
 
     @Override
     public void onDisable(Map<String, ActionMethod> signature) {
-
+        _backlog.clear();
+        _updates.clear();
         super.onDisable(signature);
     }
 
@@ -51,7 +52,6 @@ public class ChatModule extends BaseModule implements Listener {
             return;
 
         ChatMessage message = new ChatMessage(event.getPlayer().getUniqueId().toString(), event.getFormat(), event.getMessage());
-        System.out.println(message.toString());
         synchronized (_updates) {
             _updates.add(message);
         }

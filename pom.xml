@@ -28,7 +28,7 @@
                 <descriptorRefs>
                     <descriptorRef>jar-with-dependencies</descriptorRef>
                 </descriptorRefs>
-                <finalName>LiveKit-${project.version}-chat</finalName>
+                <finalName>LiveKit-${project.version}</finalName>
                 <appendAssemblyId>false</appendAssemblyId>
                 <archive>
                     <manifest>
