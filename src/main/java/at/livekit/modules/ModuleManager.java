@@ -49,6 +49,7 @@ public class ModuleManager
         this.registerModule(new LiveMapModule(Config.getModuleString("LiveMapModule", "world"), listener));
         this.registerModule(new WeatherTimeModule(Config.getModuleString("LiveMapModule", "world"), listener));
         this.registerModule(new AdminModule(listener));
+        this.registerModule(new ChatModule(listener));
 
         this.settings = (SettingsModule) _modules.get("SettingsModule");
         this.settings.onEnable(signatures);

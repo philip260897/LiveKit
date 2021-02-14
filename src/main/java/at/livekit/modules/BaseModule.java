@@ -199,7 +199,7 @@ public abstract class BaseModule
     {
         public static int PACKET_ID = 15;
         private JSONObject data;
-        private boolean full;
+        public boolean full;
 
         public ModuleUpdatePacket(BaseModule module, JSONObject data, boolean full) {
             super(module.getType());
