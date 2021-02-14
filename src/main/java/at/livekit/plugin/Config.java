@@ -64,9 +64,9 @@ public class Config
     }
 
     private static void fixMissing() {
-        if(!config.contains("modules.chat.enabled")) {
-            config.set("modules.chat.enabled", true);
-            Plugin.log("Updating config with chat module");
+        if(!config.contains("modules.ChatModule.enabled")) {
+            config.set("modules.ChatModule.enabled", true);
+            Plugin.log("Updating config with ChatModule");
             if(!getDefaultPermissions().contains("livekit.modules.chat")) {
                 getDefaultPermissions().add("livekit.modules.chat");
                 if(usePermissions()) {
