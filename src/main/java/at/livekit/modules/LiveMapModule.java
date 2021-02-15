@@ -631,7 +631,9 @@ public class LiveMapModule extends BaseModule implements Listener
         for(File file : folder.listFiles()) {
             if(file.isFile() && file.getName().endsWith(".region")) {
                 RegionData data =  new RegionData(file);
-                _regions.put(data.x+"_"+data.z, data);
+                if(_options.getLimits().regionInBounds(data.x, data.z)) {
+                    _regions.put(data.x+"_"+data.z, data);
+                }
             }
         }
         Plugin.debug("LiveMapModule loaded "+_regions.size()+" regions for "+world);

@@ -18,6 +18,7 @@ import org.json.JSONObject;
 
 import at.livekit.livekit.Identity;
 import at.livekit.modules.BaseModule.Action;
+import at.livekit.packets.ActionPacket;
 import at.livekit.packets.IPacket;
 import at.livekit.packets.StatusPacket;
 import at.livekit.plugin.Plugin;
@@ -65,8 +66,10 @@ public class ChatModule extends BaseModule implements Listener {
     }
 
     @Action(name = "Message")
-    public IPacket sendMessage(Identity identity, JSONObject data) {
-        if(!identity.hasPermission("livekit.chat.write")) return new StatusPacket(0, "Permission denied!");
+    public IPacket sendMessage(Identity identity, ActionPacket packet) {
+        JSONObject data = packet.getData();
+
+        if(!identity.hasPermission("livekit.chat.write") || identity.isAnonymous()) return new StatusPacket(0, "Permission denied!");
 
         OfflinePlayer op = Bukkit.getOfflinePlayer(UUID.fromString(identity.getUuid()));
         if(op == null || !op.isOnline()) return new StatusPacket(0, "Player not found");
