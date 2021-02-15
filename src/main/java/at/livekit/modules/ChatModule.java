@@ -4,8 +4,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -14,7 +17,9 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import at.livekit.livekit.Identity;
+import at.livekit.modules.BaseModule.Action;
 import at.livekit.packets.IPacket;
+import at.livekit.packets.StatusPacket;
 import at.livekit.plugin.Plugin;
 
 public class ChatModule extends BaseModule implements Listener {
@@ -59,6 +64,19 @@ public class ChatModule extends BaseModule implements Listener {
         notifyChange();
     }
 
+    @Action(name = "Message")
+    public IPacket sendMessage(Identity identity, JSONObject data) {
+        if(!identity.hasPermission("livekit.chat.write")) return new StatusPacket(0, "Permission denied!");
+
+        OfflinePlayer op = Bukkit.getOfflinePlayer(UUID.fromString(identity.getUuid()));
+        if(op == null || !op.isOnline()) return new StatusPacket(0, "Player not found");
+
+        Player player = op.getPlayer();
+        if(data.has("message") && !data.isNull("message")) player.chat(data.getString("message"));
+
+        return new StatusPacket(1);
+    }
+
     @Override
     public IPacket onJoinAsync(Identity identity) {
         JSONObject json = new JSONObject();
@@ -71,6 +89,7 @@ public class ChatModule extends BaseModule implements Listener {
         }
 
         json.put("messages", messages);
+        json.put("write", identity.hasPermission("livekit.chat.write"));
 
         return new ModuleUpdatePacket(this, json, true);
     }
