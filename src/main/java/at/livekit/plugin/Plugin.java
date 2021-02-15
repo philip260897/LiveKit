@@ -96,9 +96,16 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 	@Override
 	public boolean onCommand(CommandSender sender, Command command, String label, String[] args){
 		if(label.equalsIgnoreCase("livekit")) {
-			handleUserCommands(sender, command, label, args);
-			handleMapCommands(sender, command, label, args);
-			handleAdminCommands(sender, command, label, args);
+			boolean handled = false;
+			if(!handled) handled = handleUserCommands(sender, command, label, args);
+			if(!handled) handled = handleMapCommands(sender, command, label, args);
+			if(!handled) handled = handleAdminCommands(sender, command, label, args);
+
+
+
+			if(!handled) {
+				sender.sendMessage(prefixError+"Unknown command. Try /livekit help");
+			}
 
 			if(args.length == 1) {
 				/*if(args[0].equalsIgnoreCase("tp")) {
@@ -156,6 +163,18 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 	}
 
 	private boolean handleUserCommands(CommandSender sender, Command command, String label, String[] args) {
+		if(args.length == 0) {
+			sender.sendMessage(prefix+"LiveKit is supported!");
+			sender.sendMessage("iOS App: "+ChatColor.AQUA+"https://apple.co/3dltCW5"+ChatColor.RESET);
+			sender.sendMessage("Android App: "+ChatColor.AQUA+"https://bit.ly/2Zic0lB"+ChatColor.RESET);
+			sender.sendMessage("Port: "+Config.getServerPort());
+			sender.sendMessage("Password needed: "+friendlyBool((Config.getPassword()!=null)));
+			sender.sendMessage("Supports anonymous: "+friendlyBool((Config.allowAnonymous())));
+			sender.sendMessage("Has access: "+friendlyBool(checkPerm(sender, "livekit.commands.basic", false)));
+			if(checkPerm(sender, "livekit.commands.basic", false)) sender.sendMessage("Use "+ChatColor.GREEN+"/livekit claim"+ChatColor.RESET+" to generate an access pin");
+			sender.sendMessage("Use "+ChatColor.GREEN+"/livekit help"+ChatColor.RESET+" for more info");
+			return true;
+		}
 		if(args.length == 1) {
 			if(args[0].equalsIgnoreCase("claim")) {
 				if(sender instanceof Player) 
@@ -219,6 +238,30 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 				{
 					sender.sendMessage(prefixError+"Only players can clear their sessions!");
 				}
+				return true;
+			}
+			if(args[0].equalsIgnoreCase("?") || args[0].equalsIgnoreCase("help")) {
+				sender.sendMessage(prefix+"Help Page");
+				sender.sendMessage(ChatColor.GREEN+"/livekit "+ChatColor.RESET+" - LiveKit basic info");
+				if(checkPerm(sender, "livekit.commands.basic", false)) {
+					sender.sendMessage(ChatColor.GREEN+"/livekit claim"+ChatColor.RESET+" - Generate a claim pin, used to identify yourself in the App");
+					sender.sendMessage(ChatColor.GREEN+"/livekit info"+ChatColor.RESET+" - Info about App sessions identified as you");
+					sender.sendMessage(ChatColor.GREEN+"/livekit clearsessions"+ChatColor.RESET+" - Clear all active sessions. App clients need to re-claim");
+				} else {
+					sender.sendMessage("You don't have the needed permission "+ChatColor.GREEN+"livekit.commands.basic"+ChatColor.RESET+" to access LiveKit");
+					if(Config.allowAnonymous())sender.sendMessage("However, anonymous joining is enabled!");
+				}
+				if(checkPerm(sender, "livekit.commands.admin", false)) {
+					sender.sendMessage(prefixError+"Admin Commands:"+ChatColor.RESET);
+					sender.sendMessage(ChatColor.GREEN+"/livekit map"+ChatColor.RESET+" - Display info about current map and rendering stats");
+					sender.sendMessage(ChatColor.GREEN+"/livekit map fullrender"+ChatColor.RESET+" - Start full render");
+					sender.sendMessage(ChatColor.GREEN+"/livekit map abortrender"+ChatColor.RESET+" - Clear rendering queue");
+					sender.sendMessage(ChatColor.GREEN+"/livekit map bounds"+ChatColor.RESET+" - Displays livemap bounds vs actual world size bounds");
+					sender.sendMessage(ChatColor.GREEN+"/livekit map mode <FORCED | DISCOVER>"+ChatColor.RESET+" - Change map mode");
+					sender.sendMessage(ChatColor.GREEN+"/livekit map cpu <time in %>"+ChatColor.RESET+" - Speed up rendering performance at the cost of server lag. Use with care. Default: 40%");
+					sender.sendMessage(ChatColor.GREEN+"/livekit map bounds update"+ChatColor.RESET+" - Sets livemap bounds to current world bounds.");
+				}
+				return true;
 			}
 		}
 		return false;
@@ -247,6 +290,8 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 					builder.append("Chunks loaded: "+Bukkit.getWorld(map.getWorld()).getLoadedChunks().length);
 					
 					sender.sendMessage(prefix+builder.toString());
+
+					return true;
 				}
 				if(args.length == 2) {
 					if(args[1].equalsIgnoreCase("fullrender")) {
@@ -259,16 +304,22 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 							map.fullRender();
 							sender.sendMessage(prefix+"Fullrender started");
 						}catch(Exception ex){sender.sendMessage(prefixError+ex.getMessage()); return true;}
+
+						return true;
 					}
 					if(args[1].equalsIgnoreCase("abortrender")) {
 						map.clearChunkQueue();
 						map.clearRegionQueue();
 						sender.sendMessage(prefix+"Rendering queues cleared!");
+
+						return true;
 					}
 					if(args[1].equalsIgnoreCase("bounds")) {
 						BoundingBox world = BoundingBox.fromWorld(Bukkit.getWorld(map.getWorld()).getName());
 						sender.sendMessage(prefix+"Current: "+options.getLimits().toString());
 						sender.sendMessage(prefix+"World bounds: "+world.toString());
+
+						return true;
 					}
 				}
 				if(args.length == 3) {
@@ -283,6 +334,8 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 
 						map.setRenderingMode(mode);
 						sender.sendMessage(prefix+"Mode "+mode.name()+" set!"+(mode == RenderingMode.FORCED ? " Don't forget to check bounds and start full render!" : ""));
+
+						return true;
 					}
 					if(args[1].equalsIgnoreCase("cpu")) {
 						float percent = 20;
@@ -299,6 +352,8 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 						if(percent >= 80) {
 							sender.sendMessage(prefix+"WARNING: Setting cpu time above 80% might cause severe lag!");
 						}
+
+						return true;
 					}
 					if(args[1].equalsIgnoreCase("bounds")) {
 						if(args[2].equalsIgnoreCase("update")) {
@@ -307,12 +362,14 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 								options.setLimits(world);
 							}
 							sender.sendMessage(prefix+"Updated map bounds to "+world.toString());
+
+							return true;
 						}
 					}
 				}
 			}
 		}
-		return true;
+		return false;
 	}
 
 	private boolean handleAdminCommands(CommandSender sender, Command command, String label, String[] args) {
@@ -324,6 +381,8 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 
 				LiveKit.getInstance().commandReloadPermissions();
 				sender.sendMessage(prefix+"Permissions will reload");
+
+				return true;
 			}
 
 			if(args[0].equalsIgnoreCase("modules")) {
@@ -333,8 +392,10 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 				for(BaseModule module : LiveKit.getInstance().getModules()) {
 					sender.sendMessage(module.getType()+" Version: "+module.getVersion()+" Enabled: "+module.isEnabled());
 				}
+
+				return true;
 			}
-			return true;
+			
 		}
 		/*if(args.length == 3) {
 			if(args[0].equalsIgnoreCase("modules")) {
@@ -354,19 +415,28 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 				}
 			}
 		}*/
-		return true;
+		return false;
 	}
 
 	private boolean checkPerm(CommandSender sender, String permission) {
+		return checkPerm(sender, permission, true);
+	}
+
+	private boolean checkPerm(CommandSender sender, String permission, boolean verbose) {
 		if(sender.isOp()) return true;
 
 		if(sender instanceof Player) {
 			Player player = (Player)sender;
 			boolean access = Permissions.has(player, permission);
-			if(!access) player.sendMessage(prefixError+"You need "+permission+" permission to access this command!");
+			if(!access && verbose) player.sendMessage(prefixError+"You need "+permission+" permission to access this command!");
 			return access;
 		}
 		return false;
+	}
+
+	private String friendlyBool(boolean bool) {
+		if(bool) return ChatColor.GREEN+"Yes"+ChatColor.RESET;
+		else return ChatColor.RED+"No"+ChatColor.RESET;
 	}
 
 	public static Plugin getInstance() {
