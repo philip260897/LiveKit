@@ -622,6 +622,8 @@ public class LiveMapModule extends BaseModule implements Listener
         Plugin.debug("LiveMapModule using default options "+world);
         if(_options==null) _options = new RenderingOptions();
         _options.limits = BoundingBox.fromWorld(world);
+        if(_options.limits.maxX - _options.limits.minX > 20) { _options.limits.minX = -5; _options.limits.maxX = 5; }
+        if(_options.limits.maxZ - _options.limits.minZ > 20) { _options.limits.minZ = -5; _options.limits.maxZ = 5; }
     }
 
     private void load() throws Exception{
