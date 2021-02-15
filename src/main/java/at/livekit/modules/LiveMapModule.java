@@ -820,6 +820,9 @@ public class LiveMapModule extends BaseModule implements Listener
             if(box.maxX == 0 && box.minX == 0) { box.minX = -1; box.maxX = 1;}
             if(box.minZ == 0 && box.maxZ == 0) { box.minZ = -1; box.maxZ = 1;}
 
+            if(box.maxX - box.minX > 50) { box.minX = -25; box.maxX = 25; }
+            if(box.maxZ - box.minZ > 50) { box.minZ = -25; box.maxZ = 25; }
+
             return box;
         }
 

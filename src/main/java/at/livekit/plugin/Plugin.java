@@ -260,7 +260,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 					sender.sendMessage(ChatColor.GREEN+"/livekit map mode <FORCED | DISCOVER>"+ChatColor.RESET+" - Change map mode");
 					sender.sendMessage(ChatColor.GREEN+"/livekit map cpu <time in %>"+ChatColor.RESET+" - Speed up rendering performance at the cost of server lag. Use with care. Default: 40%");
 					sender.sendMessage(ChatColor.GREEN+"/livekit map bounds update"+ChatColor.RESET+" - Sets livemap bounds to current world bounds.");
-					sender.sendMessage(ChatColor.GREEN+"/livekit map bounds <minX> <maxX> <minZ> <maxZ>"+ChatColor.RESET+" - Set custom livemap bounds. Make sure max > min");
+					sender.sendMessage(ChatColor.GREEN+"/livekit map bounds <minX> <maxX> <minZ> <maxZ>"+ChatColor.RESET+" - Set custom livemap bounds. Make sure max > min. Coordinates are in regions (1 region = 32x32 Chunks)");
 				}
 				return true;
 			}
@@ -296,6 +296,12 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 				}
 				if(args.length == 2) {
 					if(args[1].equalsIgnoreCase("fullrender")) {
+
+						if(options.getLimits().maxX - options.getLimits().minX > 200 || options.getLimits().maxZ - options.getLimits().minZ > 200) {
+							sender.sendMessage(prefixError+"The current bounds are to big! Use /livekit map bounds <minX> <maxX> <minZ> <maxZ> to set fitting bounds");
+							return true;
+						}
+
 						if(map.getRegionQueueSize() != 0) {
 							sender.sendMessage(prefixError+"Fullrender can only be startet if Region Queue is empty!");
 							return true;
@@ -377,6 +383,11 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 							int maxZ = Integer.parseInt(args[5]);
 
 							if(maxX - minX >= 1 && maxZ - minZ >= 1) {
+								if(maxX - minX > 50 || maxZ - minZ > 50) {
+									sender.sendMessage(prefixError+"The bounds you are trying to set are to big! Limited to 50x50. If you think it's not enough, contact me livekitapp@gmail.com");
+									return true;
+								}
+
 								map.setBounds(minX, maxX, minZ, maxZ);
 								sender.sendMessage(prefix+"New bounds have been set!");
 								sender.sendMessage("Bounds: "+options.getLimits().toString());
