@@ -87,10 +87,17 @@ public class LiveMapModule extends BaseModule implements Listener
 
     public void setCPUTime(int ms) {
         _options.cpuTime = ms;
+        saveProperties();
     }
 
     public void setRenderingMode(RenderingMode mode) {
         _options.mode = mode;
+        saveProperties();
+    }
+
+    public void setBounds(int minX, int maxX, int minZ, int maxZ) {
+        _options.setLimits(new BoundingBox(minX, maxX, minZ, maxZ));
+        saveProperties();
     }
 
     public void fullRender() throws Exception{
@@ -220,7 +227,7 @@ public class LiveMapModule extends BaseModule implements Listener
             save();
         }catch(Exception ex){ex.printStackTrace();}
 
-        saveOptions();
+        saveCache();
 
         _regions.clear();
         _updates.clear();
@@ -527,17 +534,28 @@ public class LiveMapModule extends BaseModule implements Listener
         return null;
     }
 
-    private void saveOptions() {
+    private void saveCache() {
         try{
-            File file = new File(getDir(), "data.json");
+            File file = new File(getDir(), "cache.json");
             if(!file.exists()) file.createNewFile();
 
-            JSONObject options = _options.toJson();
+            JSONObject options = new JSONObject();
             JSONArray chunks = new JSONArray(_queueChunks.stream().map(c->c.toJson()).collect(Collectors.toList()));
             if(_chunk != null) chunks.put(_chunk.toJson());
 
             options.put("chunk_queue", chunks);
             options.put("region_queue", _queueRegions.stream().map(c->c.toJson()).collect(Collectors.toList()));
+
+            Files.write(file.toPath(), options.toString().getBytes());
+        }catch(Exception ex){ex.printStackTrace();}
+    }
+
+    private void saveProperties() {
+        try{
+            File file = new File(getDir(), "properties.json");
+            if(!file.exists()) file.createNewFile();
+
+            JSONObject options = _options.toJson();
 
             Files.write(file.toPath(), options.toString().getBytes());
         }catch(Exception ex){ex.printStackTrace();}
@@ -565,6 +583,36 @@ public class LiveMapModule extends BaseModule implements Listener
                             _queueRegions.add(Offset.fromJson(rqueue.getJSONObject(i)));
                         }
                     }
+
+                    Plugin.log("Converting to new rendering data format");
+                    optionsFile.delete();
+                    saveCache();
+                    saveProperties();
+                    return;
+                }
+
+                //v 0.0.5 split render queue cache and properties file!
+                optionsFile = new File(folder, "cache.json");
+                if(optionsFile.exists()) {
+                    JSONObject data = new JSONObject(new String(Files.readAllBytes(optionsFile.toPath())));
+                    if(data.has("chunk_queue")) {
+                        JSONArray cqueue = data.getJSONArray("chunk_queue");
+                        for(int i = 0; i < cqueue.length(); i++) {
+                            _queueChunks.add(Offset.fromJson(cqueue.getJSONObject(i)));
+                        }
+                    }
+
+                    if(data.has("region_queue")) {
+                        JSONArray rqueue = data.getJSONArray("region_queue");
+                        for(int i = 0; i < rqueue.length(); i++) {
+                            _queueRegions.add(Offset.fromJson(rqueue.getJSONObject(i)));
+                        }
+                    }
+                }
+                optionsFile = new File(folder, "properties.json");
+                if(optionsFile.exists()) {
+                    JSONObject data = new JSONObject(new String(Files.readAllBytes(optionsFile.toPath())));
+                    _options = RenderingOptions.fromJson(data);
 
                     return;
                 }
@@ -700,6 +748,17 @@ public class LiveMapModule extends BaseModule implements Listener
         public int maxZ = 0;
         private boolean _initialized = false;
 
+        public BoundingBox() {
+
+        }
+
+        public BoundingBox(int minX, int maxX, int minZ, int maxZ) {
+            this.minX = minX;
+            this.maxX = maxX;
+            this.minZ = minZ;
+            this.maxZ = maxZ;
+            _initialized = true;
+        }
       
         public void update(int x, int z) {
           if(_initialized == false) {

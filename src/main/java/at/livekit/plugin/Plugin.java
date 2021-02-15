@@ -260,6 +260,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 					sender.sendMessage(ChatColor.GREEN+"/livekit map mode <FORCED | DISCOVER>"+ChatColor.RESET+" - Change map mode");
 					sender.sendMessage(ChatColor.GREEN+"/livekit map cpu <time in %>"+ChatColor.RESET+" - Speed up rendering performance at the cost of server lag. Use with care. Default: 40%");
 					sender.sendMessage(ChatColor.GREEN+"/livekit map bounds update"+ChatColor.RESET+" - Sets livemap bounds to current world bounds.");
+					sender.sendMessage(ChatColor.GREEN+"/livekit map bounds <minX> <maxX> <minZ> <maxZ>"+ChatColor.RESET+" - Set custom livemap bounds. Make sure max > min");
 				}
 				return true;
 			}
@@ -359,12 +360,34 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 						if(args[2].equalsIgnoreCase("update")) {
 							BoundingBox world = BoundingBox.fromWorld(Bukkit.getWorld(map.getWorld()).getName());
 							if(world != null) {
-								options.setLimits(world);
+								map.setBounds(world.minX, world.maxX, world.minZ, world.maxZ);
 							}
 							sender.sendMessage(prefix+"Updated map bounds to "+world.toString());
 
 							return true;
 						}
+					}
+				}
+				if(args.length == 6) {
+					if(args[1].equalsIgnoreCase("bounds")) {
+						try{
+							int minX = Integer.parseInt(args[2]);
+							int maxX = Integer.parseInt(args[3]);
+							int minZ = Integer.parseInt(args[4]);
+							int maxZ = Integer.parseInt(args[5]);
+
+							if(maxX - minX >= 1 && maxZ - minZ >= 1) {
+								map.setBounds(minX, maxX, minZ, maxZ);
+								sender.sendMessage(prefix+"New bounds have been set!");
+								sender.sendMessage("Bounds: "+options.getLimits().toString());
+							} else {
+								sender.sendMessage(prefixError+"Invalid bounds set. Make sure max > min");
+							}
+
+						}catch(Exception ex) {
+							sender.sendMessage(prefixError+"Invalid bound numbers specified!");
+						}
+						return true;
 					}
 				}
 			}
