@@ -46,7 +46,7 @@ public class ModuleManager
     public void onEnable(Map<String,ActionMethod> signatures) {
         this.registerModule(new SettingsModule(listener));
         this.registerModule(new PlayerModule(listener));
-        this.registerModule(new LiveMapModule(Config.getModuleString("LiveMapModule", "world"), listener));
+        this.registerModule(new LiveMapModule(new String[]{Config.getModuleString("LiveMapModule", "world")}, listener));
         this.registerModule(new WeatherTimeModule(Config.getModuleString("LiveMapModule", "world"), listener));
         this.registerModule(new AdminModule(listener));
         this.registerModule(new ChatModule(listener));

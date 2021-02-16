@@ -276,6 +276,19 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 				LiveMapModule map = (LiveMapModule)LiveKit.getInstance().getModuleManager().getModule("LiveMapModule");
 				if(!map.isEnabled()) { sender.sendMessage(prefixError+" LiveMapModule not enabled."); return true;}
 
+				sender.sendMessage(map.getWorldInfo());
+
+				return true;
+			}
+		}
+
+		/*if(args.length >= 1) {
+			if(label.equalsIgnoreCase("livekit") && args[0].equalsIgnoreCase("map")) {
+				if(!checkPerm(sender, "livekit.commands.admin")) return true;
+
+				LiveMapModule map = (LiveMapModule)LiveKit.getInstance().getModuleManager().getModule("LiveMapModule");
+				if(!map.isEnabled()) { sender.sendMessage(prefixError+" LiveMapModule not enabled."); return true;}
+
 				RenderingOptions options = map.getOptions();
 
 				if(args.length == 1) {
@@ -402,7 +415,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 					}
 				}
 			}
-		}
+		}*/
 		return false;
 	}
 
@@ -486,6 +499,6 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 	}
 
 	public static void debug(String message) {
-		//logger.warning(message);
+		logger.warning(message);
 	}
 }
