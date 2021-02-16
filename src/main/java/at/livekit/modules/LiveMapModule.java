@@ -1,26 +1,16 @@
 package at.livekit.modules;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.PrintWriter;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.stream.Collectors;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
-import org.bukkit.Material;
 import org.bukkit.World;
-import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
 import org.bukkit.event.EventHandler;
@@ -32,9 +22,6 @@ import org.bukkit.event.block.BlockFormEvent;
 import org.bukkit.event.block.BlockGrowEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.BlockSpreadEvent;
-/*import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerMoveEvent;
-import org.bukkit.event.player.PlayerQuitEvent;*/
 import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.ChunkPopulateEvent;
 import org.bukkit.event.world.StructureGrowEvent;
@@ -42,12 +29,10 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import at.livekit.livekit.Identity;
+import at.livekit.map.RenderJob;
 import at.livekit.map.RenderWorld;
-import at.livekit.modules.BaseModule.Action;
 import at.livekit.plugin.Plugin;
 import at.livekit.packets.ActionPacket;
-import at.livekit.packets.BlockPacket;
-import at.livekit.packets.ChunkPacket;
 import at.livekit.packets.IPacket;
 import at.livekit.packets.RawPacket;
 import at.livekit.packets.StatusPacket;
@@ -55,7 +40,7 @@ import at.livekit.packets.StatusPacket;
 public class LiveMapModule extends BaseModule implements Listener
 {
     private static String DEFAULT_WORLD = "world";
-    private static int CPU_TIME = 40;
+    private static int CPU_TIME = 50;
 
     private String[] _worlds;
     private RenderingOptions _options;
@@ -105,6 +90,14 @@ public class LiveMapModule extends BaseModule implements Listener
         return getRenderWorld(DEFAULT_WORLD).getWorldInfoString();
     }
 
+    public void startRenderJob(RenderJob job) throws Exception {
+        getRenderWorld(DEFAULT_WORLD).startJob(job);
+    }
+
+    public void stopRenderJob() {
+        getRenderWorld(DEFAULT_WORLD).stopJob();
+    }
+
     /*public void fullRender() throws Exception{
         if(_options.mode == RenderingMode.DISCOVER) throw new Exception("Fullrender can only be started in FORCED mode!");
 
@@ -145,7 +138,7 @@ public class LiveMapModule extends BaseModule implements Listener
         return world;
     }*/
 
-    private RenderWorld getRenderWorld(String world) {
+    public RenderWorld getRenderWorld(String world) {
         for(RenderWorld w : worlds) {
             if(w.getWorldName().equals(world)) {
                 return w;
@@ -270,7 +263,7 @@ public class LiveMapModule extends BaseModule implements Listener
             for(RenderWorld world : worlds) {
                 if(!world._needsUpdate) continue;
 
-                IPacket packet = world.update(_frameStart, CPU_TIME/worlds.size(), tick);
+                IPacket packet = world.update(_frameStart, CPU_TIME, tick);
                 if(packet != null) {
                     synchronized(_updates) {
                         _updates.add(packet);

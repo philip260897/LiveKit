@@ -3,6 +3,7 @@ package at.livekit.map;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Material;
+import org.bukkit.World.Environment;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 
@@ -18,7 +19,7 @@ public class Renderer
     //private static byte[] _chunkData;
     public static boolean render(String world, RenderTask task, long cpuTime, long frameStart) throws Exception {
         //if(_currentTask != task) throw new Exception("RenderTask missmatch!");
-        
+        long start = System.currentTimeMillis();
 
         if (task != null) {
             if(task.region == null || task.region.isDead()) throw new Exception("RenderTask region is dead!");
@@ -39,8 +40,14 @@ public class Renderer
             }
             
             if(task.isChunk()) {
+                long cl = System.currentTimeMillis();
+
                 boolean unload = !Bukkit.getWorld(world).isChunkLoaded(task.getChunkOrBlock().x, task.getChunkOrBlock().z);
                 Chunk c = Bukkit.getWorld(world).getChunkAt(task.getChunkOrBlock().x, task.getChunkOrBlock().z);
+
+                long acl = System.currentTimeMillis();
+
+                //Bukkit.getWorld("name").chunk
                 
                 for (int z = task.renderingZ; z < 16; z++) {
                     for (int x = task.renderingX; x < 16; x++) {
@@ -62,12 +69,24 @@ public class Renderer
                         if(System.currentTimeMillis() - frameStart > cpuTime) {
                             task.renderingZ = z;
                             task.renderingX = x+1;
+
+                            long endRender = System.currentTimeMillis();
+                            System.out.println("Rendering partial="+(endRender-acl) +"ms chunkloading=" + (acl - cl) + "ms start=" + (cl - start)+"ms all="+(endRender-start)+"ms");
+
+
                             return false;
                         }
                     }
                     task.renderingX = 0;
                 }
+
+                long preunload = System.currentTimeMillis();
+
                 if(unload) Bukkit.getWorld(world).unloadChunk(task.getChunkOrBlock().x, task.getChunkOrBlock().z, false);
+
+                long endRender = System.currentTimeMillis();
+                System.out.println("unloading("+unload+")="+(endRender-preunload) +"ms renderer="+(preunload-acl)+"ms chunkloading=" + (acl - cl) + "ms start=" + (cl - start)+"ms all="+(endRender-start)+"ms");
+
             } else {
                 Block block = Bukkit.getWorld(world).getHighestBlockAt(task.getChunkOrBlock().x, task.getChunkOrBlock().z);
 

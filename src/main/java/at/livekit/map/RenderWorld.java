@@ -17,7 +17,7 @@ import at.livekit.plugin.Plugin;
 
 public class RenderWorld 
 {   
-    private static int TIMEOUT_LOADING = 10 * 1000;
+    private static int TIMEOUT_LOADING = 40 * 1000;
 
     private String world;
     private File workingDirectory;
@@ -30,11 +30,17 @@ public class RenderWorld
     private List<RegionData> _loadedRegions = new ArrayList<RegionData>();
 
     private RenderTask _task = null;
+    
+    private RenderBounds _bounds;
+    private RenderJob _job;
 
     public RenderWorld(String world) {
         this.world = world;
         this.workingDirectory = new File(Plugin.getInstance().getDataFolder(), "map/"+world);
         if(!this.workingDirectory.exists()) this.workingDirectory.mkdirs();
+
+        _bounds = new RenderBounds(-512*20, -512*20, 511*20, 511*20);
+        //TODO: only load regions where render bounds
 
         synchronized(_regions) {
             for(File file : workingDirectory.listFiles()) {
@@ -48,12 +54,25 @@ public class RenderWorld
         }
     }
 
+    public void startJob(RenderJob job) throws Exception {
+        if(_job != null) throw new Exception("Renderjob still active");
+        _job = job;
+    }
+
+    public void stopJob() {
+        _job = null;
+    }
+
     public List<Offset> getRegions() {
         return _regions;
     }
 
     public String getWorldName() {
         return world;
+    }
+
+    public RenderBounds getRenderBounds() {
+        return _bounds;
     }
 
     public int regionCount() {
@@ -65,6 +84,7 @@ public class RenderWorld
     public boolean _needsUpdate = false;
     public boolean needsUpdate() {
         if(_task != null) return true;
+        if(_job != null) return true;
 
         synchronized(_blockQueue) {
             if(_blockQueue.size() != 0) return true;
@@ -78,12 +98,19 @@ public class RenderWorld
     }
 
     public void updateBlock(Block block) {
+        if(!_bounds.blockInBounds(block.getX(), block.getZ())) return;
+
         synchronized(_blockQueue) {
             _blockQueue.add(new Offset(block.getX(), block.getZ()));
         }
     }
 
     public void updateChunk(Chunk chunk, boolean chunkLoadEvent) {
+        if(!_bounds.chunkInBounds(chunk.getX(), chunk.getZ())) return;
+        if(_task != null && chunkLoadEvent) {
+            if(_task.offset.x == chunk.getX() && _task.offset.z == chunk.getZ()) return;
+        }
+
         synchronized(_chunkQueue) {
             _chunkQueue.add(new Offset(chunk.getX(), chunk.getZ(), chunkLoadEvent));
         }
@@ -97,6 +124,7 @@ public class RenderWorld
                 if(_blockQueue.size() != 0) {
                     Offset block = _blockQueue.remove(0);
                     _task = new RenderTask(block, false);
+                    if(!tick) _task.tickCount++;
                 }
             }
             if(_task == null) {
@@ -104,8 +132,17 @@ public class RenderWorld
                     if(_chunkQueue.size() != 0) {
                         Offset chunk = _chunkQueue.remove(0);
                         _task = new RenderTask(chunk, true);
+                        if(!tick) _task.tickCount++;
                     }
                 }
+            }
+        }
+
+        if(_task == null) {
+            if(_job != null) {
+                Offset next = _job.next();
+                if(next == null) _job = null;
+                else { _task = new RenderTask(next, true); if(!tick) _task.tickCount++; }
             }
         }
 
@@ -139,7 +176,12 @@ public class RenderWorld
                 if(_task.renderingWatchdog == 0) _task.renderingWatchdog = System.currentTimeMillis();
                 
                 try{
+                    long start = System.currentTimeMillis();
+
                     boolean done = Renderer.render(world, _task, cpuTime, frameStart);
+
+                    System.out.println((System.currentTimeMillis()-start)+" rendereding  ms");
+
                     if(done == true) {
                         result = _task.result;
                         _task.state = RenderTaskState.DONE;
@@ -312,6 +354,10 @@ public class RenderWorld
         }
         if(_task != null) {
             result += "\nCurrent Task: "+_task.toString();
+        }
+        result +="\n"+_bounds.toString();
+        if(_job != null) {
+            result += "\n" + _job.toString();
         }
 
         long ramQueues = queueSize * (4 + 4 + 1) + regionSize * (512*512*4+8+4+4+8);

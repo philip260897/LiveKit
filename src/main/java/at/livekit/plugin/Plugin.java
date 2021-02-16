@@ -14,6 +14,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import at.livekit.livekit.Identity;
 import at.livekit.livekit.LiveKit;
 import at.livekit.livekit.PlayerAuth;
+import at.livekit.map.RenderJob;
 import at.livekit.modules.BaseModule;
 import at.livekit.modules.PlayerModule;
 import at.livekit.modules.LiveMapModule.*;
@@ -276,9 +277,33 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 				LiveMapModule map = (LiveMapModule)LiveKit.getInstance().getModuleManager().getModule("LiveMapModule");
 				if(!map.isEnabled()) { sender.sendMessage(prefixError+" LiveMapModule not enabled."); return true;}
 
-				sender.sendMessage(map.getWorldInfo());
+				if(args.length == 1) {
+					sender.sendMessage(map.getWorldInfo());
+					return true;
+				}
 
-				return true;
+				if(args.length == 2) {
+					if(args[1].equals("fullrender")) {
+						try{
+							map.startRenderJob(RenderJob.fromBounds(map.getRenderWorld("world").getRenderBounds()));
+							sender.sendMessage(prefix+"Full render started");
+						}catch(Exception ex){
+							ex.printStackTrace();
+							sender.sendMessage(prefixError+ex.getMessage());
+						}
+						return true;
+					}
+					if(args[1].equals("abortrender")) {
+						try{
+							map.stopRenderJob();
+							sender.sendMessage(prefix+"Full render stopped");
+						}catch(Exception ex){
+							ex.printStackTrace();
+							sender.sendMessage(prefixError+ex.getMessage());
+						}
+						return true;
+					}
+				}
 			}
 		}
 
