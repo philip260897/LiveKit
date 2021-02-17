@@ -26,6 +26,7 @@ modules:
   LiveMapModule:
     enabled: true
     world: 'world'
+    cpuTime: 20
   PlayerModule:
     enabled: true
   WeatherTimeModule:

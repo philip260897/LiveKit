@@ -1,5 +1,7 @@
 package at.livekit.map;
 
+import org.json.JSONObject;
+
 import at.livekit.modules.LiveMapModule.Offset;
 
 public class RenderJob {
@@ -31,11 +33,11 @@ public class RenderJob {
     }
 
     public Offset next() {
-        if(x > right) {
+        if(x >= right) {
             x = left;
             z++;
         } 
-        if(z > bottom) return null;
+        if(z >= bottom) return null;
         return new Offset(x++, z, mode ==  RenderJobMode.MISSING ? true : false);
     }
 
@@ -44,7 +46,31 @@ public class RenderJob {
         return "RenderJob[mode="+mode+"; left(-x)="+left+"; top(-z)="+top+"; right(x)="+right+"; bottom(z)="+bottom+"; x="+x+"; z="+z+"]";
     }
 
+    public JSONObject toJson() {
+        JSONObject json = new JSONObject();
+        json.put("left", left);
+        json.put("top", top);
+        json.put("right", right);
+        json.put("bottom", bottom);
+        json.put("x", x);
+        json.put("z", z);
+        json.put("mode", mode.name());
+        return json;
+    }
+
+    public static RenderJob fromJson(JSONObject json ) {
+        RenderJob job = new RenderJob();
+        job.left = json.getInt("left");
+        job.right = json.getInt("right");
+        job.top = json.getInt("top");
+        job.bottom = json.getInt("bottom");
+        job.x = json.getInt("x");
+        job.z = json.getInt("z");
+        job.mode = RenderJobMode.valueOf(json.getString("mode"));
+        return job;
+    }
+
     public enum RenderJobMode {
-        MISSING, FORCED
+        MISSING, FORCED;
     }
 }

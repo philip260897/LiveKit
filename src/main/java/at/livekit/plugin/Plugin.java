@@ -15,6 +15,7 @@ import at.livekit.livekit.Identity;
 import at.livekit.livekit.LiveKit;
 import at.livekit.livekit.PlayerAuth;
 import at.livekit.map.RenderJob;
+import at.livekit.map.RenderJob.RenderJobMode;
 import at.livekit.modules.BaseModule;
 import at.livekit.modules.PlayerModule;
 import at.livekit.modules.LiveMapModule.*;
@@ -285,7 +286,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 				if(args.length == 2) {
 					if(args[1].equals("fullrender")) {
 						try{
-							map.startRenderJob(RenderJob.fromBounds(map.getRenderWorld("world").getRenderBounds()));
+							map.startRenderJob(RenderJob.fromBounds(map.getRenderWorld("world").getRenderBounds(), RenderJobMode.FORCED));
 							sender.sendMessage(prefix+"Full render started");
 						}catch(Exception ex){
 							ex.printStackTrace();

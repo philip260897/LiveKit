@@ -1,32 +1,38 @@
 package at.livekit.map;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.block.Block;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import at.livekit.modules.LiveMapModule.Offset;
 import at.livekit.modules.LiveMapModule.RegionData;
 import at.livekit.packets.IPacket;
 import at.livekit.plugin.Plugin;
+import at.livekit.utils.Legacy;
+import at.livekit.utils.Utils;
 
 public class RenderWorld 
 {   
-    private static int TIMEOUT_LOADING = 40 * 1000;
+    private static int MAX_LOADED_REGIONS = 16;
+    private static int TIMEOUT_LOADING = 10 * 1000;
 
     private String world;
     private File workingDirectory;
 
-    //private BoundingBox _boundingBox = new BoundingBox();
     private List<Offset> _blockQueue = new ArrayList<Offset>();
     private List<Offset> _chunkQueue = new ArrayList<Offset>();
 
-    private List<Offset> _regions = new ArrayList<Offset>(); 
+    private List<RegionInfo> _regions = new ArrayList<RegionInfo>(); 
     private List<RegionData> _loadedRegions = new ArrayList<RegionData>();
 
     private RenderTask _task = null;
@@ -39,19 +45,78 @@ public class RenderWorld
         this.workingDirectory = new File(Plugin.getInstance().getDataFolder(), "map/"+world);
         if(!this.workingDirectory.exists()) this.workingDirectory.mkdirs();
 
-        _bounds = new RenderBounds(-512*20, -512*20, 511*20, 511*20);
-        //TODO: only load regions where render bounds
+        RenderBounds bounds = null;
+        if(Legacy.hasLegacySettingsCache(workingDirectory)) {
+            bounds = Legacy.getRenderBoundsFromLegacySettingsCache(workingDirectory);
+            Legacy.deleteLegacySettingsCache(workingDirectory);
+            Plugin.log("Legacy data.json converted:");
+            Plugin.log(bounds.toString());
+        } else {
+            File settings = new File(workingDirectory, "settings.json");
+            if(settings.exists()) {
+                try{
+                    bounds = RenderBounds.fromJson(new JSONObject(new String(Files.readAllBytes(settings.toPath()))));
+                }catch(Exception ex){ex.printStackTrace();}
+            }
+        }
 
+        if(bounds != null && bounds.valid()) {
+            this.setRenderBounds(bounds, false);
+        } else {
+            Plugin.log("RenderBounds are invalid for "+world+". Falling back to default bounds");
+            Plugin.log(RenderBounds.DEFAULT.toString());
+            this.setRenderBounds(RenderBounds.DEFAULT, true);
+        }
+
+        try{
+            File cache = new File(workingDirectory, "cache.json");
+            if(cache.exists()) {
+                JSONObject root = new JSONObject(new String(Files.readAllBytes(cache.toPath())));
+                JSONArray blocks = root.getJSONArray("blocks");
+                synchronized(_blockQueue) {
+                    for(int i = 0; i < blocks.length(); i++) {
+                        _blockQueue.add(Offset.fromJson(blocks.getJSONObject(i)));
+                    }
+                }
+                JSONArray chunks = root.getJSONArray("chunks");
+                synchronized(_chunkQueue) {
+                    for(int i = 0; i < chunks.length(); i++) {
+                        _chunkQueue.add(Offset.fromJson(chunks.getJSONObject(i)));
+                    }
+                }
+                if(root.has("job")) {
+                    _job = RenderJob.fromJson(root.getJSONObject("job"));
+                }
+            }
+        }catch(Exception ex){
+            ex.printStackTrace();
+        }
+    }
+
+    public void setRenderBounds(RenderBounds bounds, boolean save) {
         synchronized(_regions) {
+            _regions.clear();
+            long start = System.currentTimeMillis();
             for(File file : workingDirectory.listFiles()) {
                 if(file.getAbsolutePath().endsWith(".region")) {
                     int x = Integer.parseInt(file.getName().split("_")[0]);
                     int z = Integer.parseInt(file.getName().split("_")[1].replace(".region", ""));
-                    _regions.add(new Offset(x, z));
+
+                    if(bounds.regionInBounds(x, z)) {
+                        byte[] ts = readRegionHeader(file);
+                        _regions.add(new RegionInfo(x, z, Utils.decodeTimestamp(ts)));
+                    }
                 }
             }
-            Plugin.debug(_regions.size()+" regions detected for world "+world);
+            _bounds = bounds;
+            Plugin.debug(_regions.size()+" regions detected for world "+world+ " took "+(System.currentTimeMillis()-start)+"ms");
         }
+        try {
+            if(save) Utils.writeFile(new File(workingDirectory, "settings.json"), bounds.toJson().toString());
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        
     }
 
     public void startJob(RenderJob job) throws Exception {
@@ -63,7 +128,7 @@ public class RenderWorld
         _job = null;
     }
 
-    public List<Offset> getRegions() {
+    public List<RegionInfo> getRegions() {
         return _regions;
     }
 
@@ -176,11 +241,11 @@ public class RenderWorld
                 if(_task.renderingWatchdog == 0) _task.renderingWatchdog = System.currentTimeMillis();
                 
                 try{
-                    long start = System.currentTimeMillis();
+                    //long start = System.currentTimeMillis();
 
-                    boolean done = Renderer.render(world, _task, cpuTime, frameStart);
+                    boolean done = Renderer.render(world, _task, cpuTime, frameStart, _bounds);
 
-                    System.out.println((System.currentTimeMillis()-start)+" rendereding  ms");
+                    //System.out.println((System.currentTimeMillis()-start)+" rendereding  ms");
 
                     if(done == true) {
                         result = _task.result;
@@ -193,6 +258,15 @@ public class RenderWorld
             }
             if(_task.state == RenderTaskState.DONE) {
                 if(_task.renderingWatchdog != 0) _task.renderingWatchdog = System.currentTimeMillis() - _task.renderingWatchdog;
+                
+                if(_task.region != null) {
+                    synchronized(_regions) {
+                        RegionInfo info = _regions.stream().filter(i->i.x == _task.regionX && i.z == _task.regionZ).findFirst().orElse(null);
+                        if(info != null) info.timestamp = _task.region.timestamp;
+                        System.out.println("Timestamp updated "+(info != null)+" "+_task.region.timestamp);
+                    }
+                }
+                
                 Plugin.debug(_task.toString());
                 //TODO: doing this for testing purpose...
                 //if(_task.region != null) unloadRegionAsync(_task.region);
@@ -208,21 +282,26 @@ public class RenderWorld
     public void checkUnload() {
         RegionData _unloadTarget = null;
         synchronized(_loadedRegions) {
+            boolean needsUnload = _loadedRegions.size() > MAX_LOADED_REGIONS;
             for(RegionData region : _loadedRegions) {
-                if(System.currentTimeMillis() - region.timestamp > 5*1000) {
+                if(System.currentTimeMillis() - region.timestamp > 30*1000) {
                     _unloadTarget = region;
                     break;
                 }
+            }
+            if(_unloadTarget == null && needsUnload) {
+                //System.out.println("Limit "+MAX_LOADED_REGIONS+" reached, forcing unload: "+_loadedRegions.size());
+                _unloadTarget = _loadedRegions.get(0);
             }
         }
         if(_unloadTarget != null) unloadRegionAsync(_unloadTarget);
     }
 
-    private boolean regionExists(int x, int z) {
+    /*private boolean regionExists(int x, int z) {
         synchronized(_regions) {
             return _regions.stream().filter(r->r.x == x && r.z == z).findFirst().orElse(null) != null;
         }
-    }
+    }*/
 
     private RegionData getLoadedRegion(int x, int z) {
         synchronized(_loadedRegions) {
@@ -239,38 +318,32 @@ public class RenderWorld
             _loadedRegions.add(region);
         }
         synchronized(_regions) {
-            _regions.add(new Offset(x, z));
+            _regions.add(new RegionInfo(x, z, 0));
         }
         return region;
     }
 
     private void loadRegionAsync(int x, int z) {
-        System.out.println("LOADING REGION SCHED");
         Bukkit.getScheduler().runTaskAsynchronously(Plugin.getInstance(), new Runnable(){
 			@Override
 			public void run() {
 				boolean createNew = true;
-                if(regionExists(x, z)) {
+                RegionData region = null;
+                //if(regionExists(x, z)) {
                     File file = new File(workingDirectory, x+"_"+z+".region");
                     try{
                         if(file.exists()) {
                             byte[] data = Files.readAllBytes(file.toPath());
-                            RegionData region = new RegionData(x, z, data);
-                            region.timestamp = 0;
-                            for(int i = 0; i < 8; i++) {
-                                region.timestamp <<= 8;
-                                region.timestamp |= data[i];
-                            }
+                            region = new RegionData(x, z, data);
+                            region.timestamp = Utils.decodeTimestamp(data);
                             createNew = false;
                             synchronized(_loadedRegions) {
                                 _loadedRegions.add(region);
                             }
                         }
                     }catch(Exception ex){ex.printStackTrace();}
-                }
-                if(createNew) createRegion(x, z);
-
-                System.out.println("LOADING REGION LOADED "+x+" "+z);
+                //}
+                if(createNew) region = createRegion(x, z);
 			}
         });
     }
@@ -298,9 +371,18 @@ public class RenderWorld
 
     public void shutdown() {
         
-        //TODO: save region queue
-        //TODO: save chunk queue
-        //TODO: save block queue
+        JSONObject root = new JSONObject();
+        synchronized(_blockQueue) {
+            if(_task != null && !_task.isChunk()) _blockQueue.add(_task.offset);
+            root.put("blocks", _blockQueue.stream().map(b->b.toJson()).collect(Collectors.toList()));
+        }
+        synchronized(_chunkQueue) {
+            _chunkQueue.clear();
+            if(_task != null && _task.isChunk()) _chunkQueue.add(_task.offset);
+            root.put("chunks", _chunkQueue.stream().map(c->c.toJson()).collect(Collectors.toList()));
+        }
+        if(_job != null) root.put("job", _job.toJson());
+        Utils.tryWriteFile(new File(workingDirectory, "cache.json"), root.toString());
 
         synchronized(_loadedRegions) {
             for(RegionData region : _loadedRegions) saveRegion(region);
@@ -329,6 +411,18 @@ public class RenderWorld
         }catch(Exception ex){ex.printStackTrace();}
 
         throw new Exception("Invalid region requested");
+    }
+
+    private byte[] readRegionHeader(File file) {
+        byte[] buffer = new byte[8];
+        try{
+            FileInputStream in = new FileInputStream(file);
+            in.read(buffer, 0 , buffer.length);
+            in.close();
+        }catch(Exception ex){
+            ex.printStackTrace();
+        }
+        return buffer;
     }
 
     public String getWorldInfoString() {
@@ -388,6 +482,7 @@ public class RenderWorld
         public boolean rendering = false;
         public int renderingX=0;
         public int renderingZ=0;
+        public boolean unload = false;
 
         public byte[] buffer;
         public IPacket result;
@@ -420,6 +515,16 @@ public class RenderWorld
         @Override
         public String toString() {
             return "RenderTask[state="+state.name()+"; chunk="+chunk+"; x="+offset.x+"; z="+offset.z+"; regionX="+regionX+"; regionZ="+regionZ+" ticks="+tickCount+"; loading="+loadingWatchdog+"ms; rendering="+renderingWatchdog+"ms]";
+        }
+    }
+
+    public class RegionInfo extends Offset {
+        public long timestamp;
+
+        public RegionInfo(int x, int z, long timestamp) {
+            this.x = x;
+            this.z = z;
+            this.timestamp = timestamp;
         }
     }
 }

@@ -14,6 +14,7 @@ import org.bukkit.World;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockExplodeEvent;
@@ -29,9 +30,12 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import at.livekit.livekit.Identity;
+import at.livekit.map.RenderBounds;
 import at.livekit.map.RenderJob;
 import at.livekit.map.RenderWorld;
+import at.livekit.map.RenderWorld.RegionInfo;
 import at.livekit.plugin.Plugin;
+import at.livekit.utils.Utils;
 import at.livekit.packets.ActionPacket;
 import at.livekit.packets.IPacket;
 import at.livekit.packets.RawPacket;
@@ -39,19 +43,17 @@ import at.livekit.packets.StatusPacket;
 
 public class LiveMapModule extends BaseModule implements Listener
 {
-    private static String DEFAULT_WORLD = "world";
-    private static int CPU_TIME = 50;
+    //private static String DEFAULT_WORLD = "world";
+    private static int CPU_TIME = 20;
 
-    private String[] _worlds;
-    private RenderingOptions _options;
-    
-    private List<RenderWorld> worlds;
+
+    private String world;
+    private RenderWorld renderWorld = null;
     private List<IPacket> _updates = new ArrayList<IPacket>();
 
-    public LiveMapModule(String[] worlds, ModuleListener listener) {
+    public LiveMapModule(String world, ModuleListener listener) {
         super(1, "Live Map", "livekit.module.map", UpdateRate.MAX, listener);
-        this._worlds = worlds;
-        this.worlds = new ArrayList<RenderWorld>(worlds.length);
+        this.world = world;
     }
 
     @Action(name = "ResolveRegion", sync = false)
@@ -59,43 +61,40 @@ public class LiveMapModule extends BaseModule implements Listener
         int x = packet.getData().getInt("x");
         int z = packet.getData().getInt("z");
         String world = packet.getData().getString("world");
-        //if(!world.equals(DEFAULT_WORLD)) return new StatusPacket(0, "World mismatch!");
-
-        RenderWorld renderWorld = getRenderWorld(DEFAULT_WORLD);
-        if(renderWorld == null) return new StatusPacket(0, "World mismatch!");
+        if(!world.equals(world)) return new StatusPacket(0, "World mismatch!");
 
         return new RawPacket(renderWorld.getRegionDataAsync(x, z));
     }
 
-    public RenderingOptions getOptions() {
+    /*public RenderingOptions getOptions() {
         return _options;
-    }
+    }*/
 
     public void setCPUTime(int ms) {
-        _options.cpuTime = ms;
+        LiveMapModule.CPU_TIME = ms;
         //saveProperties();
     }
 
-    public void setRenderingMode(RenderingMode mode) {
+    /*public void setRenderingMode(RenderingMode mode) {
         _options.mode = mode;
         //saveProperties();
-    }
+    }*/
 
-    public void setBounds(int minX, int maxX, int minZ, int maxZ) {
-        _options.setLimits(new BoundingBox(minX, maxX, minZ, maxZ));
-        //saveProperties();
+    public void setRenderBounds(RenderBounds bounds) {
+       renderWorld.setRenderBounds(bounds, true);
+       notifyFull();
     }
 
     public String getWorldInfo() {
-        return getRenderWorld(DEFAULT_WORLD).getWorldInfoString();
+        return renderWorld.getWorldInfoString();
     }
 
     public void startRenderJob(RenderJob job) throws Exception {
-        getRenderWorld(DEFAULT_WORLD).startJob(job);
+        renderWorld.startJob(job);
     }
 
     public void stopRenderJob() {
-        getRenderWorld(DEFAULT_WORLD).stopJob();
+        renderWorld.stopJob();
     }
 
     /*public void fullRender() throws Exception{
@@ -138,58 +137,34 @@ public class LiveMapModule extends BaseModule implements Listener
         return world;
     }*/
 
-    public RenderWorld getRenderWorld(String world) {
+    /*public RenderWorld getRenderWorld(String world) {
         for(RenderWorld w : worlds) {
             if(w.getWorldName().equals(world)) {
                 return w;
             }
         }
         return null;
-    }
+    }*/
 
     @Override
     public void onEnable(Map<String,ActionMethod> signature) {
-       /* try{
-            //TODO: option loading => renderworld
-            loadOptions();
-            //load();
-        }catch(Exception ex){ex.printStackTrace();}*/
 
-        for(String world : _worlds) {
-            World w = Bukkit.getWorld(world);
-            if(w != null) {
-                RenderWorld renderWorld = new RenderWorld(world);
-                
-                if(renderWorld.regionCount() == 0) {
-                    Chunk[] chunks = w.getLoadedChunks();
-                    for(Chunk c : chunks) renderWorld.updateChunk(c, true);
-                }
-
-                worlds.add(renderWorld);
-            }
+        World w = Bukkit.getWorld(world);
+        if(w != null) {
+            renderWorld = new RenderWorld(world);
+            Chunk[] chunks = w.getLoadedChunks();
+            for(Chunk c : chunks) renderWorld.updateChunk(c, true);
         }
 
         Bukkit.getServer().getPluginManager().registerEvents(this, Plugin.getInstance());
         super.onEnable(signature);
 
-        if(worlds.size() == 0) onDisable(signature);
+        if(renderWorld == null) onDisable(signature);
     }
        
     @Override
     public void onDisable(Map<String,ActionMethod> signature) {
-        
-        /*try{
-            save();
-        }catch(Exception ex){ex.printStackTrace();}
-
-        saveCache();
-
-        _regions.clear();
-        _updates.clear();
-        _queueChunks.clear();*/
-        for(RenderWorld world : worlds) world.shutdown();
-
-
+        renderWorld.shutdown();
         super.onDisable(signature);
     }
 
@@ -197,20 +172,18 @@ public class LiveMapModule extends BaseModule implements Listener
     public IPacket onJoinAsync(Identity identity) {
 
         JSONObject json = new JSONObject();
-        json.put("world", DEFAULT_WORLD);
+        json.put("world", world);
         JSONArray regions = new JSONArray();
         json.put("regions", regions);
 
-        RenderWorld world = getRenderWorld(DEFAULT_WORLD);
+        
 
-        synchronized(world.getRegions()) {
-            for(Offset region : world.getRegions()) {
+        synchronized(renderWorld.getRegions()) {
+            for(RegionInfo region : renderWorld.getRegions()) {
                 JSONObject entry = new JSONObject();
                 entry.put("x", region.x);
                 entry.put("z", region.z);
-                //entry.put("timestamp", region.timestamp);
-                entry.put("timestamp", 0);
-                //TODO: fix timestamp
+                entry.put("timestamp", region.timestamp);
                 regions.put(entry);
             }
         }
@@ -223,7 +196,7 @@ public class LiveMapModule extends BaseModule implements Listener
         Map<Identity,IPacket> response = new HashMap<Identity, IPacket>();
         
         JSONObject json = new JSONObject();
-        json.put("world", DEFAULT_WORLD);
+        json.put("world", world);
         JSONArray syncable = new JSONArray();
         JSONArray upd = new JSONArray();
         json.put("updates", upd);
@@ -252,260 +225,26 @@ public class LiveMapModule extends BaseModule implements Listener
         _frameStart = System.currentTimeMillis();
         boolean tick = true;
 
-        _u = 0;
-        for(RenderWorld world : worlds) {
-            world._needsUpdate = world.needsUpdate();
-            if(world._needsUpdate) _u++;
-        }
+        
+        renderWorld._needsUpdate = renderWorld.needsUpdate();
+        while(System.currentTimeMillis() - _frameStart < CPU_TIME && renderWorld._needsUpdate) {
 
-        while(System.currentTimeMillis() - _frameStart < CPU_TIME && _u != 0) {
-            _u = 0;
-            for(RenderWorld world : worlds) {
-                if(!world._needsUpdate) continue;
-
-                IPacket packet = world.update(_frameStart, CPU_TIME, tick);
-                if(packet != null) {
-                    synchronized(_updates) {
-                        _updates.add(packet);
-                        notifyChange();
-                    }
-                    world._needsUpdate = world.needsUpdate();
+            IPacket packet = renderWorld.update(_frameStart, CPU_TIME, tick);
+            if(packet != null) {
+                synchronized(_updates) {
+                    _updates.add(packet);
+                    notifyChange();
                 }
-
-                _u++;
+                renderWorld._needsUpdate = renderWorld.needsUpdate();
             }
+
             tick = false;
         }
 
-        for(RenderWorld world : worlds) world.checkUnload();
-
+        renderWorld.checkUnload();
         long delta = System.currentTimeMillis() - _frameStart;
-        if(delta != 0) System.out.println(delta+"ms used of tick");
+        //if(delta != 0) System.out.println(delta+"ms used of tick");
     }
-    /*@Override
-    public void update() {
-        _frameStart = System.currentTimeMillis();
-        //only do chunk update, queue result packet
-        while(System.currentTimeMillis() - _frameStart < _options.cpuTime) {
-            try{
-                Offset next = null;
-                if(_currentUpdate == null) { 
-                    synchronized(_queueChunks) {
-                        if(_queueChunks.size() == 0) {
-                            synchronized(_queueRegions) {
-                                if(_queueRegions.size() != 0) {
-                                    Offset region = _queueRegions.remove(0);
-                                    for(int z = 0; z < 32; z++) {
-                                        for(int x = 0; x < 32; x++) {
-                                            _queueChunks.add(new Offset(region.x*32 + x, region.z*32+z));
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        if(_queueChunks.size() != 0) next = _queueChunks.remove(0);
-                        
-                    }
-                    if(next == null) return;
-
-                    if(next.onlyIfAbsent) {
-                        if(this.loadedChunkExists(next)) {
-                            continue;
-                        }
-                    }
-                }
-
-                IPacket result = null;
-                if(_currentUpdate != null) result = update(null);
-                else if(_options.mode == RenderingMode.FORCED || (_options.mode == RenderingMode.DISCOVER && Bukkit.getWorld(world).isChunkGenerated(next.x, next.z)) ) result = update(next);
-                //if(result == null) update();
-
-                
-
-                if(result != null) {
-                    synchronized(_updates) {
-                        _updates.add(result);
-                    }
-                    notifyChange();
-                }
-            }catch(Exception ex){ex.printStackTrace();}
-        }
-    }*/
-
-    /*private void createRegion(int regionX, int regionZ) {
-        String key = regionX + "_" + regionZ;
-        synchronized (_regions) {
-            if (!_regions.containsKey(key)) {
-                _regions.put(key, new RegionData(regionX, regionZ, new byte[8 + 512 * 512 * 4]));
-                Arrays.fill(_regions.get(key).data, (byte) 0xFF);
-                boundingBox.update(regionX, regionZ);
-            }
-        }
-    }*/
-
-   
-
-   /* public boolean loadedChunkExists(Offset chunk) {
-        int regionX = (int) Math.floor(((double) chunk.x / 32.0));
-        int regionZ = (int) Math.floor(((double) chunk.z / 32.0));
-        String key = regionX + "_" + regionZ;
-
-        if(!_regions.containsKey(key)) return false;
-
-        int localX = chunk.x*16 % 512;
-        if (localX < 0)
-            localX += 512;
-
-        int localZ = chunk.z*16 % 512;
-        if (localZ < 0)
-            localZ += 512;
-
-        RegionData data = _regions.get(key);
-
-        for(int i = 0; i < 4; i++) {
-            if( data.data[8 + ((localZ+15) * 4 * 512) + ((localX+15) * 4) + i] != (byte)0xFF) return true;
-        }
-        return false;
-    }*/
-
- 
-
-
-    /*public static byte[] loadRegion(int x, int z, String world) {
-        File file = new File(Plugin.getInstance().getDataFolder(), "map/"+world+"/"+x+"_"+z+".region");
-        if(!file.exists()) return null;
-
-        try{
-            return Files.readAllBytes(file.toPath());
-        }catch(Exception ex){ex.printStackTrace();}
-        return null;
-    }
-
-    private void saveCache() {
-        try{
-            File file = new File(getDir(), "cache.json");
-            if(!file.exists()) file.createNewFile();
-
-            JSONObject options = new JSONObject();
-            JSONArray chunks = new JSONArray(_queueChunks.stream().map(c->c.toJson()).collect(Collectors.toList()));
-            if(_chunk != null) chunks.put(_chunk.toJson());
-
-            options.put("chunk_queue", chunks);
-            options.put("region_queue", _queueRegions.stream().map(c->c.toJson()).collect(Collectors.toList()));
-
-            Files.write(file.toPath(), options.toString().getBytes());
-        }catch(Exception ex){ex.printStackTrace();}
-    }
-
-    private void saveProperties() {
-        try{
-            File file = new File(getDir(), "properties.json");
-            if(!file.exists()) file.createNewFile();
-
-            JSONObject options = _options.toJson();
-
-            Files.write(file.toPath(), options.toString().getBytes());
-        }catch(Exception ex){ex.printStackTrace();}
-    }
-
-    private void loadOptions() {
-        try{
-            File folder = getDir();
-            if(folder.exists()) {
-                File optionsFile = new File(folder, "data.json");
-                if(optionsFile.exists()) {
-                    JSONObject data = new JSONObject(new String(Files.readAllBytes(optionsFile.toPath())));
-                    _options = RenderingOptions.fromJson(data);
-
-                    if(data.has("chunk_queue")) {
-                        JSONArray cqueue = data.getJSONArray("chunk_queue");
-                        for(int i = 0; i < cqueue.length(); i++) {
-                            _queueChunks.add(Offset.fromJson(cqueue.getJSONObject(i)));
-                        }
-                    }
-
-                    if(data.has("region_queue")) {
-                        JSONArray rqueue = data.getJSONArray("region_queue");
-                        for(int i = 0; i < rqueue.length(); i++) {
-                            _queueRegions.add(Offset.fromJson(rqueue.getJSONObject(i)));
-                        }
-                    }
-
-                    Plugin.log("Converting to new rendering data format");
-                    optionsFile.delete();
-                    saveCache();
-                    saveProperties();
-                    return;
-                }
-
-                //v 0.0.5 split render queue cache and properties file!
-                optionsFile = new File(folder, "cache.json");
-                if(optionsFile.exists()) {
-                    JSONObject data = new JSONObject(new String(Files.readAllBytes(optionsFile.toPath())));
-                    if(data.has("chunk_queue")) {
-                        JSONArray cqueue = data.getJSONArray("chunk_queue");
-                        for(int i = 0; i < cqueue.length(); i++) {
-                            _queueChunks.add(Offset.fromJson(cqueue.getJSONObject(i)));
-                        }
-                    }
-
-                    if(data.has("region_queue")) {
-                        JSONArray rqueue = data.getJSONArray("region_queue");
-                        for(int i = 0; i < rqueue.length(); i++) {
-                            _queueRegions.add(Offset.fromJson(rqueue.getJSONObject(i)));
-                        }
-                    }
-                }
-                optionsFile = new File(folder, "properties.json");
-                if(optionsFile.exists()) {
-                    JSONObject data = new JSONObject(new String(Files.readAllBytes(optionsFile.toPath())));
-                    _options = RenderingOptions.fromJson(data);
-
-                    return;
-                }
-            }
-        }catch(Exception ex){ex.printStackTrace();}
-
-        Plugin.debug("LiveMapModule using default options "+world);
-        if(_options==null) _options = new RenderingOptions();
-        _options.limits = BoundingBox.fromWorld(world);
-        if(_options.limits.maxX - _options.limits.minX > 20) { _options.limits.minX = -5; _options.limits.maxX = 5; }
-        if(_options.limits.maxZ - _options.limits.minZ > 20) { _options.limits.minZ = -5; _options.limits.maxZ = 5; }
-    }
-
-    private void load() throws Exception{
-        File folder = getDir();
-        if(!folder.exists()) folder.mkdirs();
-
-        for(File file : folder.listFiles()) {
-            if(file.isFile() && file.getName().endsWith(".region")) {
-                RegionData data =  new RegionData(file);
-                if(_options.getLimits().regionInBounds(data.x, data.z)) {
-                    _regions.put(data.x+"_"+data.z, data);
-                }
-            }
-        }
-        Plugin.debug("LiveMapModule loaded "+_regions.size()+" regions for "+world);
-    }
-
-    private void save() throws FileNotFoundException, IOException { 
-        synchronized(_regions) {
-            for(Entry<String, RegionData> entry : _regions.entrySet()) {
-                entry.getValue().save(getDir());
-                /*File file = new File(getDir(), entry.getKey()+".region");
-                if(!file.exists()) file.createNewFile();
-
-                try (FileOutputStream fos = new FileOutputStream(file)) {
-                    fos.write(entry.getValue());
-                }*/
-       /*     }
-        }
-    }
-
-    private File getDir() {
-        return new File(Plugin.getInstance().getDataFolder(), "map/"+world);
-    }*/
 
     public static class RegionData {
         protected int x;
@@ -528,19 +267,16 @@ public class LiveMapModule extends BaseModule implements Listener
                 x = Integer.parseInt(file.getName().split("_")[0]);
                 z = Integer.parseInt(file.getName().split("_")[1].replace(".region", ""));
                 data = Files.readAllBytes(file.toPath());
-                timestamp = 0;
-                for(int i = 0; i < 8; i++) {
-                    timestamp <<= 8;
-                    timestamp |= data[i];
-                }
+                timestamp = Utils.decodeTimestamp(data);
 
             }catch(Exception ex){ex.printStackTrace();}
         }
 
         public void invalidate() {
             timestamp = System.currentTimeMillis();
+            byte[] encoded = Utils.encodeTimestamp(timestamp);
             for(int i = 0; i < 8; i++) {
-                data[i] = (byte)(0xFF & (timestamp >> (56-(i*8))));
+                data[i] = encoded[i];
             }
         }
 
@@ -615,7 +351,8 @@ public class LiveMapModule extends BaseModule implements Listener
             Offset offset = new Offset();
             offset.x = json.getInt("x");
             offset.z = json.getInt("z");
-            offset.onlyIfAbsent = (json.has("absent")&&!json.isNull("absent")?json.getBoolean("absent"):false);
+            if(json.has("absent")) offset.onlyIfAbsent = (json.has("absent")&&!json.isNull("absent")?json.getBoolean("absent"):false);
+            if(json.has("a")) offset.onlyIfAbsent = (json.has("a")&&!json.isNull("a")?json.getBoolean("a"):false);
             return offset;
         }
 
@@ -624,7 +361,7 @@ public class LiveMapModule extends BaseModule implements Listener
             JSONObject json = new JSONObject();
             json.put("x", x);
             json.put("z", z);
-            if(onlyIfAbsent == true)json.put("absent", onlyIfAbsent);
+            if(onlyIfAbsent == true)json.put("a", onlyIfAbsent);
             return json;
         }
     }
@@ -728,116 +465,95 @@ public class LiveMapModule extends BaseModule implements Listener
 
     //BLOCK EVENTS
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.MONITOR)
     public void onBlockPlaceEvent(BlockPlaceEvent event) {
         if(!isEnabled()) return;
-        RenderWorld world = getRenderWorld(event.getBlock().getWorld().getName());
-        if(world == null) return;
-        
 
         if(event.getBlock().getY() == event.getBlock().getWorld().getHighestBlockAt(event.getBlock().getX(), event.getBlock().getZ()).getY()) {
-            world.updateBlock(event.getBlock());
+            renderWorld.updateBlock(event.getBlock());
         }
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.MONITOR)
     public void onBlockBreakEvent(BlockBreakEvent event) {
         if(!isEnabled()) return;
-        RenderWorld world = getRenderWorld(event.getBlock().getWorld().getName());
-        if(world == null) return;
 
         if(event.getBlock().getY() == event.getBlock().getWorld().getHighestBlockAt(event.getBlock().getX(), event.getBlock().getZ()).getY()) {
-            world.updateBlock(event.getBlock().getRelative(BlockFace.DOWN));
+            renderWorld.updateBlock(event.getBlock().getRelative(BlockFace.DOWN));
         }        
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.MONITOR)
     public void onBlockFormEvent(BlockFormEvent event) {
         if(!isEnabled()) return;
-        RenderWorld world = getRenderWorld(event.getBlock().getWorld().getName());
-        if(world == null) return;
 
         if(event.getBlock().getY() == event.getBlock().getWorld().getHighestBlockAt(event.getBlock().getX(), event.getBlock().getZ()).getY()) {
-            world.updateBlock(event.getBlock());
+            renderWorld.updateBlock(event.getBlock());
         }     
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.MONITOR)
     public void onBlockGrowEvent(BlockGrowEvent event) {
         if(!isEnabled()) return;
-        RenderWorld world = getRenderWorld(event.getBlock().getWorld().getName());
-        if(world == null) return;
 
         if(event.getBlock().getY() == event.getBlock().getWorld().getHighestBlockAt(event.getBlock().getX(), event.getBlock().getZ()).getY()) {
-            world.updateBlock(event.getBlock());
+            renderWorld.updateBlock(event.getBlock());
         }     
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.MONITOR)
     public void onBlockSpreadEvent(BlockSpreadEvent event) {
         if(!isEnabled()) return;
-        RenderWorld world = getRenderWorld(event.getBlock().getWorld().getName());
-        if(world == null) return;
 
         if(event.getBlock().getY() == event.getBlock().getWorld().getHighestBlockAt(event.getBlock().getX(), event.getBlock().getZ()).getY()) {
-            world.updateBlock(event.getBlock());
+            renderWorld.updateBlock(event.getBlock());
         }    
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.MONITOR)
     public void onBlockExplodeEvent(BlockExplodeEvent event) {
         if(!isEnabled()) return;
-        RenderWorld world = getRenderWorld(event.getBlock().getWorld().getName());
-        if(world == null) return;
 
         if(event.getBlock().getY() == event.getBlock().getWorld().getHighestBlockAt(event.getBlock().getX(), event.getBlock().getZ()).getY()) {
-            world.updateBlock(event.getBlock());
+            renderWorld.updateBlock(event.getBlock());
         }    
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.MONITOR)
     public void onBlockFadeEvent(BlockFadeEvent event) {
         if(!isEnabled()) return;
-        RenderWorld world = getRenderWorld(event.getBlock().getWorld().getName());
-        if(world == null) return;
     
         if(event.getBlock().getY() == event.getBlock().getWorld().getHighestBlockAt(event.getBlock().getX(), event.getBlock().getZ()).getY()) {
-            world.updateBlock(event.getBlock());
+            renderWorld.updateBlock(event.getBlock());
         }    
     }
 
 
     // WORLD EVENTS
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.MONITOR)
     private void onChunkPopulateEvent(ChunkPopulateEvent event) {
         if(!isEnabled()) return;
-        RenderWorld world = getRenderWorld(event.getChunk().getWorld().getName());
-        if(world == null) return;
 
-        world.updateChunk(event.getChunk(), true);
+        renderWorld.updateChunk(event.getChunk(), true);
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.MONITOR)
     private void onChunkLoadEvent(ChunkLoadEvent event) {
         if(!isEnabled()) return;
-        RenderWorld world = getRenderWorld(event.getChunk().getWorld().getName());
-        if(world == null) return;
 
-        world.updateChunk(event.getChunk(), true);
+        renderWorld.updateChunk(event.getChunk(), true);
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.MONITOR)
     private void onStructureGrowEvent(StructureGrowEvent event) {
         if(!isEnabled()) return;
-        RenderWorld world = getRenderWorld(event.getWorld().getName());
-        if(world == null) return;
 
         List<Chunk> chunks = new ArrayList<Chunk>();
         for(BlockState bd : event.getBlocks()) {
             if(!chunks.contains(bd.getChunk())) {
                 chunks.add(bd.getChunk());
-                world.updateChunk(bd.getChunk(), false);
+                renderWorld.updateChunk(bd.getChunk(), false);
             }
         }
     }
