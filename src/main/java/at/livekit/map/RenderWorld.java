@@ -109,7 +109,7 @@ public class RenderWorld
                 }
             }
             _bounds = bounds;
-            Plugin.debug(_regions.size()+" regions detected for world "+world+ " took "+(System.currentTimeMillis()-start)+"ms");
+            Plugin.log(_regions.size()+" regions detected for world "+world+ " took "+(System.currentTimeMillis()-start)+"ms");
         }
         try {
             if(save) Utils.writeFile(new File(workingDirectory, "settings.json"), bounds.toJson().toString());
@@ -126,6 +126,10 @@ public class RenderWorld
 
     public void stopJob() {
         _job = null;
+    }
+
+    public RenderJob getRenderJob() {
+        return _job;
     }
 
     public List<RegionInfo> getRegions() {
@@ -265,24 +269,31 @@ public class RenderWorld
                 if(_task.renderingWatchdog != 0) _task.renderingWatchdog = System.currentTimeMillis() - _task.renderingWatchdog;
                 
                 if(_task.region != null) {
+                    /*if(_task.result != null && _task.isChunk()) {
+                        _chunkCount++;
+                    }*/
+
                     synchronized(_regions) {
                         RegionInfo info = _regions.stream().filter(i->i.x == _task.regionX && i.z == _task.regionZ).findFirst().orElse(null);
                         if(info != null) info.timestamp = _task.region.timestamp;
-                        System.out.println("Timestamp updated "+(info != null)+" "+_task.region.timestamp);
                     }
                 }
                 
-                Plugin.debug(_task.toString());
-                //TODO: doing this for testing purpose...
-                //if(_task.region != null) unloadRegionAsync(_task.region);
+                //Plugin.debug(_task.toString());
                 _task = null;
             }
         }
 
-
+        /*if(System.currentTimeMillis() - _startMetric > 60*1000) {
+            
+        }*/
 
         return result;
     }
+
+    /*double chunkPerSec = 0;
+    int _chunkCount = 0;
+    long _startMetric = 0;*/
 
     public void checkUnload() {
         RegionData _unloadTarget = null;
@@ -362,7 +373,7 @@ public class RenderWorld
                 if(_task != null && _task.region == region) return;
                 region.setDead(true);
 
-                System.out.println("Unloading region "+region.getX()+" "+region.getZ());
+                Plugin.debug("Unloading region "+region.getX()+" "+region.getZ());
                 saveRegion(region);
 
                 synchronized(_loadedRegions) {
@@ -436,13 +447,13 @@ public class RenderWorld
         int queueSize = 0;
         int regionSize = 0;
 
-        String result = "World info of "+world;
+        String result = "";
         synchronized(_regions) {
-            result += "\nRegions: "+_regions.size();
+            result += "Regions: "+_regions.size();
             queueSize += _regions.size();
         }
         synchronized(_loadedRegions) {
-            result += "\nLoaded: "+_loadedRegions.size();
+            result += " ["+_loadedRegions.size()+" Loaded]";
             regionSize += _loadedRegions.size();
         }
         synchronized(_blockQueue) {
@@ -453,13 +464,13 @@ public class RenderWorld
             result += "\nChunk Queue: "+_chunkQueue.size();
             queueSize += _chunkQueue.size();
         }
-        if(_task != null) {
+        /*if(_task != null) {
             result += "\nCurrent Task: "+_task.toString();
         }
         result +="\n"+_bounds.toString();
         if(_job != null) {
             result += "\n" + _job.toString();
-        }
+        }*/
 
         long ramQueues = queueSize * (4 + 4 + 1) + regionSize * (512*512*4+8+4+4+8);
         result += "\nRAM Estimate: "+(ramQueues/1024)+"kB";

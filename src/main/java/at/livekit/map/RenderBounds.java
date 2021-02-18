@@ -121,6 +121,30 @@ public class RenderBounds
         return _chunkBottom;
     }
 
+    public int getLeft() {
+        return left;
+    }
+
+    public int getRight() {
+        return right;
+    }
+
+    public int getTop() {
+        return top;
+    }
+
+    public int getBottom() {
+        return bottom;
+    }
+
+    public int getRadius() {
+        return radius;
+    }
+
+    public RenderShape getShape() {
+        return shape;
+    }
+
     @Override
     public String toString() {
         return shape == RenderShape.RECT ?  "RenderBounds[shape="+shape+"; left(-x)="+left+"; top(-z)="+top+"; right(x)="+right+"; bottom(z)="+bottom+";]" :

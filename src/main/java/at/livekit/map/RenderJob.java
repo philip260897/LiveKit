@@ -41,6 +41,18 @@ public class RenderJob {
         return new Offset(x++, z, mode ==  RenderJobMode.MISSING ? true : false);
     }
 
+    public float progressPercent() {
+        return Math.round(  ( (double)currentCount() / (double)maxCount() * 100f * 100f) ) / 100f;
+    }
+
+    public long currentCount() {
+        return ((long)(z - top) * (long)(right - left) + (long)(x - left));
+    }
+
+    public long maxCount() {
+        return ((long)(right-left) * (long)(bottom - top));
+    }
+
     @Override
     public String toString() {
         return "RenderJob[mode="+mode+"; left(-x)="+left+"; top(-z)="+top+"; right(x)="+right+"; bottom(z)="+bottom+"; x="+x+"; z="+z+"]";

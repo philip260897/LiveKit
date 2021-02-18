@@ -17,6 +17,7 @@ import at.livekit.livekit.PlayerAuth;
 import at.livekit.map.RenderBounds;
 import at.livekit.map.RenderJob;
 import at.livekit.map.RenderWorld;
+import at.livekit.map.RenderBounds.RenderShape;
 import at.livekit.map.RenderJob.RenderJobMode;
 import at.livekit.modules.BaseModule;
 import at.livekit.modules.PlayerModule;
@@ -312,8 +313,29 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 				if(args[0].equalsIgnoreCase(Config.getModuleString("LiveMapModule", "world"))) {
 					RenderWorld world = map.getRenderWorld();
 
+
 					if(args.length == 1) {
-						sender.sendMessage(prefix+world.getWorldInfoString());
+						RenderJob job = world.getRenderJob();
+						RenderBounds bounds = world.getRenderBounds();
+
+						sender.sendMessage(prefix+"Info of "+map.getWorldName());
+						sender.sendMessage(world.getWorldInfoString());
+						sender.sendMessage("Render bounds [in Blocks]: ");
+						sender.sendMessage("  shape: "+bounds.getShape().name());
+						if(bounds.getShape() == RenderShape.CIRCLE) {
+							sender.sendMessage("  radius: "+bounds.getRadius());
+						} else {
+							sender.sendMessage("  left("+ChatColor.GREEN+"-x"+ChatColor.RESET+"): "+bounds.getLeft());
+							sender.sendMessage("  top("+ChatColor.GREEN+"-z"+ChatColor.RESET+"): "+bounds.getTop());
+							sender.sendMessage("  right("+ChatColor.GREEN+"x"+ChatColor.RESET+"): "+bounds.getRight());
+							sender.sendMessage("  bottom("+ChatColor.GREEN+"z"+ChatColor.RESET+"): "+bounds.getBottom());
+						}
+						sender.sendMessage("Is Rendering: "+friendlyBool(job != null));
+						if(job != null) {
+							sender.sendMessage("  progress: "+ChatColor.GREEN+job.progressPercent()+"%"+ChatColor.RESET);
+							sender.sendMessage("  chunks: "+job.currentCount()+"/"+job.maxCount());
+						}
+
 						return true;
 					}
 					if(args.length >= 3 && args[1].equalsIgnoreCase("render")) {
@@ -659,6 +681,6 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 	}
 
 	public static void debug(String message) {
-		logger.warning(message);
+		//logger.warning(message);
 	}
 }
