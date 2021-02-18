@@ -214,6 +214,11 @@ public class RenderWorld
         if(_task != null) {
             if(tick) _task.tickCount++;
 
+            //Filtering out of bounds regions
+            if(!_bounds.regionInBounds(_task.regionX, _task.regionZ)) {
+                _task.state = RenderTaskState.DONE;
+            }
+            
             if(_task.state == RenderTaskState.IDLE) {
                 _task.state = RenderTaskState.LOADING_REGION;
                 _task.loadingWatchdog = System.currentTimeMillis();
@@ -314,12 +319,14 @@ public class RenderWorld
         Arrays.fill(regionBuffer, (byte)0xFF);
 
         RegionData region = new RegionData(x, z, regionBuffer);
+        region.invalidate();
         synchronized(_loadedRegions) {
             _loadedRegions.add(region);
         }
         synchronized(_regions) {
             _regions.add(new RegionInfo(x, z, 0));
         }
+        saveRegion(region);
         return region;
     }
 

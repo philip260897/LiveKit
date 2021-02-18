@@ -44,7 +44,7 @@ import at.livekit.packets.StatusPacket;
 public class LiveMapModule extends BaseModule implements Listener
 {
     //private static String DEFAULT_WORLD = "world";
-    private static int CPU_TIME = 20;
+    public static int CPU_TIME = 20;
 
 
     private String world;
@@ -66,20 +66,6 @@ public class LiveMapModule extends BaseModule implements Listener
         return new RawPacket(renderWorld.getRegionDataAsync(x, z));
     }
 
-    /*public RenderingOptions getOptions() {
-        return _options;
-    }*/
-
-    public void setCPUTime(int ms) {
-        LiveMapModule.CPU_TIME = ms;
-        //saveProperties();
-    }
-
-    /*public void setRenderingMode(RenderingMode mode) {
-        _options.mode = mode;
-        //saveProperties();
-    }*/
-
     public void setRenderBounds(RenderBounds bounds) {
        renderWorld.setRenderBounds(bounds, true);
        notifyFull();
@@ -95,6 +81,14 @@ public class LiveMapModule extends BaseModule implements Listener
 
     public void stopRenderJob() {
         renderWorld.stopJob();
+    }
+
+    public RenderWorld getRenderWorld() {
+        return renderWorld;
+    }
+
+    public String getWorldName() {
+        return world;
     }
 
     /*public void fullRender() throws Exception{
@@ -322,10 +316,28 @@ public class LiveMapModule extends BaseModule implements Listener
             if (localZ < 0)
                 localZ += 512;
 
+            int edges = 0;
+            boolean hasEdge = false;
             for(int i = 0; i < 4; i++) {
-                if( data[8 + ((localZ+15) * 4 * 512) + ((localX+15) * 4) + i] != (byte)0xFF) return true;
+                if( data[8 + ((localZ+0) * 4 * 512) + ((localX+0) * 4) + i] != (byte)0xFF) hasEdge = true;
             }
-            return false;
+            if(hasEdge) edges++;
+            hasEdge = false;
+            for(int i = 0; i < 4; i++) {
+                if( data[8 + ((localZ+15) * 4 * 512) + ((localX+0) * 4) + i] != (byte)0xFF) hasEdge = true;
+            }
+            if(hasEdge) edges++;
+            hasEdge = false;
+            for(int i = 0; i < 4; i++) {
+                if( data[8 + ((localZ+0) * 4 * 512) + ((localX+15) * 4) + i] != (byte)0xFF) hasEdge = true;
+            }
+            if(hasEdge) edges++;
+            hasEdge = false;
+            for(int i = 0; i < 4; i++) {
+                if( data[8 + ((localZ+15) * 4 * 512) + ((localX+15) * 4) + i] != (byte)0xFF) hasEdge = true;
+            }
+            if(hasEdge) edges++;
+            return edges == 4;
         }
     }
 

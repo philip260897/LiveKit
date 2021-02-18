@@ -14,7 +14,9 @@ import org.bukkit.plugin.java.JavaPlugin;
 import at.livekit.livekit.Identity;
 import at.livekit.livekit.LiveKit;
 import at.livekit.livekit.PlayerAuth;
+import at.livekit.map.RenderBounds;
 import at.livekit.map.RenderJob;
+import at.livekit.map.RenderWorld;
 import at.livekit.map.RenderJob.RenderJobMode;
 import at.livekit.modules.BaseModule;
 import at.livekit.modules.PlayerModule;
@@ -272,18 +274,150 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 
 	private boolean handleMapCommands(CommandSender sender, Command command, String label, String[] args) {
 		if(args.length >= 1) {
-			if(label.equalsIgnoreCase("livekit") && args[0].equalsIgnoreCase("map")) {
+			if(label.equalsIgnoreCase("livekit") && args[0].equalsIgnoreCase("map") || args[0].equalsIgnoreCase(Config.getModuleString("LiveMapModule", "world"))) {
 				if(!checkPerm(sender, "livekit.commands.admin")) return true;
 
 				LiveMapModule map = (LiveMapModule)LiveKit.getInstance().getModuleManager().getModule("LiveMapModule");
 				if(!map.isEnabled()) { sender.sendMessage(prefixError+" LiveMapModule not enabled."); return true;}
 
-				if(args.length == 1) {
-					sender.sendMessage(map.getWorldInfo());
-					return true;
+				if(args[0].equalsIgnoreCase("map")) {
+					if(args.length == 1) {
+						sender.sendMessage(prefix+"Live Map info");
+						sender.sendMessage("World: "+Config.getModuleString("LiveMapModule", "world"));
+						sender.sendMessage("CPU-Time: "+LiveMapModule.CPU_TIME+"ms / "+(int)(((float)LiveMapModule.CPU_TIME/50f)*100f)+"%");
+						return true;
+					}
+					if(args.length == 3) {
+						if(args[1].equalsIgnoreCase("cpu")) {
+							float percent = 20;
+							try{
+								percent = Float.parseFloat(args[2]);
+							}catch(Exception ex){sender.sendMessage(prefixError+args[2]+" is not a valid number! 0-100%"); return true;}
+	
+							if(percent < 5) percent = 5;
+							if(percent > 100) percent = 100;
+	
+							LiveMapModule.CPU_TIME = (int)(percent*50f/100f);
+							sender.sendMessage(prefix+"CPU-Time set to "+LiveMapModule.CPU_TIME+"ms / "+(int)(((float)LiveMapModule.CPU_TIME/50f)*100f)+"%");
+	
+							if(percent >= 80) {
+								sender.sendMessage(prefix+"WARNING: Setting cpu time above 80% might cause severe lag!");
+							}
+	
+							return true;
+						}
+					}
 				}
 
-				if(args.length == 2) {
+				if(args[0].equalsIgnoreCase(Config.getModuleString("LiveMapModule", "world"))) {
+					RenderWorld world = map.getRenderWorld();
+
+					if(args.length == 1) {
+						sender.sendMessage(prefix+world.getWorldInfoString());
+						return true;
+					}
+					if(args.length >= 3 && args[1].equalsIgnoreCase("render")) {
+						String mode = args[2];
+						boolean forced = false;
+						if(args.length == 4 && args[3].equalsIgnoreCase("-f")) forced = true;
+
+						if(mode.equalsIgnoreCase("full")) {
+							RenderJob job = RenderJob.fromBounds(world.getRenderBounds(), forced ? RenderJobMode.FORCED : RenderJobMode.MISSING);
+							try{
+								map.startRenderJob(job);
+								sender.sendMessage(prefix+"Full render has been started for "+map.getWorldName()+" (mode: "+(forced ? RenderJobMode.FORCED : RenderJobMode.MISSING).name()+")");
+							}catch(Exception ex) {
+								sender.sendMessage(prefixError+ex.getMessage());
+							}
+							return true;
+						}
+						if(mode.equalsIgnoreCase("stop")) {
+							map.stopRenderJob();
+							sender.sendMessage(prefix+"Render job of "+map.getWorldName()+" has been stopped!");
+							return true;
+						}
+						try{
+							int radius = Integer.parseInt(mode);
+							if(sender instanceof Player) {
+								Player player = (Player) sender;
+								if(player.getWorld().getName().equalsIgnoreCase(map.getWorldName())) {
+									RenderBounds bounds = new RenderBounds(radius, player.getLocation().getBlockX(), player.getLocation().getBlockZ());
+									if(bounds.valid() && radius <= 1024) {
+										try{
+											RenderJob job = RenderJob.fromBounds(bounds, forced ? RenderJobMode.FORCED : RenderJobMode.MISSING);
+											map.startRenderJob(job);
+											sender.sendMessage(prefix+"Rendering chunks of specified radius for "+map.getWorldName()+" (mode: "+(forced ? RenderJobMode.FORCED : RenderJobMode.MISSING).name()+")");
+										
+											sender.sendMessage(radius+" "+player.getLocation().getBlockX() + " " + player.getLocation().getBlockZ());
+											sender.sendMessage(bounds.toString());
+											sender.sendMessage(job.toString());
+										}catch(Exception ex){
+											sender.sendMessage(prefixError+ex.getMessage());
+										}
+									} else {
+										sender.sendMessage(prefixError+"A max radius of 1024 is supportd! Do a full render instead?");
+									}
+								} else {
+									sender.sendMessage(prefixError+"Input world missmatch from the current world your in!");
+								}
+								return true;
+							} else {
+								sender.sendMessage(prefixError+"A radius can only be specified as a Player in the current world!");
+								return true;
+							}
+						}catch(NumberFormatException ex){}
+					}
+
+					if(args.length >= 2 && args[1].equalsIgnoreCase("bounds")) {
+						
+						if(args.length == 2) {
+							sender.sendMessage(prefix+"Bounds for "+world.getWorldName());
+							sender.sendMessage(world.getRenderBounds().toString());
+							return true;
+						}
+						if(args.length == 3 ||  args.length == 4) {
+							boolean circle = false;
+							if(args.length == 4 && args[3].equalsIgnoreCase("-c")) circle = true;
+
+							try{
+								int radius = Math.abs(Integer.parseInt(args[2]));
+								RenderBounds bounds = circle ? new RenderBounds(radius) : new RenderBounds(-radius, -radius, radius, radius);
+								if(bounds.valid()) {
+									map.setRenderBounds(bounds);
+									sender.sendMessage(prefix+"New render bounds set for "+map.getWorldName());
+									sender.sendMessage(bounds.toString());
+								} else {
+									sender.sendMessage(prefixError+"Invalid radius specified. Make sure ist greater than 0.");
+								}
+							}catch(NumberFormatException ex) {
+								sender.sendMessage(prefixError+"Invalid radius specified!");
+								
+							}
+							return true;
+						} 
+						if(args.length == 6) {
+							try{
+								int left = Integer.parseInt(args[2]);
+								int top = Integer.parseInt(args[3]);
+								int right = Integer.parseInt(args[4]);
+								int bottom = Integer.parseInt(args[5]);
+								RenderBounds bounds = new RenderBounds(left, top, right, bottom);
+								if(bounds.valid()) {
+									map.setRenderBounds(bounds);
+									sender.sendMessage(prefix+"New render bounds set for "+map.getWorldName());
+									sender.sendMessage(bounds.toString());
+								} else {
+									sender.sendMessage(prefixError+"Invalid render bounds specified! make sure [right - left > 0] and [bottom - top > 0]");
+								}
+							}catch(NumberFormatException ex){
+								sender.sendMessage(prefixError+"Invalid left,right,top,bottom bounds specified!");
+							}
+							return true;
+						}
+					}
+				}
+
+				/*if(args.length == 2) {
 					if(args[1].equals("fullrender")) {
 						try{
 							map.startRenderJob(RenderJob.fromBounds(map.getRenderWorld("world").getRenderBounds(), RenderJobMode.FORCED));
@@ -304,7 +438,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 						}
 						return true;
 					}
-				}
+				}*/
 			}
 		}
 

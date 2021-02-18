@@ -2,6 +2,8 @@ package at.livekit.map;
 
 import org.json.JSONObject;
 
+import at.livekit.plugin.Plugin;
+
 public class RenderBounds 
 {
     public static RenderBounds DEFAULT = new RenderBounds(-512*2, -512*2, 512*2, 512*2);
@@ -13,6 +15,9 @@ public class RenderBounds
 
     private int radius = 0;
     private double radius_sq = 0;
+    private int offset_x = 0;
+    private int offset_z = 0;
+
     private RenderShape shape;
 
     private int _chunkLeft = -32;
@@ -21,8 +26,14 @@ public class RenderBounds
     private int _chunkBottom = 32;
 
     public RenderBounds(int radius) {
+        this(radius, 0, 0);
+    }
+
+    public RenderBounds(int radius, int x, int z) {
         this.radius = Math.abs(radius);
         this.radius_sq = Math.pow(this.radius, 2);
+        this.offset_x = x;
+        this.offset_z = z;
         shape = RenderShape.CIRCLE;
 
         initialize();
@@ -45,10 +56,10 @@ public class RenderBounds
             _chunkRight = (int) Math.ceil( (double) right / 16.0 );
             _chunkBottom = (int) Math.ceil( (double) bottom / 16.0 );
         } else if(shape == RenderShape.CIRCLE) {
-            _chunkLeft = (int) Math.floor((double)-radius / 16.0);
-            _chunkTop = (int) Math.floor((double)-radius / 16.0);
-            _chunkRight = (int) Math.ceil((double)radius / 16.0);
-            _chunkBottom = (int) Math.ceil((double)radius / 16.0);
+            _chunkLeft = (int) Math.floor((double)((-radius) + offset_x) / 16.0);
+            _chunkTop = (int) Math.floor((double)((-radius) + offset_z) / 16.0);
+            _chunkRight = (int) Math.ceil((double)(radius + offset_x) / 16.0);
+            _chunkBottom = (int) Math.ceil((double)(radius + offset_z) / 16.0);
         }
     }
 
@@ -89,7 +100,7 @@ public class RenderBounds
             }
         }
         if(shape == RenderShape.CIRCLE) {
-            return Math.pow(x - 0, 2) + Math.pow(z - 0, 2) < radius_sq;
+            return Math.pow(x - offset_x, 2) + Math.pow(z - offset_z, 2) < radius_sq;
         }
         return false;
     }
@@ -124,12 +135,14 @@ public class RenderBounds
         json.put("top", top);
         json.put("bottom", bottom);
         json.put("radius", radius);
+        json.put("offset_x", offset_x);
+        json.put("offset_z", offset_z);
         return json;
     }
 
     public static RenderBounds fromJson(JSONObject json) throws Exception {
         if(json.getString("shape").equalsIgnoreCase("CIRCLE")) {
-            return new RenderBounds(json.getInt("radius"));
+            return new RenderBounds(json.getInt("radius"), json.getInt("offset_x"), json.getInt("offset_z"));
         } else {
             return new RenderBounds(json.getInt("left"), json.getInt("top"), json.getInt("right"), json.getInt("bottom"));
         }

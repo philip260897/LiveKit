@@ -1,5 +1,7 @@
 package at.livekit.map;
 
+import java.util.Arrays;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Material;
@@ -37,6 +39,7 @@ public class Renderer
                 task.renderingX = 0;
                 task.renderingZ = 0;
                 task.buffer = new byte[ task.isChunk() ? 16*16*4 : 4];
+                Arrays.fill(task.buffer, (byte)0xFF);
             }
             
             if(task.isChunk()) {
@@ -77,7 +80,7 @@ public class Renderer
                             System.out.println("Rendering partial="+(endRender-acl) +"ms chunkloading=" + (acl - cl) + "ms start=" + (cl - start)+"ms all="+(endRender-start)+"ms");
 
 
-                            return false;
+                            if(z != task.renderingZ-1 && x != task.renderingX-1) return false;
                         }
                     }
                     task.renderingX = 0;
