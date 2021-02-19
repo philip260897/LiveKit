@@ -340,8 +340,8 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 					}
 					if(args.length >= 3 && args[1].equalsIgnoreCase("render")) {
 						String mode = args[2];
-						boolean forced = false;
-						if(args.length == 4 && args[3].equalsIgnoreCase("-f")) forced = true;
+						boolean forced = true;
+						if(args.length == 4 && args[3].equalsIgnoreCase("-m")) forced = false;
 
 						if(mode.equalsIgnoreCase("full")) {
 							RenderJob job = RenderJob.fromBounds(world.getRenderBounds(), forced ? RenderJobMode.FORCED : RenderJobMode.MISSING);
