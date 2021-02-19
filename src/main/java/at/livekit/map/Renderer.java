@@ -14,7 +14,7 @@ import at.livekit.packets.ChunkPacket;
 
 public class Renderer 
 {
-
+    private static byte[] DEFAULT_BLOCK = new byte[]{(byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff};
     //private static RenderTask _currentTask;
     //private static byte[] _chunkData;
     public static boolean render(String world, RenderTask task, long cpuTime, long frameStart, RenderBounds bounds) throws Exception {
@@ -42,23 +42,30 @@ public class Renderer
                 if(task.renderingX == 0 && task.renderingZ == 0) task.unload = !Bukkit.getWorld(world).isChunkLoaded(task.getChunkOrBlock().x, task.getChunkOrBlock().z);
                 Chunk c = Bukkit.getWorld(world).getChunkAt(task.getChunkOrBlock().x, task.getChunkOrBlock().z);
                 
+                int blockX = 0;
+                int blockZ = 0;
+
                 for (int z = task.renderingZ; z < 16; z++) {
                     for (int x = task.renderingX; x < 16; x++) {
-                        if(!bounds.blockInBounds(c.getX() * 16 + x, c.getZ() * 16 + z)) continue;
-
-                        Block block = c.getWorld().getHighestBlockAt(c.getX() * 16 + x, c.getZ() * 16 + z);
+                        Block block = null;
+                        blockX = c.getX() * 16 + x;
+                        blockZ = c.getZ() * 16 + z;
+                        //get block data only if in bounds
+                        if(bounds.blockInBounds(blockX, blockZ)) { 
+                            block = c.getWorld().getHighestBlockAt(blockX, blockZ);
+                        }
                         
-                        int localX = block.getX() % 512;
+                        int localX = blockX % 512;
                         if (localX < 0)
                             localX += 512;
 
-                        int localZ = block.getZ() % 512;
+                        int localZ = blockZ % 512;
                         if (localZ < 0)
                             localZ += 512;
 
-                        byte[] blockData = getBlockData(block);
+                        byte[] blockData = (block != null ? getBlockData(block) : DEFAULT_BLOCK);
                         for (int i = 0; i < blockData.length; i++) {
-                            task.region.data[8 + (localZ * 4) * 512 + (localX * 4) + i] = blockData[i];
+                            task.region.data[8 + (localZ * 4) * 512 + (localX * 4) + i] =  blockData[i];
                             task.buffer[z * 4 * 16 + x*4 + i] = blockData[i];
                         }
 
