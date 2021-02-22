@@ -11,6 +11,7 @@ import org.bukkit.block.BlockFace;
 import at.livekit.map.RenderWorld.RenderTask;
 import at.livekit.packets.BlockPacket;
 import at.livekit.packets.ChunkPacket;
+import at.livekit.plugin.Plugin;
 
 public class Renderer 
 {
@@ -18,6 +19,8 @@ public class Renderer
     //private static RenderTask _currentTask;
     //private static byte[] _chunkData;
     public static boolean render(String world, RenderTask task, long cpuTime, long frameStart, RenderBounds bounds) throws Exception {
+        long start = System.currentTimeMillis();
+        
         if (task != null) {
             if(task.region == null || task.region.isDead()) throw new Exception("RenderTask region is dead!");
 
@@ -39,6 +42,7 @@ public class Renderer
             }
             
             if(task.isChunk()) {
+
                 if(task.renderingX == 0 && task.renderingZ == 0) task.unload = !Bukkit.getWorld(world).isChunkLoaded(task.getChunkOrBlock().x, task.getChunkOrBlock().z);
                 Chunk c = Bukkit.getWorld(world).getChunkAt(task.getChunkOrBlock().x, task.getChunkOrBlock().z);
                 
@@ -73,7 +77,7 @@ public class Renderer
                             task.renderingZ = z;
                             task.renderingX = x+1;
 
-                            if(z != task.renderingZ-1 && x != task.renderingX-1) return false;
+                            if(! (z == 15 && x == 15)) return false;
                         }
                     }
                     task.renderingX = 0;

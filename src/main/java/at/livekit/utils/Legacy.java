@@ -49,7 +49,7 @@ public class Legacy
                 }
             }
         }catch(Exception ex) {
-            ex.printStackTrace();
+            //ex.printStackTrace();
         }
 
         return RenderBounds.DEFAULT;

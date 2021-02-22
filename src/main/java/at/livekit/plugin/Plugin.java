@@ -170,13 +170,13 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 	private boolean handleUserCommands(CommandSender sender, Command command, String label, String[] args) {
 		if(args.length == 0) {
 			sender.sendMessage(prefix+"LiveKit is supported!");
-			sender.sendMessage("iOS App: "+ChatColor.AQUA+"https://apple.co/3dltCW5"+ChatColor.RESET);
-			sender.sendMessage("Android App: "+ChatColor.AQUA+"https://bit.ly/2Zic0lB"+ChatColor.RESET);
+			sender.sendMessage("iOS App: "+ChatColor.AQUA+"https://bit.ly/livekitios"+ChatColor.RESET);
+			sender.sendMessage("Android App: "+ChatColor.AQUA+"https://bit.ly/livekitandroid"+ChatColor.RESET);
 			sender.sendMessage("Port: "+Config.getServerPort());
 			sender.sendMessage("Password needed: "+friendlyBool((Config.getPassword()!=null)));
 			sender.sendMessage("Supports anonymous: "+friendlyBool((Config.allowAnonymous())));
-			sender.sendMessage("Has access: "+friendlyBool(checkPerm(sender, "livekit.commands.basic", false)));
-			if(checkPerm(sender, "livekit.commands.basic", false)) sender.sendMessage("Use "+ChatColor.GREEN+"/livekit claim"+ChatColor.RESET+" to generate an access pin");
+			sender.sendMessage("Has access: "+friendlyBool(checkPerm(sender, "livekit.commands.basic", false) && (sender instanceof Player)));
+			if(checkPerm(sender, "livekit.commands.basic", false) && (sender instanceof Player)) sender.sendMessage("Use "+ChatColor.GREEN+"/livekit claim"+ChatColor.RESET+" to generate an access pin");
 			sender.sendMessage("Use "+ChatColor.GREEN+"/livekit help"+ChatColor.RESET+" for more info");
 			return true;
 		}
