@@ -26,7 +26,7 @@ public class Renderer
 
             boolean isChunk = task.isChunk();
             
-            if(isChunk && task.getChunkOrBlock().onlyIfAbsent) {
+            if(isChunk && task.rendering == false && task.getChunkOrBlock().onlyIfAbsent) {
                 if(task.region.loadedChunkExists(task.getChunkOrBlock())) {
                     return true;
                 }

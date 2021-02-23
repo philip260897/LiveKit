@@ -177,7 +177,7 @@ public class LiveMapModule extends BaseModule implements Listener
                 JSONObject entry = new JSONObject();
                 entry.put("x", region.x);
                 entry.put("z", region.z);
-                entry.put("timestamp", region.timestamp);
+                entry.put("t", region.timestamp);
                 regions.put(entry);
             }
         }
