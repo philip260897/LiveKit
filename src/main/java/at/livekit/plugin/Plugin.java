@@ -14,6 +14,11 @@ import org.bukkit.plugin.java.JavaPlugin;
 import at.livekit.livekit.Identity;
 import at.livekit.livekit.LiveKit;
 import at.livekit.livekit.PlayerAuth;
+import at.livekit.map.RenderBounds;
+import at.livekit.map.RenderJob;
+import at.livekit.map.RenderWorld;
+import at.livekit.map.RenderBounds.RenderShape;
+import at.livekit.map.RenderJob.RenderJobMode;
 import at.livekit.modules.BaseModule;
 import at.livekit.modules.PlayerModule;
 import at.livekit.modules.LiveMapModule.*;
@@ -165,13 +170,13 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 	private boolean handleUserCommands(CommandSender sender, Command command, String label, String[] args) {
 		if(args.length == 0) {
 			sender.sendMessage(prefix+"LiveKit is supported!");
-			sender.sendMessage("iOS App: "+ChatColor.AQUA+"https://apple.co/3dltCW5"+ChatColor.RESET);
-			sender.sendMessage("Android App: "+ChatColor.AQUA+"https://bit.ly/2Zic0lB"+ChatColor.RESET);
+			sender.sendMessage("iOS App: "+ChatColor.AQUA+"https://bit.ly/livekitios"+ChatColor.RESET);
+			sender.sendMessage("Android App: "+ChatColor.AQUA+"https://bit.ly/livekitandroid"+ChatColor.RESET);
 			sender.sendMessage("Port: "+Config.getServerPort());
 			sender.sendMessage("Password needed: "+friendlyBool((Config.getPassword()!=null)));
 			sender.sendMessage("Supports anonymous: "+friendlyBool((Config.allowAnonymous())));
-			sender.sendMessage("Has access: "+friendlyBool(checkPerm(sender, "livekit.commands.basic", false)));
-			if(checkPerm(sender, "livekit.commands.basic", false)) sender.sendMessage("Use "+ChatColor.GREEN+"/livekit claim"+ChatColor.RESET+" to generate an access pin");
+			sender.sendMessage("Has access: "+friendlyBool(checkPerm(sender, "livekit.commands.basic", false) && (sender instanceof Player)));
+			if(checkPerm(sender, "livekit.commands.basic", false) && (sender instanceof Player)) sender.sendMessage("Use "+ChatColor.GREEN+"/livekit claim"+ChatColor.RESET+" to generate an access pin");
 			sender.sendMessage("Use "+ChatColor.GREEN+"/livekit help"+ChatColor.RESET+" for more info");
 			return true;
 		}
@@ -253,14 +258,14 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 				}
 				if(checkPerm(sender, "livekit.commands.admin", false)) {
 					sender.sendMessage(prefixError+"Admin Commands:"+ChatColor.RESET);
-					sender.sendMessage(ChatColor.GREEN+"/livekit map"+ChatColor.RESET+" - Display info about current map and rendering stats");
-					sender.sendMessage(ChatColor.GREEN+"/livekit map fullrender"+ChatColor.RESET+" - Start full render");
-					sender.sendMessage(ChatColor.GREEN+"/livekit map abortrender"+ChatColor.RESET+" - Clear rendering queue");
-					sender.sendMessage(ChatColor.GREEN+"/livekit map bounds"+ChatColor.RESET+" - Displays livemap bounds vs actual world size bounds");
-					sender.sendMessage(ChatColor.GREEN+"/livekit map mode <FORCED | DISCOVER>"+ChatColor.RESET+" - Change map mode");
+					sender.sendMessage(ChatColor.GREEN+"/livekit map"+ChatColor.RESET+" - Display info about live map");
 					sender.sendMessage(ChatColor.GREEN+"/livekit map cpu <time in %>"+ChatColor.RESET+" - Speed up rendering performance at the cost of server lag. Use with care. Default: 40%");
-					sender.sendMessage(ChatColor.GREEN+"/livekit map bounds update"+ChatColor.RESET+" - Sets livemap bounds to current world bounds.");
-					sender.sendMessage(ChatColor.GREEN+"/livekit map bounds <minX> <maxX> <minZ> <maxZ>"+ChatColor.RESET+" - Set custom livemap bounds. Make sure max > min. Coordinates are in regions (1 region = 32x32 Chunks)");
+					sender.sendMessage(ChatColor.GREEN+"/livekit <world> render full [-m|-f]"+ChatColor.RESET+" - Start full render on <world> -m: missing tiles only, -f forces already rendered tiles to render");
+					sender.sendMessage(ChatColor.GREEN+"/livekit <world> render <radius>"+ChatColor.RESET+" - Renders a rectangular radius around the players position. (Worlds must match)");
+					sender.sendMessage(ChatColor.GREEN+"/livekit <world> render stop"+ChatColor.RESET+" - Stop current rendering job");
+					sender.sendMessage(ChatColor.GREEN+"/livekit <world> bounds"+ChatColor.RESET+" - Displays bounds of <world>");
+					sender.sendMessage(ChatColor.GREEN+"/livekit <world> bounds <radius> [-r|-c]"+ChatColor.RESET+" - Creates rectangular (-r) or circular (-c) bounds with <radius> [in blocks]");
+					sender.sendMessage(ChatColor.GREEN+"/livekit <world> bounds <left> <top> <right> <bottom>"+ChatColor.RESET+" - Set bounds for <world> in blocks");
 				}
 				return true;
 			}
@@ -270,6 +275,196 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 
 	private boolean handleMapCommands(CommandSender sender, Command command, String label, String[] args) {
 		if(args.length >= 1) {
+			if(label.equalsIgnoreCase("livekit") && args[0].equalsIgnoreCase("map") || args[0].equalsIgnoreCase(Config.getModuleString("LiveMapModule", "world"))) {
+				if(!checkPerm(sender, "livekit.commands.admin")) return true;
+
+				LiveMapModule map = (LiveMapModule)LiveKit.getInstance().getModuleManager().getModule("LiveMapModule");
+				if(!map.isEnabled()) { sender.sendMessage(prefixError+" LiveMapModule not enabled."); return true;}
+
+				if(args[0].equalsIgnoreCase("map")) {
+					if(args.length == 1) {
+						sender.sendMessage(prefix+"Live Map info");
+						sender.sendMessage("World: "+Config.getModuleString("LiveMapModule", "world"));
+						sender.sendMessage("CPU-Time: "+LiveMapModule.CPU_TIME+"ms / "+(int)(((float)LiveMapModule.CPU_TIME/50f)*100f)+"%");
+						return true;
+					}
+					if(args.length == 3) {
+						if(args[1].equalsIgnoreCase("cpu")) {
+							float percent = 20;
+							try{
+								percent = Float.parseFloat(args[2]);
+							}catch(Exception ex){sender.sendMessage(prefixError+args[2]+" is not a valid number! 0-100%"); return true;}
+	
+							if(percent < 5) percent = 5;
+							if(percent > 100) percent = 100;
+	
+							LiveMapModule.CPU_TIME = (int)(percent*50f/100f);
+							sender.sendMessage(prefix+"CPU-Time set to "+LiveMapModule.CPU_TIME+"ms / "+(int)(((float)LiveMapModule.CPU_TIME/50f)*100f)+"%");
+	
+							if(percent >= 80) {
+								sender.sendMessage(prefix+"WARNING: Setting cpu time above 80% might cause severe lag!");
+							}
+	
+							return true;
+						}
+					}
+				}
+
+				if(args[0].equalsIgnoreCase(Config.getModuleString("LiveMapModule", "world"))) {
+					RenderWorld world = map.getRenderWorld();
+
+
+					if(args.length == 1) {
+						RenderJob job = world.getRenderJob();
+						RenderBounds bounds = world.getRenderBounds();
+
+						sender.sendMessage(prefix+"Info of "+map.getWorldName());
+						sender.sendMessage(world.getWorldInfoString());
+						sender.sendMessage("Render bounds [in Blocks]: ");
+						sender.sendMessage("  shape: "+bounds.getShape().name());
+						if(bounds.getShape() == RenderShape.CIRCLE) {
+							sender.sendMessage("  radius: "+bounds.getRadius());
+						} else {
+							sender.sendMessage("  left("+ChatColor.GREEN+"-x"+ChatColor.RESET+"): "+bounds.getLeft());
+							sender.sendMessage("  top("+ChatColor.GREEN+"-z"+ChatColor.RESET+"): "+bounds.getTop());
+							sender.sendMessage("  right("+ChatColor.GREEN+"x"+ChatColor.RESET+"): "+bounds.getRight());
+							sender.sendMessage("  bottom("+ChatColor.GREEN+"z"+ChatColor.RESET+"): "+bounds.getBottom());
+						}
+						sender.sendMessage("Is Rendering: "+friendlyBool(job != null));
+						if(job != null) {
+							sender.sendMessage("  progress: "+ChatColor.GREEN+job.progressPercent()+"%"+ChatColor.RESET);
+							sender.sendMessage("  chunks: "+job.currentCount()+"/"+job.maxCount());
+						}
+
+						return true;
+					}
+					if(args.length >= 3 && args[1].equalsIgnoreCase("render")) {
+						String mode = args[2];
+						boolean forced = true;
+						if(args.length == 4 && args[3].equalsIgnoreCase("-m")) forced = false;
+
+						if(mode.equalsIgnoreCase("full")) {
+							RenderJob job = RenderJob.fromBounds(world.getRenderBounds(), forced ? RenderJobMode.FORCED : RenderJobMode.MISSING);
+							try{
+								map.startRenderJob(job);
+								sender.sendMessage(prefix+"Full render has been started for "+map.getWorldName()+" (mode: "+(forced ? RenderJobMode.FORCED : RenderJobMode.MISSING).name()+")");
+							}catch(Exception ex) {
+								sender.sendMessage(prefixError+ex.getMessage());
+							}
+							return true;
+						}
+						if(mode.equalsIgnoreCase("stop")) {
+							map.stopRenderJob();
+							sender.sendMessage(prefix+"Render job of "+map.getWorldName()+" has been stopped!");
+							return true;
+						}
+						try{
+							int radius = Integer.parseInt(mode);
+							if(sender instanceof Player) {
+								Player player = (Player) sender;
+								if(player.getWorld().getName().equalsIgnoreCase(map.getWorldName())) {
+									RenderBounds bounds = new RenderBounds(radius, player.getLocation().getBlockX(), player.getLocation().getBlockZ());
+									if(bounds.valid() && radius <= 1024) {
+										try{
+											RenderJob job = RenderJob.fromBounds(bounds, forced ? RenderJobMode.FORCED : RenderJobMode.MISSING);
+											map.startRenderJob(job);
+											sender.sendMessage(prefix+"Rendering chunks of specified radius for "+map.getWorldName()+" (mode: "+(forced ? RenderJobMode.FORCED : RenderJobMode.MISSING).name()+")");
+										
+											sender.sendMessage(radius+" "+player.getLocation().getBlockX() + " " + player.getLocation().getBlockZ());
+											sender.sendMessage(bounds.toString());
+											sender.sendMessage(job.toString());
+										}catch(Exception ex){
+											sender.sendMessage(prefixError+ex.getMessage());
+										}
+									} else {
+										sender.sendMessage(prefixError+"A max radius of 1024 is supportd! Do a full render instead?");
+									}
+								} else {
+									sender.sendMessage(prefixError+"Input world missmatch from the current world your in!");
+								}
+								return true;
+							} else {
+								sender.sendMessage(prefixError+"A radius can only be specified as a Player in the current world!");
+								return true;
+							}
+						}catch(NumberFormatException ex){}
+					}
+
+					if(args.length >= 2 && args[1].equalsIgnoreCase("bounds")) {
+						
+						if(args.length == 2) {
+							sender.sendMessage(prefix+"Bounds for "+world.getWorldName());
+							sender.sendMessage(world.getRenderBounds().toString());
+							return true;
+						}
+						if(args.length == 3 ||  args.length == 4) {
+							boolean circle = false;
+							if(args.length == 4 && args[3].equalsIgnoreCase("-c")) circle = true;
+
+							try{
+								int radius = Math.abs(Integer.parseInt(args[2]));
+								RenderBounds bounds = circle ? new RenderBounds(radius) : new RenderBounds(-radius, -radius, radius, radius);
+								if(bounds.valid()) {
+									map.setRenderBounds(bounds);
+									sender.sendMessage(prefix+"New render bounds set for "+map.getWorldName());
+									sender.sendMessage(bounds.toString());
+								} else {
+									sender.sendMessage(prefixError+"Invalid radius specified. Make sure ist greater than 0.");
+								}
+							}catch(NumberFormatException ex) {
+								sender.sendMessage(prefixError+"Invalid radius specified!");
+								
+							}
+							return true;
+						} 
+						if(args.length == 6) {
+							try{
+								int left = Integer.parseInt(args[2]);
+								int top = Integer.parseInt(args[3]);
+								int right = Integer.parseInt(args[4]);
+								int bottom = Integer.parseInt(args[5]);
+								RenderBounds bounds = new RenderBounds(left, top, right, bottom);
+								if(bounds.valid()) {
+									map.setRenderBounds(bounds);
+									sender.sendMessage(prefix+"New render bounds set for "+map.getWorldName());
+									sender.sendMessage(bounds.toString());
+								} else {
+									sender.sendMessage(prefixError+"Invalid render bounds specified! make sure [right - left > 0] and [bottom - top > 0]");
+								}
+							}catch(NumberFormatException ex){
+								sender.sendMessage(prefixError+"Invalid left,right,top,bottom bounds specified!");
+							}
+							return true;
+						}
+					}
+				}
+
+				/*if(args.length == 2) {
+					if(args[1].equals("fullrender")) {
+						try{
+							map.startRenderJob(RenderJob.fromBounds(map.getRenderWorld("world").getRenderBounds(), RenderJobMode.FORCED));
+							sender.sendMessage(prefix+"Full render started");
+						}catch(Exception ex){
+							ex.printStackTrace();
+							sender.sendMessage(prefixError+ex.getMessage());
+						}
+						return true;
+					}
+					if(args[1].equals("abortrender")) {
+						try{
+							map.stopRenderJob();
+							sender.sendMessage(prefix+"Full render stopped");
+						}catch(Exception ex){
+							ex.printStackTrace();
+							sender.sendMessage(prefixError+ex.getMessage());
+						}
+						return true;
+					}
+				}*/
+			}
+		}
+
+		/*if(args.length >= 1) {
 			if(label.equalsIgnoreCase("livekit") && args[0].equalsIgnoreCase("map")) {
 				if(!checkPerm(sender, "livekit.commands.admin")) return true;
 
@@ -402,7 +597,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 					}
 				}
 			}
-		}
+		}*/
 		return false;
 	}
 

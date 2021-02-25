@@ -1,5 +1,7 @@
 package at.livekit.utils;
 
+import java.io.File;
+import java.nio.file.Files;
 import java.security.SecureRandom;
 
 import org.bukkit.Material;
@@ -25,4 +27,53 @@ public class Utils
         mat == Material.GREEN_BED || mat == Material.LIME_BED ||
         mat == Material.ORANGE_BED ||mat == Material.PINK_BED );
     }
+
+    public static byte[] encodeTimestamp(long lng) {
+       return new byte[] {
+            (byte) (lng >> 56),
+            (byte) (lng >> 48),
+            (byte) (lng >> 40),
+            (byte) (lng >> 32),
+            (byte) (lng >> 24),
+            (byte) (lng >> 16),
+            (byte) (lng >> 8),
+            (byte) lng };
+    }
+
+    public static long decodeTimestamp(byte[] b) {
+        return ((long) b[0] << 56)
+       | ((long) b[1] & 0xff) << 48
+       | ((long) b[2] & 0xff) << 40
+       | ((long) b[3] & 0xff) << 32
+       | ((long) b[4] & 0xff) << 24
+       | ((long) b[5] & 0xff) << 16
+       | ((long) b[6] & 0xff) << 8
+       | ((long) b[7] & 0xff);
+    }
+
+    public static void tryWriteFile(File file, String data) {
+        try{
+            writeFile(file, data);
+        }catch(Exception ex){
+            ex.printStackTrace();
+        }
+    }
+
+    public static void writeFile(File file, String data) throws Exception {
+        writeFile(file, data.getBytes());
+    }
+
+    public static void writeFile(File file, byte[] data) throws Exception {
+        if(!file.exists()) file.createNewFile();
+        Files.write(file.toPath(), data);
+    }
+
+    /*public static long timestampFromBytes(byte[] data) {
+        long timestamp = 0;
+        for(int i = 0; i < 8; i++) {
+            timestamp <<= 8;
+            timestamp |= data[i];
+        }
+        return timestamp;
+    }*/
 }

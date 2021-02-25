@@ -64,6 +64,8 @@ public class Config
     }
 
     private static void fixMissing() {
+        boolean save = false;
+
         if(!config.contains("modules.ChatModule.enabled")) {
             config.set("modules.ChatModule.enabled", true);
             Plugin.log("Updating config with ChatModule");
@@ -73,9 +75,10 @@ public class Config
                     Plugin.log("Friendly reminder, use livekit.modules.chat permission to enable chat in App!");
                 }
             }
+            save = true;
         }
         try{
-            config.save(configFile);
+            if(save) config.save(configFile);
         }catch(Exception ex){ex.printStackTrace();}
     }
 }
