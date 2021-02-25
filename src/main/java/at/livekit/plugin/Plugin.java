@@ -21,11 +21,10 @@ import at.livekit.map.RenderBounds.RenderShape;
 import at.livekit.map.RenderJob.RenderJobMode;
 import at.livekit.modules.BaseModule;
 import at.livekit.modules.PlayerModule;
-import at.livekit.modules.LiveMapModule.*;
 import at.livekit.modules.LiveMapModule;
 import at.livekit.modules.PlayerModule.LPlayer;
-import at.livekit.utils.HeadLibrary;
 import at.livekit.utils.HeadLibraryEvent;
+import at.livekit.utils.HeadLibraryV2;
 
 public class Plugin extends JavaPlugin implements CommandExecutor {
 
@@ -68,8 +67,8 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 		//logger.info("Materials: " + Material.values().length);
 		//logger.info("Biomes: " + Biome.values().length);
 
-		HeadLibrary.load();
-		HeadLibrary.setHeadLibraryListener(new HeadLibraryEvent(){
+		HeadLibraryV2.onEnable();
+		HeadLibraryV2.setHeadLibraryListener(new HeadLibraryEvent(){
 			@Override
 			public void onHeadResolved(String name, String base64) {
 				PlayerModule module = (PlayerModule)LiveKit.getInstance().getModuleManager().getModule("PlayerModule");
@@ -90,7 +89,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 		LiveKit.getInstance().onDisable();
 			
 		try{
-			HeadLibrary.dispose();
+			HeadLibraryV2.onDisable();
 		}catch(Exception ex){ex.printStackTrace();}
 	}
 

@@ -33,7 +33,7 @@ import at.livekit.plugin.Plugin;
 import at.livekit.packets.ActionPacket;
 import at.livekit.packets.IPacket;
 import at.livekit.packets.StatusPacket;
-import at.livekit.utils.HeadLibrary;
+import at.livekit.utils.HeadLibraryV2;
 
 public class PlayerModule extends BaseModule implements Listener
 {
@@ -160,10 +160,10 @@ public class PlayerModule extends BaseModule implements Listener
 		player.updateExhaustion(p.getExhaustion());
         
 
-        if(!HeadLibrary.has(p.getName())) { 
+        /*if(!HeadLibrary.has(p.getName())) { 
 			HeadLibrary.resolveAsync(p.getName());
-		} 
-		player.updateHead(HeadLibrary.get(p.getName()));
+		} */
+		player.updateHead(HeadLibraryV2.get(p.getName()));
         player.updateOnline(true);
 
         ItemStack itemInHand = p.getInventory().getItemInMainHand();
@@ -527,10 +527,10 @@ public class PlayerModule extends BaseModule implements Listener
             LPlayer p = new LPlayer(player.getUniqueId().toString());
             p.name = player.getName();
             p.online = player.isOnline();
-            if(!HeadLibrary.has(player.getName())) { 
+            /*if(!HeadLibrary.has(player.getName())) { 
                 HeadLibrary.resolveAsync(player.getName());
-            } 
-            p.updateHead(HeadLibrary.get(player.getName()));
+            } */
+            p.updateHead(HeadLibraryV2.get(player.getName()));
             
 
             if(player.getPlayer() != null) {
