@@ -258,14 +258,14 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 				}
 				if(checkPerm(sender, "livekit.commands.admin", false)) {
 					sender.sendMessage(prefixError+"Admin Commands:"+ChatColor.RESET);
-					sender.sendMessage(ChatColor.GREEN+"/livekit map"+ChatColor.RESET+" - Display info about current map and rendering stats");
-					sender.sendMessage(ChatColor.GREEN+"/livekit map fullrender"+ChatColor.RESET+" - Start full render");
-					sender.sendMessage(ChatColor.GREEN+"/livekit map abortrender"+ChatColor.RESET+" - Clear rendering queue");
-					sender.sendMessage(ChatColor.GREEN+"/livekit map bounds"+ChatColor.RESET+" - Displays livemap bounds vs actual world size bounds");
-					sender.sendMessage(ChatColor.GREEN+"/livekit map mode <FORCED | DISCOVER>"+ChatColor.RESET+" - Change map mode");
+					sender.sendMessage(ChatColor.GREEN+"/livekit map"+ChatColor.RESET+" - Display info about live map");
 					sender.sendMessage(ChatColor.GREEN+"/livekit map cpu <time in %>"+ChatColor.RESET+" - Speed up rendering performance at the cost of server lag. Use with care. Default: 40%");
-					sender.sendMessage(ChatColor.GREEN+"/livekit map bounds update"+ChatColor.RESET+" - Sets livemap bounds to current world bounds.");
-					sender.sendMessage(ChatColor.GREEN+"/livekit map bounds <minX> <maxX> <minZ> <maxZ>"+ChatColor.RESET+" - Set custom livemap bounds. Make sure max > min. Coordinates are in regions (1 region = 32x32 Chunks)");
+					sender.sendMessage(ChatColor.GREEN+"/livekit <world> render full [-m|-f]"+ChatColor.RESET+" - Start full render on <world> -m: missing tiles only, -f forces already rendered tiles to render");
+					sender.sendMessage(ChatColor.GREEN+"/livekit <world> render <radius>"+ChatColor.RESET+" - Renders a rectangular radius around the players position. (Worlds must match)");
+					sender.sendMessage(ChatColor.GREEN+"/livekit <world> render stop"+ChatColor.RESET+" - Stop current rendering job");
+					sender.sendMessage(ChatColor.GREEN+"/livekit <world> bounds"+ChatColor.RESET+" - Displays bounds of <world>");
+					sender.sendMessage(ChatColor.GREEN+"/livekit <world> bounds <radius> [-r|-c]"+ChatColor.RESET+" - Creates rectangular (-r) or circular (-c) bounds with <radius> [in blocks]");
+					sender.sendMessage(ChatColor.GREEN+"/livekit <world> bounds <left> <top> <right> <bottom>"+ChatColor.RESET+" - Set bounds for <world> in blocks");
 				}
 				return true;
 			}
