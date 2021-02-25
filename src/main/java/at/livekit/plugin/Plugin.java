@@ -260,6 +260,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 					sender.sendMessage(prefixError+"Admin Commands:"+ChatColor.RESET);
 					sender.sendMessage(ChatColor.GREEN+"/livekit map"+ChatColor.RESET+" - Display info about live map");
 					sender.sendMessage(ChatColor.GREEN+"/livekit map cpu <time in %>"+ChatColor.RESET+" - Speed up rendering performance at the cost of server lag. Use with care. Default: 40%");
+					sender.sendMessage(ChatColor.GREEN+"/livekit <world>"+ChatColor.RESET+" - Show general info and rendering status of <world>");
 					sender.sendMessage(ChatColor.GREEN+"/livekit <world> render full [-m|-f]"+ChatColor.RESET+" - Start full render on <world> -m: missing tiles only, -f forces already rendered tiles to render");
 					sender.sendMessage(ChatColor.GREEN+"/livekit <world> render <radius>"+ChatColor.RESET+" - Renders a rectangular radius around the players position. (Worlds must match)");
 					sender.sendMessage(ChatColor.GREEN+"/livekit <world> render stop"+ChatColor.RESET+" - Stop current rendering job");
