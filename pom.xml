@@ -29,7 +29,7 @@
           <relocation>
             <pattern>org.bstats</pattern>
             <!-- Replace this with your package! -->
-            <shadedPattern>at.livekit</shadedPattern>
+            <shadedPattern>at.livekit.plugin</shadedPattern>
           </relocation>
         </relocations>
       </configuration>

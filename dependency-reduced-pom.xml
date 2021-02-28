@@ -35,7 +35,7 @@
           <relocations>
             <relocation>
               <pattern>org.bstats</pattern>
-              <shadedPattern>at.livekit</shadedPattern>
+              <shadedPattern>at.livekit.plugin</shadedPattern>
             </relocation>
           </relocations>
         </configuration>

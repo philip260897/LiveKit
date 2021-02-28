@@ -84,7 +84,9 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 			LiveKit.getInstance().onEnable();
 		}catch(Exception ex){ex.printStackTrace();}
 
-		Metrics metrics = new Metrics(this, 10516);
+		try{
+			Metrics metrics = new Metrics(this, 10516);
+		}catch(Exception ex){Plugin.debug("bStats could not be initialized! "+ex.getMessage());}
     }
     
     @Override
