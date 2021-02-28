@@ -20,7 +20,7 @@
 	</resource>
 	</resources>
 	<plugins>
-      <plugin>
+      <!--plugin>
       <groupId>org.apache.maven.plugins</groupId>
       <artifactId>maven-shade-plugin</artifactId>
       <version>3.1.0</version>
@@ -28,7 +28,7 @@
         <relocations>
           <relocation>
             <pattern>org.bstats</pattern>
-            <!-- Replace this with your package! -->
+            
             <shadedPattern>at.livekit.plugin</shadedPattern>
           </relocation>
         </relocations>
@@ -41,7 +41,7 @@
           </goals>
         </execution>
       </executions>
-    </plugin>
+    </plugin -->
 	            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
@@ -111,12 +111,12 @@
 	    <artifactId>jsoup</artifactId>
 	    <version>1.12.1</version>
 	</dependency>
-  <dependency>
+  <!-- dependency>
     <groupId>org.bstats</groupId>
     <artifactId>bstats-bukkit</artifactId>
     <version>2.2.1</version>
     <scope>compile</scope>
-  </dependency>
+  </dependency -->
   
   
   <!--Spigot API-->

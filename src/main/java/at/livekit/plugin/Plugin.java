@@ -3,7 +3,6 @@ package at.livekit.plugin;
 import java.util.List;
 import java.util.logging.Logger;
 
-import org.bstats.bukkit.Metrics;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
@@ -85,7 +84,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 		}catch(Exception ex){ex.printStackTrace();}
 
 		try{
-			Metrics metrics = new Metrics(this, 10516);
+			//Metrics metrics = new Metrics(this, 10516);
 		}catch(Exception ex){Plugin.debug("bStats could not be initialized! "+ex.getMessage());}
     }
     
