@@ -25,6 +25,7 @@ import at.livekit.modules.LiveMapModule;
 import at.livekit.modules.PlayerModule.LPlayer;
 import at.livekit.utils.HeadLibraryEvent;
 import at.livekit.utils.HeadLibraryV2;
+import at.livekit.utils.Metrics;
 
 public class Plugin extends JavaPlugin implements CommandExecutor {
 
@@ -84,7 +85,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 		}catch(Exception ex){ex.printStackTrace();}
 
 		try{
-			//Metrics metrics = new Metrics(this, 10516);
+			Metrics metrics = new Metrics(this, 10516);
 		}catch(Exception ex){Plugin.debug("bStats could not be initialized! "+ex.getMessage());}
     }
     
