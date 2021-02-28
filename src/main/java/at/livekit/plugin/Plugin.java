@@ -3,6 +3,7 @@ package at.livekit.plugin;
 import java.util.List;
 import java.util.logging.Logger;
 
+import org.bstats.bukkit.Metrics;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
@@ -82,6 +83,8 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 		try{
 			LiveKit.getInstance().onEnable();
 		}catch(Exception ex){ex.printStackTrace();}
+
+		Metrics metrics = new Metrics(this, 10516);
     }
     
     @Override
