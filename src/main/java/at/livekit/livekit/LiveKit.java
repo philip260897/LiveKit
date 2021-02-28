@@ -30,7 +30,7 @@ import at.livekit.packets.ServerSettingsPacket;
 import at.livekit.packets.StatusPacket;
 import at.livekit.plugin.Config;
 import at.livekit.plugin.Plugin;
-import at.livekit.utils.HeadLibrary;
+import at.livekit.utils.HeadLibraryV2;
 
 public class LiveKit implements ModuleListener, NIOServerEvent<Identity>, Runnable {
 
@@ -626,7 +626,7 @@ public class LiveKit implements ModuleListener, NIOServerEvent<Identity>, Runnab
                 }catch(Exception ex){ex.printStackTrace();}
 
             
-                return new IdentityPacket(identity.getUUID(), client.getIdentifier().getName(), HeadLibrary.get(client.getIdentifier().getName()), identity.generateSessionKey());
+                return new IdentityPacket(identity.getUUID(), client.getIdentifier().getName(), HeadLibraryV2.get(client.getIdentifier().getName()), identity.generateSessionKey());
             }
         } 
         else

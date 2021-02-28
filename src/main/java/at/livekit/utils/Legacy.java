@@ -2,8 +2,13 @@ package at.livekit.utils;
 
 import java.io.File;
 import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.json.JSONObject;
 import at.livekit.map.RenderBounds;
+import at.livekit.plugin.Plugin;
+import at.livekit.utils.HeadLibraryV2.HeadInfo;
 
 
 public class Legacy 
@@ -53,5 +58,49 @@ public class Legacy
         }
 
         return RenderBounds.DEFAULT;
+    }
+
+    /**
+     * Used to detect if server has legacy head data <= v0.0.5
+     * @return true if legacy heads detected
+     */
+    public static boolean hasLegacyHeads() {
+        File file = new File(Plugin.getInstance().getDataFolder(), "heads/");
+        return file.exists();
+    }
+
+    /**
+     * Gets Legacy Head data and converts to new format <= v0.0.5
+     * @return Head data in new format
+     */
+    public static List<HeadInfo> getLegacyHeads() {
+        List<HeadInfo> infos = new ArrayList<>();
+
+        for(File file : new File(Plugin.getInstance().getDataFolder(), "heads/").listFiles()) {
+            try{
+                if(file.getName().endsWith(".txt")) {
+                    String name = file.getName().replace(".txt", "");
+                    String head = new String(Files.readAllBytes(file.toPath()));
+                    if(head.length() != 0) {
+                        HeadInfo info = new HeadInfo(name, head);
+                        infos.add(info);
+                    }
+                }
+            }catch(Exception ex){
+                ex.printStackTrace();
+            }
+        }
+
+        return infos;
+    }
+
+    /**
+     * Deletes legacy head storage <= v0.0.5
+     * @return true if legacy storage detected
+     */
+    public static void deleteLegacyHeads() {
+        File file = new File(Plugin.getInstance().getDataFolder(), "heads/");
+        for(File h : file.listFiles()) h.delete();
+        file.delete();
     }
 }
