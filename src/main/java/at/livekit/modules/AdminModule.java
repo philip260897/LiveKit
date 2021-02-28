@@ -9,7 +9,6 @@ import java.util.UUID;
 import org.bukkit.BanList;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 import org.bukkit.block.BlockFace;
@@ -18,12 +17,10 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import at.livekit.livekit.Identity;
-import at.livekit.livekit.LiveKit;
-import at.livekit.modules.BaseModule.Action;
 import at.livekit.packets.ActionPacket;
 import at.livekit.packets.IPacket;
 import at.livekit.packets.StatusPacket;
-import at.livekit.utils.HeadLibrary;
+import at.livekit.utils.HeadLibraryV2;
 
 public class AdminModule extends BaseModule 
 {
@@ -110,7 +107,7 @@ public class AdminModule extends BaseModule
             JSONObject p = new JSONObject();
             p.put("uuid", player.getUniqueId().toString());
             p.put("name", player.getName() );
-            p.put("head", HeadLibrary.get(player.getName()));
+            p.put("head", HeadLibraryV2.get(player.getName()));
             array.put(p);
         }
         data.put("players", array);
@@ -225,7 +222,7 @@ public class AdminModule extends BaseModule
             JSONObject p = new JSONObject();
             p.put("uuid", player.getUniqueId().toString());
             p.put("name", player.getName() );
-            p.put("head", HeadLibrary.get(player.getName()));
+            p.put("head", HeadLibraryV2.get(player.getName()));
             array.put(p);
         }
         data.put("players", array);
