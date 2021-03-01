@@ -70,6 +70,13 @@ public class ModuleManager
             if(m.isEnabled()) {
                 m.onDisable(signature);
             }
+
+            if(m instanceof PlayerModule) {
+                ((PlayerModule) m).clearProviders();
+            }
+            if(m instanceof POIModule) {
+                ((POIModule) m).clearProviders();
+            }
         }
     }
 

@@ -47,6 +47,10 @@ public class PlayerModule extends BaseModule implements Listener
         super(1, "Players", "livekit.module.players", UpdateRate.MAX, listener, true);
     }
      
+    public void clearProviders() {
+        _locationProviders.clear();
+    }
+
     public void addLocationProvider(LocationProvider provider) {
         if(!_locationProviders.contains(provider)) {
             _locationProviders.add(provider);

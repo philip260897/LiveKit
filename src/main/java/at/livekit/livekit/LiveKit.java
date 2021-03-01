@@ -20,6 +20,7 @@ import at.livekit.api.map.LocationProvider;
 import at.livekit.api.map.POIProvider;
 import at.livekit.modules.BaseModule;
 import at.livekit.modules.ModuleManager;
+import at.livekit.modules.POIModule;
 import at.livekit.modules.PlayerModule;
 import at.livekit.modules.BaseModule.Action;
 import at.livekit.modules.BaseModule.ActionMethod;
@@ -737,8 +738,10 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
 
 	@Override
 	public void updatePOIs() {
-		// TODO Auto-generated method stub
-		
+        POIModule module = (POIModule) _modules.getModule("POIModule");
+        if(module != null && module.isEnabled()) {
+            this.onFullUpdate(module.getType());
+        }
 	}
 }
 
