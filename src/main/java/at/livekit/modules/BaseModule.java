@@ -207,6 +207,10 @@ public abstract class BaseModule
             this.full = full;
         }
 
+        public JSONObject getJSONObject() {
+            return data;
+        }
+
         @Override
         public JSONObject toJson() {
             JSONObject json = super.toJson();

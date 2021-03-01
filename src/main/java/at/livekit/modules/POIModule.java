@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.bukkit.Bukkit;
+import org.bukkit.World;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -12,10 +14,13 @@ import at.livekit.api.map.POIProvider;
 import at.livekit.api.map.Waypoint;
 import at.livekit.livekit.Identity;
 import at.livekit.packets.IPacket;
+import at.livekit.plugin.Config;
 
 public class POIModule extends BaseModule {
 
     private List<POIProvider> _poiProviders = new ArrayList<POIProvider>();
+
+    private List<Waypoint> _waypoints = new ArrayList<Waypoint>();
 
     public POIModule(ModuleListener listener) {
         super(1, "POI", "livekit.module.poi", UpdateRate.NEVER, listener);
@@ -37,16 +42,43 @@ public class POIModule extends BaseModule {
         }
     }
 
+    public void updatePOIs() {
+        if(!this.isEnabled()) return; 
+
+        World world = Bukkit.getWorld(Config.getModuleString("LiveMapModule", "world"));
+        if(world != null) {
+            synchronized(_waypoints) {
+                _waypoints.clear();
+                for(POIProvider provider : _poiProviders) {
+                    provider.onPOIRequest(world, _waypoints);
+                }
+            }
+        }
+
+        notifyFull();
+    }
+
     @Override
     public IPacket onJoinAsync(Identity identity) {
         JSONObject json = new JSONObject();
         JSONArray pois = new JSONArray();
 
-        List<Waypoint> waypoints = new ArrayList<Waypoint>();
-        synchronized(_poiProviders) {
-            
+        synchronized(_waypoints) {
+            for(Waypoint waypoint : _waypoints) {
+                JSONObject poi = new JSONObject();
+                poi.put("type", "loc");
+                poi.put("name", waypoint.getName());
+                poi.put("description", waypoint.getDescription());
+                poi.put("x", waypoint.getLocation().getBlockX());
+                poi.put("y", waypoint.getLocation().getBlockY());
+                poi.put("z", waypoint.getLocation().getBlockZ());
+                poi.put("color", waypoint.getColor().getHEX());
+                poi.put("world", waypoint.getLocation().getWorld().getName());
+                pois.put(poi);
+            }
         }
 
+        json.put("pois", pois);
         return new ModuleUpdatePacket(this, json, true);
     }
 
@@ -55,24 +87,25 @@ public class POIModule extends BaseModule {
         Map<Identity, IPacket> responses = new HashMap<Identity,IPacket>();
 
         JSONObject json = new JSONObject();
-        JSONArray messages = new JSONArray();
-    
-        synchronized(_updates) {
-            for(ChatMessage message : _updates) {
-                messages.put(message.toJson());
-            }
+        JSONArray pois = new JSONArray();
 
-            while(_updates.size() > 0) {
-                _backlog.add(_updates.remove(0));
-            }
-            while(_backlog.size() > CHAT_LOG_SIZE) {
-                _backlog.remove(0);
+        synchronized(_waypoints) {
+            for(Waypoint waypoint : _waypoints) {
+                JSONObject poi = new JSONObject();
+                poi.put("type", "loc");
+                poi.put("name", waypoint.getName());
+                poi.put("description", waypoint.getDescription());
+                poi.put("x", waypoint.getLocation().getBlockX());
+                poi.put("y", waypoint.getLocation().getBlockY());
+                poi.put("z", waypoint.getLocation().getBlockZ());
+                poi.put("color", waypoint.getColor().getHEX());
+                poi.put("world", waypoint.getLocation().getWorld().getName());
+                pois.put(poi);
             }
         }
-        json.put("messages", messages);
-        IPacket response =  new ModuleUpdatePacket(this, json, false);
+        json.put("pois", pois);
 
-        for(Identity identity : identities) responses.put(identity, response);
+        for(Identity identity : identities) responses.put(identity, new ModuleUpdatePacket(this, json, false));
 
         return responses;
     }
