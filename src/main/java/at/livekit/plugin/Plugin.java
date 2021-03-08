@@ -1,10 +1,14 @@
 package at.livekit.plugin;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.logging.Logger;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.World;
+import org.bukkit.WorldType;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -59,10 +63,13 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 			return;
 		}
 
-		if(Bukkit.getWorld(Config.getModuleString("LiveMapModule", "world")) == null) {
-			Plugin.severe(Config.getModuleString("LiveMapModule", "world")+" does not exist! Shutting down");
-			getServer().getPluginManager().disablePlugin(this);
-			return;
+		List<String> worlds = Config.getLiveMapWorlds();
+		for(String world : worlds) {
+			if(Bukkit.getWorld(world) == null) {
+				Plugin.severe(world + " does not exist! Shutting down");
+				getServer().getPluginManager().disablePlugin(this);
+				return;
+			}
 		}
 
 		//logger.info("Materials: " + Material.values().length);
@@ -280,16 +287,16 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 
 	private boolean handleMapCommands(CommandSender sender, Command command, String label, String[] args) {
 		if(args.length >= 1) {
-			if(label.equalsIgnoreCase("livekit") && args[0].equalsIgnoreCase("map") || args[0].equalsIgnoreCase(Config.getModuleString("LiveMapModule", "world"))) {
-				if(!checkPerm(sender, "livekit.commands.admin")) return true;
+			List<String> worlds = Config.getLiveMapWorlds();
 
-				LiveMapModule map = (LiveMapModule)LiveKit.getInstance().getModuleManager().getModule("LiveMapModule");
-				if(!map.isEnabled()) { sender.sendMessage(prefixError+" LiveMapModule not enabled."); return true;}
+			if(label.equalsIgnoreCase("livekit") && args[0].equalsIgnoreCase("map") || worlds.contains(args[0])) {
+				if(!checkPerm(sender, "livekit.commands.admin")) return true;
 
 				if(args[0].equalsIgnoreCase("map")) {
 					if(args.length == 1) {
 						sender.sendMessage(prefix+"Live Map info");
-						sender.sendMessage("World: "+Config.getModuleString("LiveMapModule", "world"));
+						sender.sendMessage("Worlds: ");
+						for(String s : worlds) sender.sendMessage(" - "+s);
 						sender.sendMessage("CPU-Time: "+LiveMapModule.CPU_TIME+"ms / "+(int)(((float)LiveMapModule.CPU_TIME/50f)*100f)+"%");
 						return true;
 					}
@@ -315,7 +322,11 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 					}
 				}
 
-				if(args[0].equalsIgnoreCase(Config.getModuleString("LiveMapModule", "world"))) {
+				
+				if(worlds.contains(args[0])) {
+					LiveMapModule map = (LiveMapModule)LiveKit.getInstance().getModuleManager().getModule("LiveMapModule:"+args[0]);
+					if(map == null || !map.isEnabled()) { sender.sendMessage(prefixError+" LiveMapModule not enabled."); return true;}
+
 					RenderWorld world = map.getRenderWorld();
 
 
@@ -630,8 +641,32 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 				return true;
 			}
 			
+			if(args[0].equalsIgnoreCase("subs")) {
+				if(!checkPerm(sender, "livekit.commands.admin")) return true;
+
+				Map<String, List<String>> subscriptions = LiveKit.getInstance().getModuleManager().getSubscriptions();
+				sender.sendMessage(prefix+"Registered Subscriptions: ");
+				for(Entry<String, List<String>> entry : subscriptions.entrySet()) {
+					sender.sendMessage(entry.getKey()+": ");
+					for(String s : entry.getValue()) 
+						sender.sendMessage(" - "+s);
+				}
+
+				return true;
+			}
+
+
+			World mWorld = Bukkit.getWorld(args[0]);
+            WorldType mType = mWorld.getWorldType();
+			sender.sendMessage(mType.getName());
+
+
+			if(sender instanceof Player) {
+				Player player = (Player)sender;
+				sender.sendMessage(mWorld.getHighestBlockAt(player.getLocation()).getType().name());
+			}
 		}
-		/*if(args.length == 3) {
+		if(args.length == 3) {
 			if(args[0].equalsIgnoreCase("modules")) {
 				if(!checkPerm(sender, "livekit.commands.admin")) return true;
 
@@ -647,8 +682,31 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 					}
 					LiveKit.getInstance().notifyQueue("SettingsModule");
 				}
+
+				return true;
 			}
-		}*/
+			if(args[0].equalsIgnoreCase("load")) {
+				if(!checkPerm(sender, "livekit.commands.admin")) return true;
+				
+				if(sender instanceof Player) {
+					Player player = (Player)sender;
+					World world = player.getWorld();
+
+					int x = Integer.parseInt(args[1]);
+					int z = Integer.parseInt(args[2]);
+
+					long start = System.currentTimeMillis();
+					for(int cx = x*32; cx < (x+1)*32; cx++) {
+						for(int cz = z*32; cz < (z+1)*32; cz++) {
+							//world.getChunkAt(cx, cz);
+							world.loadChunk(cx, cz);
+						}
+					}
+					player.sendMessage(prefix+"Chunks loaded!" + (System.currentTimeMillis()-start)+"ms");
+					return true;
+				}
+			}
+		}
 		return false;
 	}
 

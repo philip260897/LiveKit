@@ -48,7 +48,14 @@ public class Identity
 
     public void setSubscription(String baseType, String subscription) {
         synchronized(subscriptions) {
-            subscriptions.put(baseType, subscription);
+            if(subscription != null) subscriptions.put(baseType, subscription);
+            else subscriptions.remove(baseType);
+        }
+    }
+
+    public boolean hasSubscriptionFor(String baseType) {
+        synchronized(subscriptions) {
+            return subscriptions.containsKey(baseType);
         }
     }
 

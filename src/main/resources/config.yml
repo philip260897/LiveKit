@@ -25,7 +25,10 @@ permissions:
 modules:
   LiveMapModule:
     enabled: true
-    world: 'world'
+    worlds:
+      - world
+      - world_nether
+      - world_the_end
     cpuTime: 20
   PlayerModule:
     enabled: true

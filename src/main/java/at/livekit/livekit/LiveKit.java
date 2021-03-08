@@ -92,11 +92,11 @@ public class LiveKit implements ModuleListener, NIOServerEvent<Identity>, Runnab
     }
 
     public void enableModule(String module) {
-        getModuleManager().enableModule(module, invokationMap);
+        getModuleManager().enableModule(module, invokationMap, _server.getIdentifiers().stream().filter(i->i.isIdentified()).collect(Collectors.toList()));
     }
 
     public void disableModule(String module) {
-        getModuleManager().disableModule(module, invokationMap);
+        getModuleManager().disableModule(module, invokationMap, _server.getIdentifiers().stream().filter(i->i.isIdentified()).collect(Collectors.toList()));
     }
 
     public void commandReloadPermissions() {

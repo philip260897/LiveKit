@@ -237,7 +237,7 @@ public class LiveMapModule extends BaseModule implements Listener
 
         renderWorld.checkUnload();
         long delta = System.currentTimeMillis() - _frameStart;
-        //if(delta != 0) System.out.println(delta+"ms used of tick");
+        if(delta != 0) System.out.println(delta+"ms used of tick ("+world+")");
     }
 
     public static class RegionData {
@@ -479,7 +479,7 @@ public class LiveMapModule extends BaseModule implements Listener
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onBlockPlaceEvent(BlockPlaceEvent event) {
-        if(!isEnabled()) return;
+        if(!isEnabled() || !event.getBlock().getWorld().getName().equals(world)) return;
 
         if(event.getBlock().getY() == event.getBlock().getWorld().getHighestBlockAt(event.getBlock().getX(), event.getBlock().getZ()).getY()) {
             renderWorld.updateBlock(event.getBlock());
@@ -488,7 +488,7 @@ public class LiveMapModule extends BaseModule implements Listener
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onBlockBreakEvent(BlockBreakEvent event) {
-        if(!isEnabled()) return;
+        if(!isEnabled() || !event.getBlock().getWorld().getName().equals(world)) return;
 
         if(event.getBlock().getY() == event.getBlock().getWorld().getHighestBlockAt(event.getBlock().getX(), event.getBlock().getZ()).getY()) {
             renderWorld.updateBlock(event.getBlock().getRelative(BlockFace.DOWN));
@@ -497,7 +497,7 @@ public class LiveMapModule extends BaseModule implements Listener
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onBlockFormEvent(BlockFormEvent event) {
-        if(!isEnabled()) return;
+        if(!isEnabled() || !event.getBlock().getWorld().getName().equals(world)) return;
 
         if(event.getBlock().getY() == event.getBlock().getWorld().getHighestBlockAt(event.getBlock().getX(), event.getBlock().getZ()).getY()) {
             renderWorld.updateBlock(event.getBlock());
@@ -506,7 +506,7 @@ public class LiveMapModule extends BaseModule implements Listener
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onBlockGrowEvent(BlockGrowEvent event) {
-        if(!isEnabled()) return;
+        if(!isEnabled() || !event.getBlock().getWorld().getName().equals(world)) return;
 
         if(event.getBlock().getY() == event.getBlock().getWorld().getHighestBlockAt(event.getBlock().getX(), event.getBlock().getZ()).getY()) {
             renderWorld.updateBlock(event.getBlock());
@@ -515,7 +515,7 @@ public class LiveMapModule extends BaseModule implements Listener
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onBlockSpreadEvent(BlockSpreadEvent event) {
-        if(!isEnabled()) return;
+        if(!isEnabled() || !event.getBlock().getWorld().getName().equals(world)) return;
 
         if(event.getBlock().getY() == event.getBlock().getWorld().getHighestBlockAt(event.getBlock().getX(), event.getBlock().getZ()).getY()) {
             renderWorld.updateBlock(event.getBlock());
@@ -524,7 +524,7 @@ public class LiveMapModule extends BaseModule implements Listener
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onBlockExplodeEvent(BlockExplodeEvent event) {
-        if(!isEnabled()) return;
+        if(!isEnabled() || !event.getBlock().getWorld().getName().equals(world)) return;
 
         if(event.getBlock().getY() == event.getBlock().getWorld().getHighestBlockAt(event.getBlock().getX(), event.getBlock().getZ()).getY()) {
             renderWorld.updateBlock(event.getBlock());
@@ -533,7 +533,7 @@ public class LiveMapModule extends BaseModule implements Listener
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onBlockFadeEvent(BlockFadeEvent event) {
-        if(!isEnabled()) return;
+        if(!isEnabled() || !event.getBlock().getWorld().getName().equals(world)) return;
     
         if(event.getBlock().getY() == event.getBlock().getWorld().getHighestBlockAt(event.getBlock().getX(), event.getBlock().getZ()).getY()) {
             renderWorld.updateBlock(event.getBlock());
@@ -545,21 +545,21 @@ public class LiveMapModule extends BaseModule implements Listener
 
     @EventHandler(priority = EventPriority.MONITOR)
     private void onChunkPopulateEvent(ChunkPopulateEvent event) {
-        if(!isEnabled()) return;
+        if(!isEnabled() || !event.getWorld().getName().equals(world)) return;
 
         renderWorld.updateChunk(event.getChunk(), true);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     private void onChunkLoadEvent(ChunkLoadEvent event) {
-        if(!isEnabled()) return;
+        if(!isEnabled() || !event.getWorld().getName().equals(world)) return;
 
         renderWorld.updateChunk(event.getChunk(), true);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     private void onStructureGrowEvent(StructureGrowEvent event) {
-        if(!isEnabled()) return;
+        if(!isEnabled() || !event.getWorld().getName().equals(world)) return;
 
         List<Chunk> chunks = new ArrayList<Chunk>();
         for(BlockState bd : event.getBlocks()) {

@@ -509,6 +509,7 @@ public class RenderWorld
         public int renderingX=0;
         public int renderingZ=0;
         public boolean unload = false;
+        public Chunk rchunk;
 
         public byte[] buffer;
         public IPacket result;

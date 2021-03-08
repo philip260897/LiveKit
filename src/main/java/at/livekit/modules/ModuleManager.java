@@ -50,10 +50,12 @@ public class ModuleManager
         //Config.getModuleString("LiveMapModule", "world")
         this.registerModule(new SettingsModule(listener));
         this.registerModule(new PlayerModule(listener));
-        this.registerModule(new LiveMapModule("world", listener));
-        this.registerModule(new LiveMapModule("world_nether", listener));
-        this.registerModule(new WeatherTimeModule("world", listener));
-        this.registerModule(new WeatherTimeModule("world_nether", listener));
+
+        for(String world : Config.getLiveMapWorlds()) {
+            this.registerModule(new LiveMapModule(world, listener));
+            this.registerModule(new WeatherTimeModule(world, listener));
+        }
+
         this.registerModule(new AdminModule(listener));
         this.registerModule(new ChatModule(listener));
 
@@ -101,7 +103,7 @@ public class ModuleManager
         }
     }
 
-    public void disableModule(String moduleType, Map<String, ActionMethod> signatures) /*throws Exception */{
+    public void disableModule(String moduleType, Map<String, ActionMethod> signatures, List<Identity> identities) /*throws Exception */{
         /*Bukkit.getScheduler().callSyncMethod(Plugin.instance, new Callable<Void>(){
             @Override
             public Void call() throws Exception {*/
@@ -109,6 +111,21 @@ public class ModuleManager
                     BaseModule module = _modules.get(moduleType);
                     if(module.isEnabled()) {
                         module.onDisable(signatures);
+                        
+                        //handle subscription update && update identity subscriptions if some got disabled!
+                        if(module.isSubscribeable()) {
+                            if(_subscriptions.containsKey(module.getClass().getSimpleName())) {
+                                List<String> subs = _subscriptions.get(module.getClass().getSimpleName());
+                                subs.remove(module.getSubscription());
+                                if(subs.size() == 0) _subscriptions.remove(module.getClass().getSimpleName());
+
+                                for(Identity identity : identities) {
+                                    if(identity.isSubscribed(module.getClass().getSimpleName(), module.getSubscription())) {
+                                        identity.setSubscription(module.getClass().getSimpleName(), subs.size() == 0 ? null : subs.get(0));
+                                    }
+                                }
+                            }
+                        }
                     }   
                 }
          /*       return null;
@@ -116,7 +133,7 @@ public class ModuleManager
         }).get();*/
     }
 
-    public void enableModule(String moduleType, Map<String, ActionMethod> signatures) /*throws Exception*/ {
+    public void enableModule(String moduleType, Map<String, ActionMethod> signatures, List<Identity> identities) /*throws Exception*/ {
         /*Bukkit.getScheduler().callSyncMethod(Plugin.instance, new Callable<Void>(){
             @Override
             public Void call() throws Exception {*/
@@ -124,6 +141,22 @@ public class ModuleManager
                     BaseModule module = _modules.get(moduleType);
                     if(!module.isEnabled()) {
                         module.onEnable(signatures);
+
+                        //handle subscription update && update identity subscriptions if some got disabled!
+                        if(module.isSubscribeable()) {
+                            List<String> subs = _subscriptions.get(module.getClass().getSimpleName());
+                            if(subs == null) {
+                                subs = new ArrayList<String>();
+                                _subscriptions.put(module.getClass().getSimpleName(), subs);
+                            }
+                            subs.add(module.getSubscription());
+
+                            for(Identity identity : identities) {
+                                if(!identity.hasSubscriptionFor(module.getClass().getSimpleName())) {
+                                    identity.setSubscription(module.getClass().getSimpleName(), module.getSubscription());
+                                }
+                            }
+                        }
                     }
                 }
                /* return null;
@@ -281,6 +314,10 @@ public class ModuleManager
         }
 
         return _default;
+    }
+
+    public Map<String, List<String>> getSubscriptions() {
+        return _subscriptions;
     }
 
     private JSONArray getSubscriptionsArray() {

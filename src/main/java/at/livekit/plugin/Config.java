@@ -51,6 +51,10 @@ public class Config
         return (List<String>) config.getList("permissions.default");
     }
 
+    public static List<String> getLiveMapWorlds() {
+        return (List<String>) config.getList("modules.LiveMapModule.worlds");
+    }
+
     public static boolean moduleEnabled(String name) {
         return config.getBoolean("modules."+name+".enabled");
     }
@@ -59,9 +63,9 @@ public class Config
         return config.getString("server.password");
     }
 
-    public static String getModuleString(String name, String setting) {
+    /*public static String getModuleString(String name, String setting) {
         return config.getString("modules."+name+"."+setting);
-    }
+    }*/
 
     private static void fixMissing() {
         boolean save = false;
@@ -80,5 +84,7 @@ public class Config
         try{
             if(save) config.save(configFile);
         }catch(Exception ex){ex.printStackTrace();}
+
+        //TODO: Convert world => worlds
     }
 }
