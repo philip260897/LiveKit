@@ -686,6 +686,6 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 	}
 
 	public static void debug(String message) {
-		//logger.warning(message);
+		logger.warning(message);
 	}
 }

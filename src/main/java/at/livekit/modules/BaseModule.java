@@ -21,30 +21,32 @@ public abstract class BaseModule
     private UpdateRate tick;
     private String name;
     private String permission;
-    private boolean anonymousAllowed;
 
     private boolean active = false;
     private boolean enabled = false;
 
     private ModuleListener listener;
-    
+    private String subscription;
+
     public BaseModule(int version, String name, String permission, UpdateRate tick, ModuleListener listener) {
-        this(version, name, permission, tick, listener, false, true);
+        this(version, name, permission, tick, listener, null);
     }
 
-    public BaseModule(int version, String name, String permission, UpdateRate tick, ModuleListener listener,  boolean anonymousAllowed) {
-        this(version, name, permission, tick,listener,  anonymousAllowed, true);
-    }
-
-    public BaseModule(int version, String name, String permission, UpdateRate tick,ModuleListener listener, boolean anonymousAllowed, boolean defaultActive) {
+    public BaseModule(int version, String name, String permission, UpdateRate tick, ModuleListener listener, String subscription) {
         this.version = version;
         this.name = name;
         this.permission = permission;
         this.tick = tick;
         this.listener = listener;
-        this.anonymousAllowed = anonymousAllowed;
-        this.active = defaultActive;
-        //this.enabled = defaultEnabled;
+        this.subscription = subscription;
+    }
+
+    public boolean isSubscribeable() {
+        return subscription != null;
+    }
+
+    public String getSubscription() {
+        return subscription;
     }
 
     public void onEnable(Map<String,ActionMethod> signature) {
@@ -149,7 +151,7 @@ public abstract class BaseModule
     }*/
 
     public boolean hasAccess(Identity identity) {
-        return identity.hasPermission(permission);
+        return identity.hasPermission(permission) && (isSubscribeable() ? identity.isSubscribed(this.getClass().getSimpleName(), subscription) : true);
     }
 
     /*public JSONObject toJson(String uuid) {
@@ -157,7 +159,7 @@ public abstract class BaseModule
     }*/
 
     public String getType() {
-        return this.getClass().getSimpleName();
+        return this.getClass().getSimpleName() + (subscription != null ? ":"+subscription : "");
     }
 
     public String getPermission() {
@@ -181,6 +183,7 @@ public abstract class BaseModule
         json.put("version", version);
         json.put("name", name);
         json.put("active", active);
+        json.put("subscribeable", isSubscribeable());
         json.put("moduleType", this.getClass().getSimpleName());
         return json;
     }
@@ -221,9 +224,11 @@ public abstract class BaseModule
 
         public static int PACKET_ID = 16;
         private JSONArray modules;
+        private JSONArray subscriptions;
 
-        public ModulesAvailablePacket(JSONArray modules) {
+        public ModulesAvailablePacket(JSONArray modules, JSONArray subscriptions) {
             this.modules = modules;
+            this.subscriptions = subscriptions;
         }
 
         @Override
@@ -234,6 +239,7 @@ public abstract class BaseModule
             JSONObject json = new JSONObject();
             json.put("packet_id", PACKET_ID);
             json.put("modules", modules);
+            json.put("subscriptions", subscriptions);
             return json;
         }
     }

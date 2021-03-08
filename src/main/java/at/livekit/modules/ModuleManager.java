@@ -5,12 +5,14 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 import org.bukkit.Bukkit;
 import org.json.JSONArray;
+import org.json.JSONObject;
 
 import at.livekit.livekit.Identity;
 import at.livekit.modules.BaseModule.ActionMethod;
@@ -27,7 +29,7 @@ public class ModuleManager
 
     private SettingsModule settings;
     private Map<String, BaseModule> _modules = new HashMap<String, BaseModule>();
-    
+    private Map<String, List<String>> _subscriptions = new HashMap<String, List<String>>();
 
     public ModuleManager(ModuleListener listener) {
         this.listener = listener;
@@ -43,20 +45,32 @@ public class ModuleManager
         }
     }
 
-    public void onEnable(Map<String,ActionMethod> signatures) {
+    public void onEnable(Map<String,ActionMethod> signatures) throws Exception {
+        //Config.getModuleString("LiveMapModule", "world")
+        //Config.getModuleString("LiveMapModule", "world")
         this.registerModule(new SettingsModule(listener));
         this.registerModule(new PlayerModule(listener));
-        this.registerModule(new LiveMapModule(Config.getModuleString("LiveMapModule", "world"), listener));
-        this.registerModule(new WeatherTimeModule(Config.getModuleString("LiveMapModule", "world"), listener));
+        this.registerModule(new LiveMapModule("world", listener));
+        this.registerModule(new LiveMapModule("world_nether", listener));
+        this.registerModule(new WeatherTimeModule("world", listener));
+        this.registerModule(new WeatherTimeModule("world_nether", listener));
         this.registerModule(new AdminModule(listener));
         this.registerModule(new ChatModule(listener));
+
+        System.out.println("Subscriptions collected: ");
+        for(Entry<String, List<String>> entry : _subscriptions.entrySet()) {
+            System.out.println(entry.getKey()+":");
+            for(String e : entry.getValue()) {
+                System.out.println(" - "+e);
+            }
+        }
 
         this.settings = (SettingsModule) _modules.get("SettingsModule");
         this.settings.onEnable(signatures);
         for(BaseModule m : _modules.values()) {
             if(!(m instanceof SettingsModule)) {
                 
-                if(Config.moduleEnabled(m.getType())) {
+                if(Config.moduleEnabled(m.getType().split(":")[0])) {
                     Plugin.debug("Enabling "+m.getType());
                     m.onEnable(signatures);
                     this.settings.registerModule(m.getType(), m.moduleInfo());
@@ -73,21 +87,19 @@ public class ModuleManager
         }
     }
 
-    private void registerModule(BaseModule module) {
+    private void registerModule(BaseModule module) throws Exception {
         _modules.put(module.getType(), module);
-    }
-
-    /*public IPacket invokeActionSync(Identity identity, ActionPacket action) {
-        BaseModule module = getModule(action.getModuleType());
-        if(module == null) return new StatusPacket(0, "Invalid module "+action.getModuleType()+" specified.");
-        if(!module.isEnabled()) return new StatusPacket(0, "Requested module is not enabled!");
-        if(!module.hasAccess(identity)) return new StatusPacket(0, "Permission denied!");
         
-        IPacket response = module.invokeActionSync(identity, action);
-        if(response == null)response = new StatusPacket(0, "Action "+action.getActionName()+" not found in module "+action.getModuleType());
-
-        return response;
-    }*/
+        if(module.isSubscribeable()) {
+            List<String> _values = _subscriptions.get(module.getClass().getSimpleName());
+            if(_values == null) {
+                _values = new ArrayList<>();
+                _subscriptions.put(module.getClass().getSimpleName(), _values);   
+            }
+            if(_values.contains(module.getSubscription())) throw new Exception("Duplicate subscription for module "+module.getType());
+            _values.add(module.getSubscription());
+        }
+    }
 
     public void disableModule(String moduleType, Map<String, ActionMethod> signatures) /*throws Exception */{
         /*Bukkit.getScheduler().callSyncMethod(Plugin.instance, new Callable<Void>(){
@@ -131,7 +143,7 @@ public class ModuleManager
                             mods.put(module.moduleInfo());
                         }
                     }
-                    packets.put(identity, new ModulesAvailablePacket(mods));
+                    packets.put(identity, new ModulesAvailablePacket(mods, getSubscriptionsArray()));
                 }
                 return packets;
             /*}
@@ -148,7 +160,7 @@ public class ModuleManager
                         mods.put(module.moduleInfo());
                     }
                 }
-                return new ModulesAvailablePacket(mods);
+                return new ModulesAvailablePacket(mods, getSubscriptionsArray());
            /* }
         }).get();*/
     }
@@ -246,5 +258,44 @@ public class ModuleManager
 				return null;
 			}
         });
+    }
+
+    public boolean hasSubscription(String baseType, String subscription) {
+        synchronized(_subscriptions) {
+            if(_subscriptions.containsKey(baseType)) {
+                return _subscriptions.get(baseType).contains(subscription);
+            }
+        }
+        return false;
+    }
+
+    public HashMap<String,String> getDefaultSubscriptions() {
+        HashMap<String, String> _default = new HashMap<String, String>();
+
+        synchronized(_subscriptions) {
+            for(Entry<String, List<String>> entry : _subscriptions.entrySet()) {
+                if(entry.getValue() != null && entry.getValue().size() != 0) {
+                    _default.put(entry.getKey(), entry.getValue().get(0));
+                }
+            }
+        }
+
+        return _default;
+    }
+
+    private JSONArray getSubscriptionsArray() {
+        JSONArray json = new JSONArray();
+
+        synchronized(_subscriptions) {
+            for(Entry<String, List<String>> entry : _subscriptions.entrySet()) {
+                JSONObject asdf = new JSONObject();
+                JSONArray module = new JSONArray();
+                for(String s : entry.getValue()) module.put(s);
+                asdf.put("module", entry.getKey());
+                asdf.put("values", module);
+                json.put(asdf);
+            }
+        }
+        return json;
     }
 }

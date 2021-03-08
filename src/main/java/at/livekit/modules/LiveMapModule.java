@@ -52,7 +52,7 @@ public class LiveMapModule extends BaseModule implements Listener
     private List<IPacket> _updates = new ArrayList<IPacket>();
 
     public LiveMapModule(String world, ModuleListener listener) {
-        super(1, "Live Map", "livekit.module.map", UpdateRate.MAX, listener);
+        super(1, "Live Map", "livekit.module.map", UpdateRate.MAX, listener, world);
         this.world = world;
     }
 
