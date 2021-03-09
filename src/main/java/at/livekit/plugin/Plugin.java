@@ -64,14 +64,14 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 			return;
 		}
 
-		List<String> worlds = Config.getLiveMapWorlds();
+		/*List<String> worlds = Config.getLiveMapWorlds();
 		for(String world : worlds) {
 			if(Bukkit.getWorld(world) == null) {
 				Plugin.severe(world + " does not exist! Shutting down");
 				getServer().getPluginManager().disablePlugin(this);
 				return;
 			}
-		}
+		}*/
 
 		//logger.info("Materials: " + Material.values().length);
 		//logger.info("Biomes: " + Biome.values().length);

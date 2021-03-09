@@ -77,9 +77,11 @@ public class HeadLibraryV2 implements Runnable
            // save();
 
             abort = true;
-            thread.interrupt();
-            synchronized(_queue) {
-                _queue.notifyAll();
+            if(thread != null) {
+                thread.interrupt();
+                synchronized(_queue) {
+                    _queue.notifyAll();
+                }
             }
         }catch(Exception ex){
             ex.printStackTrace();

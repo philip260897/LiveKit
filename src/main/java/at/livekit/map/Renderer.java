@@ -162,7 +162,7 @@ public class Renderer
         }
     }
 
-    private static Block getBlockForRendering(Block block) {
+    public static Block getBlockForRendering(Block block) {
         if(block.getType() == Material.BEDROCK && block.getY() != 0) {
             boolean air = false;
             while(block.getY() > 0 && air == false) {
