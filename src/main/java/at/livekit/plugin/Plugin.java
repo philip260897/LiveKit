@@ -277,6 +277,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 				}
 				if(checkPerm(sender, "livekit.commands.admin", false)) {
 					sender.sendMessage(prefixError+"Admin Commands:"+ChatColor.RESET);
+					sender.sendMessage(ChatColor.GREEN+"/livekit reload"+ChatColor.RESET+" - Reload LiveKit plugin");
 					sender.sendMessage(ChatColor.GREEN+"/livekit map"+ChatColor.RESET+" - Display info about live map");
 					sender.sendMessage(ChatColor.GREEN+"/livekit map cpu <time in %>"+ChatColor.RESET+" - Speed up rendering performance at the cost of server lag. Use with care. Default: 40%");
 					sender.sendMessage(ChatColor.GREEN+"/livekit <world>"+ChatColor.RESET+" - Show general info and rendering status of <world>");
