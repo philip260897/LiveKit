@@ -1,35 +1,25 @@
-server.port: 4123
-server.name: 'My Minecraft Server'
-server.tickrate: 20
-#password protect access to LiveKit
-server.password: null
-
-#allow app clients to view livemap/online players without claiming an account
+server:
+  port: 4123
+  name: My Minecraft Server
+  password: null
+  tickrate: 20
 anonymous:
   allow: true
   permissions:
-    - livekit.module.map
-    - livekit.module.players
-
-#wether to use permissions (Vault) or if use==false, use default permissions for every player
+  - livekit.module.map
+  - livekit.module.players
 permissions:
-  use: false
+  useVault: false
   default:
-    - livekit.commands.basic
-    - livekit.module.map
-    - livekit.module.players
-    - livekit.module.weathertime
-    - livekit.module.chat
-
-#which modules to enable
+  - livekit.commands.basic
+  - livekit.module.map
+  - livekit.module.players
+  - livekit.module.weathertime
+  - livekit.modules.chat
+  - livekit.chat.write
 modules:
   LiveMapModule:
     enabled: true
-    worlds:
-      - world
-      - world_nether
-      - world_the_end
-    cpuTime: 20
   PlayerModule:
     enabled: true
   WeatherTimeModule:

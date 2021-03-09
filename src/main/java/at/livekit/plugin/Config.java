@@ -1,8 +1,11 @@
 package at.livekit.plugin;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 
+import org.bukkit.Bukkit;
+import org.bukkit.World;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
@@ -17,6 +20,7 @@ public class Config
             Plugin.getInstance().saveResource("config.yml", false);
         }
         config = YamlConfiguration.loadConfiguration(configFile);
+
         fixMissing();
     }    
 
@@ -44,7 +48,7 @@ public class Config
     }
 
     public static boolean usePermissions() {
-        return config.getBoolean("permissions.use");
+        return config.getBoolean("permissions.useVault");
     }
 
     public static List<String> getDefaultPermissions() {
@@ -81,8 +85,33 @@ public class Config
             }
             save = true;
         }
+        
+        if(!config.contains("modules.LiveMapModule.worlds")) {
+            Plugin.log("Updating config to Multi-World format :)");
+            List<String> worlds = new ArrayList<String>();
+            for(int i = 0; i < (Bukkit.getWorlds().size() < 3 ? Bukkit.getWorlds().size() : 3); i++) {
+                worlds.add(Bukkit.getWorlds().get(i).getName());
+            }
+            config.set("modules.LiveMapModule.worlds", worlds);
+            save = true;
+        }
+
+        if(config.contains("modules.LiveMapModule.world")) {
+            config.set("modules.LiveMapModule.world", null);
+        }
+
+        if(config.contains("permissions.use")) {
+            boolean value = config.getBoolean("permissions.use");
+            config.set("permissions.useVault", value);
+            config.set("permissions.use", null);
+            save = true;
+        }
+
         try{
-            if(save) config.save(configFile);
+            if(save) {
+                //config.options().header(config.options().header());
+                config.save(configFile);
+            }
         }catch(Exception ex){ex.printStackTrace();}
 
         //TODO: Convert world => worlds
