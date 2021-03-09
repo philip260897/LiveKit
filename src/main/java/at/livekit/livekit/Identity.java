@@ -101,10 +101,6 @@ public class Identity
                 this.subscriptions.put(e.getKey(), e.getValue());
             }
         }
-
-        for(Entry<String, String> entry : defaultSub.entrySet()) {
-            System.out.println(entry.getKey() + " " + entry.getValue());
-        }
     }
 
     public void loadPermissionsAsync() {

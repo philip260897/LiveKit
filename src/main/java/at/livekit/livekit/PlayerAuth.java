@@ -90,6 +90,7 @@ public class PlayerAuth
     private static Map<String, PlayerAuth> auth = new HashMap<String, PlayerAuth>();
 
     public static void initialize() throws Exception {
+        auth.clear();
         if((new File(Plugin.getInstance().getDataFolder().getAbsolutePath()+"/sessions.json")).exists()) {
             String jsonText = new String(Files.readAllBytes(Paths.get(Plugin.getInstance().getDataFolder().getAbsolutePath()+"/sessions.json")), StandardCharsets.UTF_8);
             JSONObject root = new JSONObject(jsonText);

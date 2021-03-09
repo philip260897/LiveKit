@@ -60,13 +60,13 @@ public class ModuleManager
         this.registerModule(new AdminModule(listener));
         this.registerModule(new ChatModule(listener));
 
-        System.out.println("Subscriptions collected: ");
+        /*System.out.println("Subscriptions collected: ");
         for(Entry<String, List<String>> entry : _subscriptions.entrySet()) {
             System.out.println(entry.getKey()+":");
             for(String e : entry.getValue()) {
                 System.out.println(" - "+e);
             }
-        }
+        }*/
 
         this.settings = (SettingsModule) _modules.get("SettingsModule");
         this.settings.onEnable(signatures);
@@ -88,6 +88,10 @@ public class ModuleManager
                 m.onDisable(signature);
             }
         }
+        _modules.clear();
+        _subscriptions.clear();
+        settings = null;
+        listener = null;
     }
 
     private void registerModule(BaseModule module) throws Exception {

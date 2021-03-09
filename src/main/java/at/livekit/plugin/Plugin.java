@@ -119,12 +119,16 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 			if(!handled) handled = handleAdminCommands(sender, command, label, args);
 
 
-
-			if(!handled) {
-				sender.sendMessage(prefixError+"Unknown command. Try /livekit help");
-			}
-
 			if(args.length == 1) {
+				if(args[0].equalsIgnoreCase("reload")) {
+					if(!checkPerm(sender, "livekit.commands.admin")) return true;
+
+					getServer().getPluginManager().disablePlugin(this);
+					getServer().getPluginManager().enablePlugin(this);
+					sender.sendMessage(prefix+"reload complete!");
+
+					handled = true;
+				}
 				/*if(args[0].equalsIgnoreCase("tp")) {
 					JSONObject object = new JSONObject();
 					
@@ -175,6 +179,9 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 				}*/
 			}
 
+			if(!handled) {
+				sender.sendMessage(prefixError+"Unknown command. Try /livekit help");
+			}
 		}
 		return true;
 	}
@@ -642,7 +649,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 				return true;
 			}
 			
-			if(args[0].equalsIgnoreCase("subs")) {
+			/*if(args[0].equalsIgnoreCase("subs")) {
 				if(!checkPerm(sender, "livekit.commands.admin")) return true;
 
 				Map<String, List<String>> subscriptions = LiveKit.getInstance().getModuleManager().getSubscriptions();
@@ -706,7 +713,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 					player.sendMessage(prefix+"Chunks loaded!" + (System.currentTimeMillis()-start)+"ms");
 					return true;
 				}
-			}
+			}*/
 		}
 		return false;
 	}
@@ -745,6 +752,6 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 	}
 
 	public static void debug(String message) {
-		logger.warning(message);
+		//logger.warning(message);
 	}
 }

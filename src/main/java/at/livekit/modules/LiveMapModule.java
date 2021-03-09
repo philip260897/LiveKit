@@ -166,7 +166,6 @@ public class LiveMapModule extends BaseModule implements Listener
         RenderScheduler.unregisterWork(this);
         RenderScheduler.setTotalWorkers(RenderScheduler.getTotalWorkers()-1);
         
-        
         super.onDisable(signature);
     }
 
@@ -249,7 +248,7 @@ public class LiveMapModule extends BaseModule implements Listener
 
         renderWorld.checkUnload();
         long delta = System.currentTimeMillis() - _frameStart;
-        if(delta != 0) System.out.println(delta+"ms/"+cpu_time+"ms used of tick ("+world+") needsUpdate="+renderWorld.needsUpdate());
+       // if(delta != 0) System.out.println(delta+"ms/"+cpu_time+"ms used of tick ("+world+") needsUpdate="+renderWorld.needsUpdate());
     }
 
     public static class RegionData {

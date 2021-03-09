@@ -345,6 +345,8 @@ public class LiveKit implements ModuleListener, NIOServerEvent<Identity>, Runnab
                 _server.stop();
         }catch(Exception ex){ex.printStackTrace();}
 
+        
+
         try{
             synchronized(invokationMap) {
                 Iterator<Entry<String,ActionMethod>> iterator = invokationMap.entrySet().iterator();
@@ -357,6 +359,8 @@ public class LiveKit implements ModuleListener, NIOServerEvent<Identity>, Runnab
                 if(invokationMap.size() > 0)  throw new Exception("Invokation leak?");
             }
         }catch(Exception ex){ex.printStackTrace();}
+
+        LiveKit.instance = null;
     }
     
     /*private RequestPacket handlePacket(NIOClient<Identity> client, RequestPacket packet) {
