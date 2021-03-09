@@ -20,6 +20,7 @@ import at.livekit.livekit.LiveKit;
 import at.livekit.livekit.PlayerAuth;
 import at.livekit.map.RenderBounds;
 import at.livekit.map.RenderJob;
+import at.livekit.map.RenderScheduler;
 import at.livekit.map.RenderWorld;
 import at.livekit.map.RenderBounds.RenderShape;
 import at.livekit.map.RenderJob.RenderJobMode;
@@ -297,7 +298,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 						sender.sendMessage(prefix+"Live Map info");
 						sender.sendMessage("Worlds: ");
 						for(String s : worlds) sender.sendMessage(" - "+s);
-						sender.sendMessage("CPU-Time: "+LiveMapModule.CPU_TIME+"ms / "+(int)(((float)LiveMapModule.CPU_TIME/50f)*100f)+"%");
+						sender.sendMessage("CPU-Time: "+RenderScheduler.getCPUTime()+"ms / "+(int)(((float)RenderScheduler.getCPUTime()/50f)*100f)+"%");
 						return true;
 					}
 					if(args.length == 3) {
@@ -310,8 +311,8 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 							if(percent < 5) percent = 5;
 							if(percent > 100) percent = 100;
 	
-							LiveMapModule.CPU_TIME = (int)(percent*50f/100f);
-							sender.sendMessage(prefix+"CPU-Time set to "+LiveMapModule.CPU_TIME+"ms / "+(int)(((float)LiveMapModule.CPU_TIME/50f)*100f)+"%");
+							RenderScheduler.setCPUTime((int)(percent*50f/100f));
+							sender.sendMessage(prefix+"CPU-Time set to "+RenderScheduler.getCPUTime()+"ms / "+(int)(((float)RenderScheduler.getCPUTime()/50f)*100f)+"%");
 	
 							if(percent >= 80) {
 								sender.sendMessage(prefix+"WARNING: Setting cpu time above 80% might cause severe lag!");

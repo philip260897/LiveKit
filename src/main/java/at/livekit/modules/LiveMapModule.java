@@ -32,6 +32,7 @@ import org.json.JSONObject;
 import at.livekit.livekit.Identity;
 import at.livekit.map.RenderBounds;
 import at.livekit.map.RenderJob;
+import at.livekit.map.RenderScheduler;
 import at.livekit.map.RenderWorld;
 import at.livekit.map.RenderWorld.RegionInfo;
 import at.livekit.plugin.Plugin;
@@ -44,7 +45,7 @@ import at.livekit.packets.StatusPacket;
 public class LiveMapModule extends BaseModule implements Listener
 {
     //private static String DEFAULT_WORLD = "world";
-    public static int CPU_TIME = 20;
+    //public static int CPU_TIME = 20;
 
 
     private String world;
@@ -142,6 +143,7 @@ public class LiveMapModule extends BaseModule implements Listener
 
     @Override
     public void onEnable(Map<String,ActionMethod> signature) {
+        RenderScheduler.setTotalWorkers(RenderScheduler.getTotalWorkers()+1);
 
         World w = Bukkit.getWorld(world);
         if(w != null) {
@@ -159,6 +161,12 @@ public class LiveMapModule extends BaseModule implements Listener
     @Override
     public void onDisable(Map<String,ActionMethod> signature) {
         renderWorld.shutdown();
+
+
+        RenderScheduler.unregisterWork(this);
+        RenderScheduler.setTotalWorkers(RenderScheduler.getTotalWorkers()-1);
+        
+        
         super.onDisable(signature);
     }
 
@@ -214,16 +222,17 @@ public class LiveMapModule extends BaseModule implements Listener
 
     long _frameStart = 0;
     int _u = -1;
+    int cpu_time = 1;
     @Override
     public void update() {
         _frameStart = System.currentTimeMillis();
         boolean tick = true;
 
-        
+        cpu_time = RenderScheduler.getTimeAllocation(this);
         renderWorld._needsUpdate = renderWorld.needsUpdate();
-        while(System.currentTimeMillis() - _frameStart < CPU_TIME && renderWorld._needsUpdate) {
+        while(System.currentTimeMillis() - _frameStart < cpu_time && renderWorld._needsUpdate) {
 
-            IPacket packet = renderWorld.update(_frameStart, CPU_TIME, tick);
+            IPacket packet = renderWorld.update(_frameStart, cpu_time, tick);
             if(packet != null) {
                 synchronized(_updates) {
                     _updates.add(packet);
@@ -235,9 +244,12 @@ public class LiveMapModule extends BaseModule implements Listener
             tick = false;
         }
 
+        if(renderWorld.needsUpdate()) RenderScheduler.registerWork(this);
+        else RenderScheduler.unregisterWork(this);
+
         renderWorld.checkUnload();
         long delta = System.currentTimeMillis() - _frameStart;
-        if(delta != 0) System.out.println(delta+"ms used of tick ("+world+")");
+        if(delta != 0) System.out.println(delta+"ms/"+cpu_time+"ms used of tick ("+world+") needsUpdate="+renderWorld.needsUpdate());
     }
 
     public static class RegionData {

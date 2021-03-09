@@ -7,31 +7,30 @@ import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Material;
 import org.bukkit.World;
-import org.bukkit.WorldType;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 
 import at.livekit.map.RenderWorld.RenderTask;
 import at.livekit.packets.BlockPacket;
 import at.livekit.packets.ChunkPacket;
-import at.livekit.plugin.Plugin;
 
 public class Renderer 
 {
     private static HashMap<String, Integer> _idMap = null;
 
-    private static byte[] DEFAULT_BLOCK = new byte[]{(byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff};
-    //private static RenderTask _currentTask;
-    //private static byte[] _chunkData;
-    public static boolean render(String world, RenderTask task, long cpuTime, long frameStart, RenderBounds bounds) throws Exception {
-        long start = System.currentTimeMillis();
-        
+    private static void initialize() {
         if(_idMap == null) {
             _idMap = new HashMap<String, Integer>(Material.values().length);
             for (int i = 0; i < Material.values().length; i++) {
                 _idMap.put(Material.values()[i].toString(), i);
             }
         }
+    }
+
+    private static byte[] DEFAULT_BLOCK = new byte[]{(byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff};
+    public static boolean render(String world, RenderTask task, long cpuTime, long frameStart, RenderBounds bounds) throws Exception {
+        long start = System.currentTimeMillis();
+        initialize();
 
         if (task != null) {
             if(task.region == null || task.region.isDead()) throw new Exception("RenderTask region is dead!");
@@ -56,7 +55,7 @@ public class Renderer
 
                 if(task.isChunk()) {
                     task.unload = !bWorld.isChunkLoaded(task.getChunkOrBlock().x, task.getChunkOrBlock().z);
-                    if(task.unload) bWorld.loadChunk(task.getChunkOrBlock().x, task.getChunkOrBlock().z);
+                    //if(task.unload) bWorld.loadChunk(task.getChunkOrBlock().x, task.getChunkOrBlock().z);
                     task.rchunk = bWorld.getChunkAt(task.getChunkOrBlock().x, task.getChunkOrBlock().z);
                 }
             }
@@ -118,7 +117,7 @@ public class Renderer
 
                             if(! (z == 15 && x == 15)) { 
                                 long end = System.currentTimeMillis();
-                                System.out.println("Abort rendering: "+(end - chunk)+"ms chunk: "+(chunk - setup)+"ms setup: "+(setup - start)+"ms total: "+(end - start)+"ms");
+                                //System.out.println("Abort rendering: "+(end - chunk)+"ms chunk: "+(chunk - setup)+"ms setup: "+(setup - start)+"ms total: "+(end - start)+"ms");
                                 return false;
                             }
                         }
@@ -155,7 +154,7 @@ public class Renderer
             else task.result = new BlockPacket(task.getChunkOrBlock().x, task.getChunkOrBlock().z, task.buffer, timestamp);
 
             long end = System.currentTimeMillis();
-            System.out.println("DONE cleanup: "+(end-rdone)+"ms rendering: "+(rdone - chunk)+"ms chunk: "+(chunk - setup)+"ms setup: "+(setup - start)+"ms total: "+(end - start)+"ms");
+            //System.out.println("DONE cleanup: "+(end-rdone)+"ms rendering: "+(rdone - chunk)+"ms chunk: "+(chunk - setup)+"ms setup: "+(setup - start)+"ms total: "+(end - start)+"ms");
 
             return true;
         } else {

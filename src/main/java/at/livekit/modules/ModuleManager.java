@@ -15,6 +15,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import at.livekit.livekit.Identity;
+import at.livekit.map.RenderScheduler;
 import at.livekit.modules.BaseModule.ActionMethod;
 import at.livekit.modules.BaseModule.ModuleListener;
 import at.livekit.modules.BaseModule.ModulesAvailablePacket;
@@ -111,7 +112,8 @@ public class ModuleManager
                     BaseModule module = _modules.get(moduleType);
                     if(module.isEnabled()) {
                         module.onDisable(signatures);
-                        
+                
+
                         //handle subscription update && update identity subscriptions if some got disabled!
                         if(module.isSubscribeable()) {
                             if(_subscriptions.containsKey(module.getClass().getSimpleName())) {
