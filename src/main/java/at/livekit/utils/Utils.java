@@ -12,7 +12,8 @@ public class Utils
 {
     public static String generateRandom(int length) {
         SecureRandom r = new SecureRandom();
-        String alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789abcdefghijklmnopqrstuvwxyz";
+        //String alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789abcdefghijklmnopqrstuvwxyz";
+        String alphabet = "1234567890";
         String pin = "";
         for (int i = 0; i < length; i++) {
             pin += alphabet.charAt(r.nextInt(alphabet.length()));
