@@ -90,6 +90,7 @@ public class PlayerAuth
     private static Map<String, PlayerAuth> auth = new HashMap<String, PlayerAuth>();
 
     public static void initialize() throws Exception {
+        auth.clear();
         if((new File(Plugin.getInstance().getDataFolder().getAbsolutePath()+"/sessions.json")).exists()) {
             String jsonText = new String(Files.readAllBytes(Paths.get(Plugin.getInstance().getDataFolder().getAbsolutePath()+"/sessions.json")), StandardCharsets.UTF_8);
             JSONObject root = new JSONObject(jsonText);
@@ -135,7 +136,7 @@ public class PlayerAuth
     }
 
     public static PlayerAuth validateClaim(String pin) {
-        //if(pin.equalsIgnoreCase("test")) return get("867678c4-391b-42a9-a4cb-3ad14089f3f6");
+        //if(pin.equalsIgnoreCase("123456")) return get("867678c4-391b-42a9-a4cb-3ad14089f3f6");
         //if(pin.equalsIgnoreCase("test")) return get("9e98a307-d0db-3a07-bf57-97e5d80a6e17");
         //if(pin.equalsIgnoreCase("test2")) return get("36881d51-7477-3eb6-91a1-dfc11065590d");
         synchronized(auth) {

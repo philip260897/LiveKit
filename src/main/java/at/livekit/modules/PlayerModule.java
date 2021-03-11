@@ -40,7 +40,7 @@ public class PlayerModule extends BaseModule implements Listener
     private Map<String,LPlayer> _players = new HashMap<String, LPlayer>();
 
     public PlayerModule(ModuleListener listener) {
-        super(1, "Players", "livekit.module.players", UpdateRate.MAX, listener, true);
+        super(1, "Players", "livekit.module.players", UpdateRate.MAX, listener);
     }
      
     public LPlayer getPlayer(String uuid) {

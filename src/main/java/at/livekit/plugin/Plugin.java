@@ -1,10 +1,14 @@
 package at.livekit.plugin;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.logging.Logger;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.World;
+import org.bukkit.WorldType;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -16,6 +20,7 @@ import at.livekit.livekit.LiveKit;
 import at.livekit.livekit.PlayerAuth;
 import at.livekit.map.RenderBounds;
 import at.livekit.map.RenderJob;
+import at.livekit.map.RenderScheduler;
 import at.livekit.map.RenderWorld;
 import at.livekit.map.RenderBounds.RenderShape;
 import at.livekit.map.RenderJob.RenderJobMode;
@@ -59,11 +64,14 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 			return;
 		}
 
-		if(Bukkit.getWorld(Config.getModuleString("LiveMapModule", "world")) == null) {
-			Plugin.severe(Config.getModuleString("LiveMapModule", "world")+" does not exist! Shutting down");
-			getServer().getPluginManager().disablePlugin(this);
-			return;
-		}
+		/*List<String> worlds = Config.getLiveMapWorlds();
+		for(String world : worlds) {
+			if(Bukkit.getWorld(world) == null) {
+				Plugin.severe(world + " does not exist! Shutting down");
+				getServer().getPluginManager().disablePlugin(this);
+				return;
+			}
+		}*/
 
 		//logger.info("Materials: " + Material.values().length);
 		//logger.info("Biomes: " + Biome.values().length);
@@ -111,12 +119,16 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 			if(!handled) handled = handleAdminCommands(sender, command, label, args);
 
 
-
-			if(!handled) {
-				sender.sendMessage(prefixError+"Unknown command. Try /livekit help");
-			}
-
 			if(args.length == 1) {
+				if(args[0].equalsIgnoreCase("reload")) {
+					if(!checkPerm(sender, "livekit.commands.admin")) return true;
+
+					getServer().getPluginManager().disablePlugin(this);
+					getServer().getPluginManager().enablePlugin(this);
+					sender.sendMessage(prefix+"reload complete!");
+
+					handled = true;
+				}
 				/*if(args[0].equalsIgnoreCase("tp")) {
 					JSONObject object = new JSONObject();
 					
@@ -167,6 +179,9 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 				}*/
 			}
 
+			if(!handled) {
+				sender.sendMessage(prefixError+"Unknown command. Try /livekit help");
+			}
 		}
 		return true;
 	}
@@ -262,6 +277,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 				}
 				if(checkPerm(sender, "livekit.commands.admin", false)) {
 					sender.sendMessage(prefixError+"Admin Commands:"+ChatColor.RESET);
+					sender.sendMessage(ChatColor.GREEN+"/livekit reload"+ChatColor.RESET+" - Reload LiveKit plugin");
 					sender.sendMessage(ChatColor.GREEN+"/livekit map"+ChatColor.RESET+" - Display info about live map");
 					sender.sendMessage(ChatColor.GREEN+"/livekit map cpu <time in %>"+ChatColor.RESET+" - Speed up rendering performance at the cost of server lag. Use with care. Default: 40%");
 					sender.sendMessage(ChatColor.GREEN+"/livekit <world>"+ChatColor.RESET+" - Show general info and rendering status of <world>");
@@ -280,17 +296,17 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 
 	private boolean handleMapCommands(CommandSender sender, Command command, String label, String[] args) {
 		if(args.length >= 1) {
-			if(label.equalsIgnoreCase("livekit") && args[0].equalsIgnoreCase("map") || args[0].equalsIgnoreCase(Config.getModuleString("LiveMapModule", "world"))) {
-				if(!checkPerm(sender, "livekit.commands.admin")) return true;
+			List<String> worlds = Config.getLiveMapWorlds();
 
-				LiveMapModule map = (LiveMapModule)LiveKit.getInstance().getModuleManager().getModule("LiveMapModule");
-				if(!map.isEnabled()) { sender.sendMessage(prefixError+" LiveMapModule not enabled."); return true;}
+			if(label.equalsIgnoreCase("livekit") && args[0].equalsIgnoreCase("map") || worlds.contains(args[0])) {
+				if(!checkPerm(sender, "livekit.commands.admin")) return true;
 
 				if(args[0].equalsIgnoreCase("map")) {
 					if(args.length == 1) {
 						sender.sendMessage(prefix+"Live Map info");
-						sender.sendMessage("World: "+Config.getModuleString("LiveMapModule", "world"));
-						sender.sendMessage("CPU-Time: "+LiveMapModule.CPU_TIME+"ms / "+(int)(((float)LiveMapModule.CPU_TIME/50f)*100f)+"%");
+						sender.sendMessage("Worlds: ");
+						for(String s : worlds) sender.sendMessage(" - "+s);
+						sender.sendMessage("CPU-Time: "+RenderScheduler.getCPUTime()+"ms / "+(int)(((float)RenderScheduler.getCPUTime()/50f)*100f)+"%");
 						return true;
 					}
 					if(args.length == 3) {
@@ -303,8 +319,8 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 							if(percent < 5) percent = 5;
 							if(percent > 100) percent = 100;
 	
-							LiveMapModule.CPU_TIME = (int)(percent*50f/100f);
-							sender.sendMessage(prefix+"CPU-Time set to "+LiveMapModule.CPU_TIME+"ms / "+(int)(((float)LiveMapModule.CPU_TIME/50f)*100f)+"%");
+							RenderScheduler.setCPUTime((int)(percent*50f/100f));
+							sender.sendMessage(prefix+"CPU-Time set to "+RenderScheduler.getCPUTime()+"ms / "+(int)(((float)RenderScheduler.getCPUTime()/50f)*100f)+"%");
 	
 							if(percent >= 80) {
 								sender.sendMessage(prefix+"WARNING: Setting cpu time above 80% might cause severe lag!");
@@ -315,7 +331,11 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 					}
 				}
 
-				if(args[0].equalsIgnoreCase(Config.getModuleString("LiveMapModule", "world"))) {
+				
+				if(worlds.contains(args[0])) {
+					LiveMapModule map = (LiveMapModule)LiveKit.getInstance().getModuleManager().getModule("LiveMapModule:"+args[0]);
+					if(map == null || !map.isEnabled()) { sender.sendMessage(prefixError+" LiveMapModule not enabled."); return true;}
+
 					RenderWorld world = map.getRenderWorld();
 
 
@@ -630,8 +650,32 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 				return true;
 			}
 			
+			/*if(args[0].equalsIgnoreCase("subs")) {
+				if(!checkPerm(sender, "livekit.commands.admin")) return true;
+
+				Map<String, List<String>> subscriptions = LiveKit.getInstance().getModuleManager().getSubscriptions();
+				sender.sendMessage(prefix+"Registered Subscriptions: ");
+				for(Entry<String, List<String>> entry : subscriptions.entrySet()) {
+					sender.sendMessage(entry.getKey()+": ");
+					for(String s : entry.getValue()) 
+						sender.sendMessage(" - "+s);
+				}
+
+				return true;
+			}
+
+
+			World mWorld = Bukkit.getWorld(args[0]);
+            WorldType mType = mWorld.getWorldType();
+			sender.sendMessage(mType.getName());
+
+
+			if(sender instanceof Player) {
+				Player player = (Player)sender;
+				sender.sendMessage(mWorld.getHighestBlockAt(player.getLocation()).getType().name());
+			}
 		}
-		/*if(args.length == 3) {
+		if(args.length == 3) {
 			if(args[0].equalsIgnoreCase("modules")) {
 				if(!checkPerm(sender, "livekit.commands.admin")) return true;
 
@@ -647,8 +691,31 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 					}
 					LiveKit.getInstance().notifyQueue("SettingsModule");
 				}
+
+				return true;
 			}
-		}*/
+			if(args[0].equalsIgnoreCase("load")) {
+				if(!checkPerm(sender, "livekit.commands.admin")) return true;
+				
+				if(sender instanceof Player) {
+					Player player = (Player)sender;
+					World world = player.getWorld();
+
+					int x = Integer.parseInt(args[1]);
+					int z = Integer.parseInt(args[2]);
+
+					long start = System.currentTimeMillis();
+					for(int cx = x*32; cx < (x+1)*32; cx++) {
+						for(int cz = z*32; cz < (z+1)*32; cz++) {
+							//world.getChunkAt(cx, cz);
+							world.loadChunk(cx, cz);
+						}
+					}
+					player.sendMessage(prefix+"Chunks loaded!" + (System.currentTimeMillis()-start)+"ms");
+					return true;
+				}
+			}*/
+		}
 		return false;
 	}
 

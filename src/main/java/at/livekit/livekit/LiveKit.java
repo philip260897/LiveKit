@@ -92,11 +92,11 @@ public class LiveKit implements ModuleListener, NIOServerEvent<Identity>, Runnab
     }
 
     public void enableModule(String module) {
-        getModuleManager().enableModule(module, invokationMap);
+        getModuleManager().enableModule(module, invokationMap, _server.getIdentifiers().stream().filter(i->i.isIdentified()).collect(Collectors.toList()));
     }
 
     public void disableModule(String module) {
-        getModuleManager().disableModule(module, invokationMap);
+        getModuleManager().disableModule(module, invokationMap, _server.getIdentifiers().stream().filter(i->i.isIdentified()).collect(Collectors.toList()));
     }
 
     public void commandReloadPermissions() {
@@ -232,7 +232,9 @@ public class LiveKit implements ModuleListener, NIOServerEvent<Identity>, Runnab
                 if(module != null) {
                     BaseModule m = _modules.getModule(module);
                     for(Identity identity : clientUUIDs) {
-                        _server.send(identity, m.onJoinAsync(identity));
+                        if(m.hasAccess(identity)) {
+                            _server.send(identity, m.onJoinAsync(identity));
+                        }
                     }
                 }
             }while(module != null);
@@ -343,6 +345,8 @@ public class LiveKit implements ModuleListener, NIOServerEvent<Identity>, Runnab
                 _server.stop();
         }catch(Exception ex){ex.printStackTrace();}
 
+        
+
         try{
             synchronized(invokationMap) {
                 Iterator<Entry<String,ActionMethod>> iterator = invokationMap.entrySet().iterator();
@@ -355,6 +359,8 @@ public class LiveKit implements ModuleListener, NIOServerEvent<Identity>, Runnab
                 if(invokationMap.size() > 0)  throw new Exception("Invokation leak?");
             }
         }catch(Exception ex){ex.printStackTrace();}
+
+        LiveKit.instance = null;
     }
     
     /*private RequestPacket handlePacket(NIOClient<Identity> client, RequestPacket packet) {
@@ -452,6 +458,7 @@ public class LiveKit implements ModuleListener, NIOServerEvent<Identity>, Runnab
 
             for(Identity identity : clientUUIDs) {
                 identity.loadPermissionsAsync();
+                identity.updateSubscriptions(_modules.getDefaultSubscriptions());
             }
 
             
@@ -592,6 +599,18 @@ public class LiveKit implements ModuleListener, NIOServerEvent<Identity>, Runnab
         boolean anonymous = o.has("anonymous")&&!o.isNull("anonymous") ? o.getBoolean("anonymous") : false;
         String password = o.has("password")&&!o.isNull("password")?o.getString("password"):null;
 
+        HashMap<String, String> subscriptions = new HashMap<String,String>();
+        if(o.has("subscriptions") && !o.isNull("subscriptions")) {
+            JSONObject subs = o.getJSONObject("subscriptions");
+            for(String key : subs.keySet()) {
+                String subscription = subs.getString(key);
+
+                if(_modules.hasSubscription(key, subscription)) {
+                    subscriptions.put(key, subs.getString(key));
+                }
+            }
+        }
+
         if(_modules.getSettings().needsPassword) {
             if(!Config.getPassword().equals(password)) {
                 return new StatusPacket(0, "Invalid server password!");
@@ -619,6 +638,8 @@ public class LiveKit implements ModuleListener, NIOServerEvent<Identity>, Runnab
                 //client.setIdentifier(new Identity(identity.getUUID()));
                 client.getIdentifier().identify(identity.getUUID());
                 client.getIdentifier().loadPermissionsAsync();
+                client.getIdentifier().updateSubscriptions(_modules.getDefaultSubscriptions());
+                client.getIdentifier().updateSubscriptions(subscriptions);
             
                 try{
                     _server.send(client.getIdentifier(), _modules.modulesAvailableAsync(client.getIdentifier()));
@@ -633,6 +654,8 @@ public class LiveKit implements ModuleListener, NIOServerEvent<Identity>, Runnab
         {
             client.getIdentifier().setAnonymous();
             client.getIdentifier().loadPermissionsAsync();
+            client.getIdentifier().updateSubscriptions(_modules.getDefaultSubscriptions());
+            client.getIdentifier().updateSubscriptions(subscriptions);
 
             try{
                 _server.send(client.getIdentifier(), _modules.modulesAvailableAsync(client.getIdentifier()));
@@ -643,6 +666,23 @@ public class LiveKit implements ModuleListener, NIOServerEvent<Identity>, Runnab
         }
 
         return new StatusPacket(0, "Invalid authentication credentials!");
+    }
+
+    @Action(name = "Subscribe", sync = false)
+    public IPacket subscribe(Identity identity, ActionPacket action) {
+        String baseType = action.getData().getString("baseType");
+        String subscription = action.getData().getString("subscription");
+
+        if(!_modules.hasSubscription(baseType, subscription)) return new StatusPacket(0, "Subscription not available!");
+
+        BaseModule module = _modules.getModule(baseType+":"+subscription);
+        if(module == null) return new StatusPacket(0, "Module with subscription not found!");
+
+        //TODO: permission check ?
+        identity.setSubscription(baseType, subscription);
+        _server.send(identity, module.onJoinAsync(identity));
+
+        return new StatusPacket(1);
     }
 
     @Action(name = "TestSync", sync = true)

@@ -9,14 +9,17 @@ import java.util.UUID;
 import org.bukkit.BanList;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
+import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import at.livekit.livekit.Identity;
+import at.livekit.map.Renderer;
 import at.livekit.packets.ActionPacket;
 import at.livekit.packets.IPacket;
 import at.livekit.packets.StatusPacket;
@@ -92,7 +95,9 @@ public class AdminModule extends BaseModule
         if(player == null || !player.isOnline()) return new StatusPacket(0, "Can't teleport offline player");
 
         Player online = player.getPlayer();
-        online.teleport(Bukkit.getWorld(world).getHighestBlockAt((int)x, (int)z).getRelative(BlockFace.UP, 1).getLocation());
+
+        Block block = Renderer.getBlockForRendering(Bukkit.getWorld(world).getHighestBlockAt((int)x, (int)z));
+        online.teleport(block.getRelative(BlockFace.UP, 1).getLocation());
 
         //PlayerModule playerModule = () LiveKit.getInstance().getModuleManager().getModule("PlayerModule");
 
