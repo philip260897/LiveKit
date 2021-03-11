@@ -57,7 +57,7 @@ public class ChatModule extends BaseModule implements Listener {
         if (!isEnabled())
             return;
 
-        ChatMessage message = new ChatMessage(event.getPlayer().getUniqueId().toString(), event.getFormat(), event.getMessage());
+        ChatMessage message = new ChatMessage(event.getPlayer().getUniqueId().toString(), "", event.getMessage());
         synchronized (_updates) {
             _updates.add(message);
         }
