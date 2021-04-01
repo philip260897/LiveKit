@@ -296,7 +296,7 @@ public class LiveMapModule extends BaseModule implements Listener
 
                 try (FileOutputStream fos = new FileOutputStream(file)) {
                     fos.write(data);
-                }
+                } catch(Exception ex){ex.printStackTrace();}
             }catch(Exception ex){
                 ex.printStackTrace();
             }
