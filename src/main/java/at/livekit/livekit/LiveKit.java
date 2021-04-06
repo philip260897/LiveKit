@@ -16,6 +16,7 @@ import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 import at.livekit.api.core.ILiveKit;
+import at.livekit.api.map.InfoProvider;
 import at.livekit.api.map.LocationProvider;
 import at.livekit.api.map.POIProvider;
 import at.livekit.modules.BaseModule;
@@ -762,6 +763,18 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
 	public void removeLocationProvider(LocationProvider provider) {
 		PlayerModule module = (PlayerModule)_modules.getModule("PlayerModule");
         if(module != null) module.removeLocationProvider(provider);
+	}
+
+    @Override
+	public void addInfoProvider(InfoProvider provider) {
+		PlayerModule module = (PlayerModule)_modules.getModule("PlayerModule");
+        if(module != null) module.addInfoProvider(provider);
+	}
+
+	@Override
+	public void removeInfoProvider(InfoProvider provider) {
+		PlayerModule module = (PlayerModule)_modules.getModule("PlayerModule");
+        if(module != null) module.removeInfoProvider(provider);
 	}
 
 	@Override

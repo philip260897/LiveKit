@@ -31,6 +31,7 @@ import at.livekit.modules.PlayerModule;
 import at.livekit.modules.LiveMapModule;
 import at.livekit.modules.PlayerModule.LPlayer;
 import at.livekit.provider.LocationBedSpawnProvider;
+import at.livekit.provider.PlayerInfoProvider;
 import at.livekit.utils.HeadLibraryEvent;
 import at.livekit.utils.HeadLibraryV2;
 import at.livekit.utils.Metrics;
@@ -100,6 +101,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 		}catch(Exception ex){Plugin.debug("bStats could not be initialized! "+ex.getMessage());}
 
 		this.getLiveKit().addLocationProvider(new LocationBedSpawnProvider());
+		this.getLiveKit().addInfoProvider(new PlayerInfoProvider());
     }
     
     @Override

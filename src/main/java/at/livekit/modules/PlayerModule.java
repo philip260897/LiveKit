@@ -29,6 +29,9 @@ import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import at.livekit.api.core.Privacy;
+import at.livekit.api.map.InfoEntry;
+import at.livekit.api.map.InfoProvider;
 import at.livekit.api.map.LocationProvider;
 import at.livekit.api.map.Waypoint;
 import at.livekit.livekit.Identity;
@@ -41,6 +44,7 @@ import at.livekit.utils.HeadLibraryV2;
 public class PlayerModule extends BaseModule implements Listener
 {
     private List<LocationProvider> _locationProviders = new ArrayList<LocationProvider>();
+    private List<InfoProvider> _infoProviders = new ArrayList<InfoProvider>();
     private Map<String,LPlayer> _players = new HashMap<String, LPlayer>();
 
     public PlayerModule(ModuleListener listener) {
@@ -60,6 +64,18 @@ public class PlayerModule extends BaseModule implements Listener
     public void removeLocationProvider(LocationProvider provider) {
         if(_locationProviders.contains(provider)) {
             _locationProviders.remove(provider);
+        }
+    }
+
+    public void addInfoProvider(InfoProvider provider) {
+        if(!_infoProviders.contains(provider)) {
+            _infoProviders.add(provider);
+        }
+    }
+
+    public void removeInfoProvider(InfoProvider provider) {
+        if(_infoProviders.contains(provider)) {
+            _infoProviders.remove(provider);
         }
     }
 
@@ -351,31 +367,65 @@ public class PlayerModule extends BaseModule implements Listener
             response.put("lastPlayed", player.getLastPlayed());
             response.put("banned", player.isBanned());
             if(onlinePlayer != null) response.put("gamemode", onlinePlayer.getGameMode().name());
-
-            JSONArray locationData = new JSONArray();
-            response.put("locations", locationData);
-            
-            List<Waypoint> _waypoints = new ArrayList<>();
-            for(LocationProvider lprov : _locationProviders) {
-                lprov.onLocationRequest(player, _waypoints);
-            }
-
-            for(Waypoint waypoint : _waypoints) {
-                if(waypoint.getLocation() == null) continue;
-                if(waypoint.getName() == null) continue;
-
-                JSONObject bedlocation = new JSONObject();
-                bedlocation.put("type", "loc");
-                bedlocation.put("name", waypoint.getName());
-                bedlocation.put("description", waypoint.getDescription());
-                bedlocation.put("x", waypoint.getLocation().getBlockX());
-                bedlocation.put("y", waypoint.getLocation().getBlockY());
-                bedlocation.put("z", waypoint.getLocation().getBlockZ());
-                bedlocation.put("color", waypoint.getColor().getHEX());
-                bedlocation.put("world", waypoint.getLocation().getWorld().getName());
-                locationData.put(bedlocation);
-            }
         }
+
+        JSONArray infoData = new JSONArray();
+        response.put("info", infoData);
+
+        JSONArray locationData = new JSONArray();
+        response.put("locations", locationData);
+            
+        List<InfoEntry> _infos = new ArrayList<>();
+        for(InfoProvider iprov : _infoProviders) {
+            iprov.onPlayerInfoRequest(player, _infos);
+        }
+
+        List<Waypoint> _waypoints = new ArrayList<>();
+        for(LocationProvider lprov : _locationProviders) {
+            lprov.onLocationRequest(player, _waypoints);
+        }
+
+        for(InfoEntry entry : _infos) {
+            if(entry.getName() == null) continue;
+            if(entry.getValue() == null) continue;
+            if(entry.getPrivacy() == null) continue;
+            
+            if(entry.getPrivacy() == Privacy.PRIVATE) {
+                if(!identity.hasPermission("livekit.module.admin") ) {
+                    if(!uuid.equals(identity.getUuid())) continue;
+                }
+            }
+
+            JSONObject jentry = new JSONObject();
+            jentry.put("name", entry.getName());
+            jentry.put("value", entry.getValue());
+            jentry.put("priority", 50);
+            infoData.put(jentry);
+        }
+
+        for(Waypoint waypoint : _waypoints) {
+            if(waypoint.getLocation() == null) continue;
+            if(waypoint.getName() == null) continue;
+            if(waypoint.getPrivacy() == null) continue;
+            
+            if(waypoint.getPrivacy() == Privacy.PRIVATE) {
+                if(!identity.hasPermission("livekit.module.admin") ) {
+                    if(!uuid.equals(identity.getUuid())) continue;
+                }
+            }
+
+            JSONObject bedlocation = new JSONObject();
+            bedlocation.put("type", "loc");
+            bedlocation.put("name", waypoint.getName());
+            bedlocation.put("description", waypoint.getDescription());
+            bedlocation.put("x", waypoint.getLocation().getBlockX());
+            bedlocation.put("y", waypoint.getLocation().getBlockY());
+            bedlocation.put("z", waypoint.getLocation().getBlockZ());
+            bedlocation.put("color", waypoint.getColor().getHEX());
+            bedlocation.put("world", waypoint.getLocation().getWorld().getName());
+            locationData.put(bedlocation);
+        }
+        
 
         return packet.response(response);
     }

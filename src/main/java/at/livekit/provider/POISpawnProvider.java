@@ -10,6 +10,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.world.SpawnChangeEvent;
 
 import at.livekit.api.core.Color;
+import at.livekit.api.core.Privacy;
 import at.livekit.api.map.POIProvider;
 import at.livekit.api.map.Waypoint;
 import at.livekit.plugin.Plugin;
@@ -22,7 +23,7 @@ public class POISpawnProvider extends POIProvider implements Listener {
 
     @Override
     public void onPOIRequest(World world, List<Waypoint> waypoints) {
-        Waypoint waypoint = new Waypoint(world.getSpawnLocation(), "Spawn", "Spawn of "+world.getName(), Color.fromChatColor(ChatColor.RED));
+        Waypoint waypoint = new Waypoint(world.getSpawnLocation(), "Spawn", "Spawn of "+world.getName(), Color.fromChatColor(ChatColor.RED), Privacy.PUBLIC);
         waypoints.add(waypoint);
     }
     
