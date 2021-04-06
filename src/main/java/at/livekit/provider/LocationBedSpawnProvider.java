@@ -32,9 +32,6 @@ public class LocationBedSpawnProvider extends LocationProvider implements Listen
 
     }
 
-    @EventHandler(priority = EventPriority.MONITOR)
-    public void onSpawnChangeEvent(SpawnChangeEvent event) {
-        Plugin.getInstance().getLiveKit().updatePOIs();
-    }
+
     
 }

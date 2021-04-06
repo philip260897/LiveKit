@@ -15,6 +15,7 @@ import at.livekit.api.map.Waypoint;
 import at.livekit.livekit.Identity;
 import at.livekit.packets.IPacket;
 import at.livekit.plugin.Config;
+import at.livekit.plugin.Plugin;
 
 public class POIModule extends BaseModule {
 
@@ -45,7 +46,7 @@ public class POIModule extends BaseModule {
     public void updatePOIs() {
         if(!this.isEnabled()) return; 
 
-        World world = Bukkit.getWorld(Config.getModuleString("LiveMapModule", "world"));
+        /*World world = Bukkit.getWorld(Config.getModuleString("LiveMapModule", "world"));
         if(world != null) {
             synchronized(_waypoints) {
                 _waypoints.clear();
@@ -53,7 +54,7 @@ public class POIModule extends BaseModule {
                     provider.onPOIRequest(world, _waypoints);
                 }
             }
-        }
+        }*/
 
         notifyFull();
     }

@@ -4,13 +4,17 @@ import java.util.List;
 
 import org.bukkit.ChatColor;
 import org.bukkit.World;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
+import org.bukkit.event.world.SpawnChangeEvent;
 
 import at.livekit.api.core.Color;
 import at.livekit.api.map.POIProvider;
 import at.livekit.api.map.Waypoint;
 import at.livekit.plugin.Plugin;
 
-public class POISpawnProvider extends POIProvider {
+public class POISpawnProvider extends POIProvider implements Listener {
 
     public POISpawnProvider() {
         super(Plugin.getInstance(), "World Spawn Provider");
@@ -22,4 +26,8 @@ public class POISpawnProvider extends POIProvider {
         waypoints.add(waypoint);
     }
     
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onSpawnChangeEvent(SpawnChangeEvent event) {
+        Plugin.getInstance().getLiveKit().updatePOIs();
+    }
 }
