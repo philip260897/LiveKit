@@ -14,8 +14,14 @@ import java.util.Map.Entry;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
+
+import at.livekit.api.core.ILiveKit;
+import at.livekit.api.map.LocationProvider;
+import at.livekit.api.map.POIProvider;
 import at.livekit.modules.BaseModule;
 import at.livekit.modules.ModuleManager;
+import at.livekit.modules.POIModule;
+import at.livekit.modules.PlayerModule;
 import at.livekit.modules.BaseModule.Action;
 import at.livekit.modules.BaseModule.ActionMethod;
 import at.livekit.modules.BaseModule.ModuleListener;
@@ -32,7 +38,7 @@ import at.livekit.plugin.Config;
 import at.livekit.plugin.Plugin;
 import at.livekit.utils.HeadLibraryV2;
 
-public class LiveKit implements ModuleListener, NIOServerEvent<Identity>, Runnable {
+public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identity>, Runnable {
 
     private static LiveKit instance;
 
@@ -745,6 +751,38 @@ public class LiveKit implements ModuleListener, NIOServerEvent<Identity>, Runnab
             return invokationMap.get(module+":"+action);
         }
     }
+
+	@Override
+	public void addLocationProvider(LocationProvider provider) {
+		PlayerModule module = (PlayerModule)_modules.getModule("PlayerModule");
+        if(module != null) module.addLocationProvider(provider);
+	}
+
+	@Override
+	public void removeLocationProvider(LocationProvider provider) {
+		PlayerModule module = (PlayerModule)_modules.getModule("PlayerModule");
+        if(module != null) module.removeLocationProvider(provider);
+	}
+
+	@Override
+	public void addPOIProvider(POIProvider arg0) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void removePOIProvider(POIProvider arg0) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void updatePOIs() {
+        POIModule module = (POIModule) _modules.getModule("POIModule");
+        if(module != null && module.isEnabled()) {
+            this.onFullUpdate(module.getType());
+        }
+	}
 }
 
 

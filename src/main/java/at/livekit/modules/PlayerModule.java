@@ -28,6 +28,9 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.json.JSONArray;
 import org.json.JSONObject;
+
+import at.livekit.api.map.LocationProvider;
+import at.livekit.api.map.Waypoint;
 import at.livekit.livekit.Identity;
 import at.livekit.plugin.Plugin;
 import at.livekit.packets.ActionPacket;
@@ -37,12 +40,29 @@ import at.livekit.utils.HeadLibraryV2;
 
 public class PlayerModule extends BaseModule implements Listener
 {
+    private List<LocationProvider> _locationProviders = new ArrayList<LocationProvider>();
     private Map<String,LPlayer> _players = new HashMap<String, LPlayer>();
 
     public PlayerModule(ModuleListener listener) {
         super(1, "Players", "livekit.module.players", UpdateRate.MAX, listener);
     }
      
+    public void clearProviders() {
+        _locationProviders.clear();
+    }
+
+    public void addLocationProvider(LocationProvider provider) {
+        if(!_locationProviders.contains(provider)) {
+            _locationProviders.add(provider);
+        }
+    }
+
+    public void removeLocationProvider(LocationProvider provider) {
+        if(_locationProviders.contains(provider)) {
+            _locationProviders.remove(provider);
+        }
+    }
+
     public LPlayer getPlayer(String uuid) {
         return _players.get(uuid);
     }
@@ -334,16 +354,25 @@ public class PlayerModule extends BaseModule implements Listener
 
             JSONArray locationData = new JSONArray();
             response.put("locations", locationData);
-            Location bedspawn = player.getBedSpawnLocation();
-            if(bedspawn != null) {
+            
+            List<Waypoint> _waypoints = new ArrayList<>();
+            for(LocationProvider lprov : _locationProviders) {
+                lprov.onLocationRequest(player, _waypoints);
+            }
+
+            for(Waypoint waypoint : _waypoints) {
+                if(waypoint.getLocation() == null) continue;
+                if(waypoint.getName() == null) continue;
+
                 JSONObject bedlocation = new JSONObject();
                 bedlocation.put("type", "loc");
-                bedlocation.put("name", "Bed Spawn");
-                bedlocation.put("description", "Bed Spawn location of "+player.getName());
-                bedlocation.put("x", bedspawn.getBlockX());
-                bedlocation.put("y", bedspawn.getBlockY());
-                bedlocation.put("z", bedspawn.getBlockZ());
-                bedlocation.put("world", bedspawn.getWorld().getName());
+                bedlocation.put("name", waypoint.getName());
+                bedlocation.put("description", waypoint.getDescription());
+                bedlocation.put("x", waypoint.getLocation().getBlockX());
+                bedlocation.put("y", waypoint.getLocation().getBlockY());
+                bedlocation.put("z", waypoint.getLocation().getBlockZ());
+                bedlocation.put("color", waypoint.getColor().getHEX());
+                bedlocation.put("world", waypoint.getLocation().getWorld().getName());
                 locationData.put(bedlocation);
             }
         }

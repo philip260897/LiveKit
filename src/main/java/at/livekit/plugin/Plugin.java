@@ -15,6 +15,8 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import at.livekit.api.core.ILiveKit;
+import at.livekit.api.core.ILiveKitPlugin;
 import at.livekit.livekit.Identity;
 import at.livekit.livekit.LiveKit;
 import at.livekit.livekit.PlayerAuth;
@@ -28,11 +30,12 @@ import at.livekit.modules.BaseModule;
 import at.livekit.modules.PlayerModule;
 import at.livekit.modules.LiveMapModule;
 import at.livekit.modules.PlayerModule.LPlayer;
+import at.livekit.provider.LocationBedSpawnProvider;
 import at.livekit.utils.HeadLibraryEvent;
 import at.livekit.utils.HeadLibraryV2;
 import at.livekit.utils.Metrics;
 
-public class Plugin extends JavaPlugin implements CommandExecutor {
+public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugin {
 
 	private static Logger logger;
 	private static Plugin instance;
@@ -95,6 +98,8 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 		try{
 			Metrics metrics = new Metrics(this, 10516);
 		}catch(Exception ex){Plugin.debug("bStats could not be initialized! "+ex.getMessage());}
+
+		this.getLiveKit().addLocationProvider(new LocationBedSpawnProvider());
     }
     
     @Override
@@ -754,5 +759,10 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 
 	public static void debug(String message) {
 		//logger.warning(message);
+	}
+
+	@Override
+	public ILiveKit getLiveKit() {
+		return LiveKit.getInstance();
 	}
 }
