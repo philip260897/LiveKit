@@ -323,11 +323,14 @@ public class PlayerModule extends BaseModule implements Listener
         if(player == null) return new StatusPacket(0, "Player not found");
         if(!player.isOnline() && !identity.hasPermission("livekit.module.admin")) return new StatusPacket(0, "Permission denied");
         
+        Player onlinePlayer = (player.isOnline() ?  player.getPlayer() : null);
+
         JSONObject response = new JSONObject();
         if(identity.hasPermission("livekit.module.admin") || uuid.equals(identity.getUuid())) {
             response.put("firstPlayed", player.getFirstPlayed());
             response.put("lastPlayed", player.getLastPlayed());
             response.put("banned", player.isBanned());
+            if(onlinePlayer != null) response.put("gamemode", onlinePlayer.getGameMode().name());
 
             JSONArray locationData = new JSONArray();
             response.put("locations", locationData);
