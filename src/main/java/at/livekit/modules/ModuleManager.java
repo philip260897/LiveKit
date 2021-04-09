@@ -59,6 +59,7 @@ public class ModuleManager
 
         this.registerModule(new AdminModule(listener));
         this.registerModule(new ChatModule(listener));
+        this.registerModule(new POIModule(listener));
 
         /*System.out.println("Subscriptions collected: ");
         for(Entry<String, List<String>> entry : _subscriptions.entrySet()) {
@@ -91,9 +92,9 @@ public class ModuleManager
             if(m instanceof PlayerModule) {
                 ((PlayerModule) m).clearProviders();
             }
-            if(m instanceof POIModule) {
+            /*if(m instanceof POIModule) {
                 ((POIModule) m).clearProviders();
-            }
+            }*/
         }
         _modules.clear();
         _subscriptions.clear();

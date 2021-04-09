@@ -28,3 +28,5 @@ modules:
     enabled: true
   ChatModule:
     enabled: true
+  POIModule:
+    enabled: true

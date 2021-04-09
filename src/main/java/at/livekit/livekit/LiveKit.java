@@ -18,7 +18,9 @@ import java.util.stream.Collectors;
 import at.livekit.api.core.ILiveKit;
 import at.livekit.api.map.InfoProvider;
 import at.livekit.api.map.LocationProvider;
+import at.livekit.api.map.POI;
 import at.livekit.api.map.POIProvider;
+import at.livekit.api.map.Waypoint;
 import at.livekit.modules.BaseModule;
 import at.livekit.modules.ModuleManager;
 import at.livekit.modules.POIModule;
@@ -777,7 +779,23 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
         if(module != null) module.removeInfoProvider(provider);
 	}
 
-	@Override
+    @Override
+    public void addPointOfInterest(POI waypoint) {
+        POIModule module = (POIModule) _modules.getModule("POIModule");
+        if(module != null && module.isEnabled()) {
+            module.addPOI(waypoint);
+        }
+    }
+
+    @Override
+    public void removePointOfIntereset(POI waypoint) {
+        POIModule module = (POIModule) _modules.getModule("POIModule");
+        if(module != null && module.isEnabled()) {
+            module.removePOI(waypoint);
+        }
+    }
+
+	/*@Override
 	public void addPOIProvider(POIProvider arg0) {
 		// TODO Auto-generated method stub
 		
@@ -795,7 +813,7 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
         if(module != null && module.isEnabled()) {
             this.onFullUpdate(module.getType());
         }
-	}
+	}*/
 }
 
 

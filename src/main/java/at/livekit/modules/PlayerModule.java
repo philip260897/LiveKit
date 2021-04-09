@@ -40,6 +40,7 @@ import at.livekit.packets.ActionPacket;
 import at.livekit.packets.IPacket;
 import at.livekit.packets.StatusPacket;
 import at.livekit.utils.HeadLibraryV2;
+import javafx.animation.Animation.Status;
 
 public class PlayerModule extends BaseModule implements Listener
 {
@@ -95,18 +96,21 @@ public class PlayerModule extends BaseModule implements Listener
     @Override
     public void update() {
         boolean needsUpdate = false;
+        Location _loc = null;
 
         for(LPlayer player : _players.values()) {
             Player p = Bukkit.getPlayer(UUID.fromString(player.uuid));
             if(p != null) {
+                _loc = p.getLocation();
+
                 if(p.getHealth() != player.health) needsUpdate = true;
                 if(p.getHealthScale() != player.healthMax) needsUpdate = true;
                 if(p.getExhaustion() != player.exhaustion) needsUpdate = true;
-                if(p.getLocation().getYaw() != player.dir) needsUpdate = true;
+                if(_loc.getX() != player.x || _loc.getY() != player.y || _loc.getZ() != player.z || _loc.getYaw() != player.dir) needsUpdate = true;
 
                 player.updateExhaustion(p.getExhaustion());
                 player.updateHealth(p.getHealth(), p.getHealthScale());
-                player.updateLocation(p.getLocation().getX(), p.getLocation().getY(), p.getLocation().getZ(), p.getLocation().getYaw() );
+                player.updateLocation(_loc.getX(), _loc.getY(), _loc.getZ(), _loc.getYaw() );
             }
         }
 
@@ -352,6 +356,38 @@ public class PlayerModule extends BaseModule implements Listener
         return null;
     }
 
+    private Waypoint getWaypointByUUID(String playerUUID, UUID waypointUuid) {
+        LPlayer player = getPlayer(playerUUID);
+        if(player == null || player._cachedWaypoints == null) return null;
+
+        synchronized(player._cachedWaypoints) {
+            for(Waypoint waypoint : player._cachedWaypoints) {
+                if(waypoint.getUUID().equals(waypointUuid)) {
+                    return waypoint;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    @Action(name="Teleport")
+    protected IPacket teleportWaypoint(Identity identity, ActionPacket packet) {
+        String wp = packet.getData().getString("waypoint");
+        Waypoint waypoint = getWaypointByUUID(identity.getUuid(), UUID.fromString(wp));
+
+        if(waypoint == null) return new StatusPacket(0, "Waypoint not found!");
+        if(waypoint.canTeleport() == false && !identity.hasPermission("livekit.module.admin")) return new StatusPacket(0, "Can't teleport to this waypoint");
+
+        OfflinePlayer player = Bukkit.getOfflinePlayer(UUID.fromString(identity.getUuid()));
+        if(player == null || !player.isOnline()) return new StatusPacket(0, "Player is offline");
+
+        Player online = player.getPlayer();
+        online.teleport(waypoint.getLocation());
+
+        return new StatusPacket(1);
+    }
+
     @Action(name = "GetPlayerInfo")
     public IPacket actionPlayerInfo(Identity identity, ActionPacket packet) {
         String uuid = packet.getData().getString("uuid");
@@ -369,6 +405,9 @@ public class PlayerModule extends BaseModule implements Listener
             if(onlinePlayer != null) response.put("gamemode", onlinePlayer.getGameMode().name());
         }
 
+        LPlayer lplayer = getPlayer(uuid);
+        if(lplayer == null) return new StatusPacket(0, "Invalid Player requested");
+
         JSONArray infoData = new JSONArray();
         response.put("info", infoData);
 
@@ -383,6 +422,9 @@ public class PlayerModule extends BaseModule implements Listener
         List<Waypoint> _waypoints = new ArrayList<>();
         for(LocationProvider lprov : _locationProviders) {
             lprov.onLocationRequest(player, _waypoints);
+        }
+        synchronized(lplayer._cachedWaypoints) {
+            lplayer._cachedWaypoints = _waypoints;
         }
 
         for(InfoEntry entry : _infos) {
@@ -415,7 +457,7 @@ public class PlayerModule extends BaseModule implements Listener
             }
 
             JSONObject bedlocation = new JSONObject();
-            bedlocation.put("type", "loc");
+            bedlocation.put("uuid", waypoint.getUUID().toString());
             bedlocation.put("name", waypoint.getName());
             bedlocation.put("description", waypoint.getDescription());
             bedlocation.put("x", waypoint.getLocation().getBlockX());
@@ -423,6 +465,7 @@ public class PlayerModule extends BaseModule implements Listener
             bedlocation.put("z", waypoint.getLocation().getBlockZ());
             bedlocation.put("color", waypoint.getColor().getHEX());
             bedlocation.put("world", waypoint.getLocation().getWorld().getName());
+            bedlocation.put("teleport", waypoint.canTeleport());
             locationData.put(bedlocation);
         }
         
@@ -486,6 +529,9 @@ public class PlayerModule extends BaseModule implements Listener
         public LItem itemHeld;
 
         public List<PlayerAction> actions = new ArrayList<PlayerAction>();
+
+        //used for caching player specific waypoints
+        protected List<Waypoint> _cachedWaypoints = new ArrayList<Waypoint>();
 
        // public long lastOnline = 0;
        // public long firstPlayed = 0;

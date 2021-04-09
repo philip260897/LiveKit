@@ -24,7 +24,7 @@ public class LocationBedSpawnProvider extends LocationProvider implements Listen
 
         Location location = player.getBedSpawnLocation();
         if(location != null) {
-            Waypoint waypoint = new Waypoint(location, "Bed Spawn", "Bed Spawn Location of "+player.getName(), Color.fromChatColor(ChatColor.GREEN), Privacy.PRIVATE);
+            Waypoint waypoint = new Waypoint(location, "Bed Spawn", "Bed Spawn Location of "+player.getName(), Color.fromChatColor(ChatColor.GREEN), true, Privacy.PRIVATE);
             waypoints.add(waypoint);
         }
 

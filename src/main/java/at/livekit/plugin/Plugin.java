@@ -1,5 +1,6 @@
 package at.livekit.plugin;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -7,6 +8,7 @@ import java.util.logging.Logger;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.WorldType;
 import org.bukkit.command.Command;
@@ -15,8 +17,13 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import at.livekit.api.core.Color;
 import at.livekit.api.core.ILiveKit;
 import at.livekit.api.core.ILiveKitPlugin;
+import at.livekit.api.core.Privacy;
+import at.livekit.api.map.InfoEntry;
+import at.livekit.api.map.POI;
+import at.livekit.api.map.Waypoint;
 import at.livekit.livekit.Identity;
 import at.livekit.livekit.LiveKit;
 import at.livekit.livekit.PlayerAuth;
@@ -31,6 +38,7 @@ import at.livekit.modules.PlayerModule;
 import at.livekit.modules.LiveMapModule;
 import at.livekit.modules.PlayerModule.LPlayer;
 import at.livekit.provider.LocationBedSpawnProvider;
+import at.livekit.provider.POISpawnProvider;
 import at.livekit.provider.PlayerInfoProvider;
 import at.livekit.utils.HeadLibraryEvent;
 import at.livekit.utils.HeadLibraryV2;
@@ -102,6 +110,16 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 
 		this.getLiveKit().addLocationProvider(new LocationBedSpawnProvider());
 		this.getLiveKit().addInfoProvider(new PlayerInfoProvider());
+
+		//POI
+		Bukkit.getServer().getPluginManager().registerEvents(new POISpawnProvider(), Plugin.getInstance());
+		POI spawn = new POI(new Location(Bukkit.getWorld("world"), 0, 65, 0), "Origin", "The origin of world", Color.fromChatColor(ChatColor.DARK_PURPLE), false);
+		List<InfoEntry> info = new ArrayList<InfoEntry>();
+		info.add(new InfoEntry("Players spawned", "69", Privacy.PUBLIC));
+		info.add(new InfoEntry("World", "world", Privacy.PUBLIC));
+		info.add(new InfoEntry("Location", spawn.getLocation().getBlockX() + ", " + spawn.getLocation().getBlockY() + ", "+ spawn.getLocation().getBlockZ(), Privacy.PUBLIC));
+		spawn.setAdditionalInfo(info);
+        Plugin.getInstance().getLiveKit().addPointOfInterest(spawn);
     }
     
     @Override
