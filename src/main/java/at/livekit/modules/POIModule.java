@@ -15,6 +15,7 @@ import org.json.JSONObject;
 
 import at.livekit.api.map.InfoEntry;
 import at.livekit.api.map.POI;
+import at.livekit.api.map.POIInfoProvider;
 import at.livekit.api.map.Waypoint;
 import at.livekit.livekit.Identity;
 import at.livekit.packets.ActionPacket;
@@ -23,7 +24,7 @@ import at.livekit.packets.StatusPacket;
 
 public class POIModule extends BaseModule {
 
-    //private List<POIProvider> _poiProviders = new ArrayList<POIProvider>();
+    private List<POIInfoProvider> _infoProviders = new ArrayList<POIInfoProvider>();
 
     private List<POI> _pois = new ArrayList<POI>();
 
@@ -43,6 +44,22 @@ public class POIModule extends BaseModule {
             _pois.remove(waypoint);
         }
         notifyFull();
+    }
+
+    public void clearProviders() {
+        _infoProviders.clear();
+    }
+
+    public void addInfoProvider(POIInfoProvider provider) {
+        if(!_infoProviders.contains(provider)) {
+            _infoProviders.add(provider);
+        }
+    }
+
+    public void removeInfoProvider(POIInfoProvider provider) {
+        if(_infoProviders.contains(provider)) {
+            _infoProviders.remove(provider);
+        }
     }
 
     /*public void clearProviders() {
@@ -94,15 +111,6 @@ public class POIModule extends BaseModule {
                 poi.put("color", waypoint.getColor().getHEX());
                 poi.put("world", waypoint.getLocation().getWorld().getName());
                 poi.put("teleport", waypoint.canTeleport());
-                JSONArray jinfo = new JSONArray();
-                for(InfoEntry entry : waypoint.getAdditionalInfo()) {
-                    JSONObject jentry = new JSONObject();
-                    jentry.put("name", entry.getName());
-                    jentry.put("value", entry.getValue());
-                    jentry.put("priority", 50);
-                    jinfo.put(jentry);
-                }
-                poi.put("info", jinfo);
                 pois.put(poi);
             }
         }
@@ -130,15 +138,6 @@ public class POIModule extends BaseModule {
                 poi.put("color", waypoint.getColor().getHEX());
                 poi.put("world", waypoint.getLocation().getWorld().getName());
                 poi.put("teleport", waypoint.canTeleport());
-                JSONArray jinfo = new JSONArray();
-                for(InfoEntry entry : waypoint.getAdditionalInfo()) {
-                    JSONObject jentry = new JSONObject();
-                    jentry.put("name", entry.getName());
-                    jentry.put("value", entry.getValue());
-                    jentry.put("priority", 50);
-                    jinfo.put(jentry);
-                }
-                poi.put("info", jinfo);
                 pois.put(poi);
             }
         }
@@ -166,9 +165,37 @@ public class POIModule extends BaseModule {
         return new StatusPacket(1);
     }
 
-    private Waypoint getWaypointByUUID(UUID uuid) {
+    @Action(name = "GetPOIInfo")
+    public IPacket actionPlayerInfo(Identity identity, ActionPacket packet) {
+        String wp = packet.getData().getString("poi");
+        POI waypoint = getWaypointByUUID(UUID.fromString(wp));
+
+        if(waypoint == null) return new StatusPacket(0, "POI not found!");
+
+        JSONObject response = new JSONObject();
+        
+        JSONArray infos = new JSONArray();
+        response.put("info", infos);
+
+        List<InfoEntry> entries = new ArrayList<InfoEntry>();
+        for(POIInfoProvider provider : _infoProviders) {
+            provider.onResolvePOIInfo(waypoint, entries);
+        }
+
+        for(InfoEntry entry : entries) {
+            JSONObject jentry = new JSONObject();
+            jentry.put("name", entry.getName());
+            jentry.put("value", entry.getValue());
+            jentry.put("priority", 50);
+            infos.put(jentry);
+        }
+
+        return packet.response(response);
+    }
+
+    private POI getWaypointByUUID(UUID uuid) {
         synchronized(_pois) {
-            for(Waypoint waypoint : _pois) {
+            for(POI waypoint : _pois) {
                 if(waypoint.getUUID().equals(uuid)) {
                     return waypoint;
                 }

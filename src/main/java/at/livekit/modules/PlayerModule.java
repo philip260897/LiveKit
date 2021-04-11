@@ -31,8 +31,7 @@ import org.json.JSONObject;
 
 import at.livekit.api.core.Privacy;
 import at.livekit.api.map.InfoEntry;
-import at.livekit.api.map.InfoProvider;
-import at.livekit.api.map.LocationProvider;
+import at.livekit.api.map.PlayerInfoProvider;
 import at.livekit.api.map.Waypoint;
 import at.livekit.livekit.Identity;
 import at.livekit.plugin.Plugin;
@@ -40,12 +39,11 @@ import at.livekit.packets.ActionPacket;
 import at.livekit.packets.IPacket;
 import at.livekit.packets.StatusPacket;
 import at.livekit.utils.HeadLibraryV2;
-import javafx.animation.Animation.Status;
 
 public class PlayerModule extends BaseModule implements Listener
 {
-    private List<LocationProvider> _locationProviders = new ArrayList<LocationProvider>();
-    private List<InfoProvider> _infoProviders = new ArrayList<InfoProvider>();
+
+    private List<PlayerInfoProvider> _infoProviders = new ArrayList<PlayerInfoProvider>();
     private Map<String,LPlayer> _players = new HashMap<String, LPlayer>();
 
     public PlayerModule(ModuleListener listener) {
@@ -53,28 +51,16 @@ public class PlayerModule extends BaseModule implements Listener
     }
      
     public void clearProviders() {
-        _locationProviders.clear();
+        _infoProviders.clear();
     }
 
-    public void addLocationProvider(LocationProvider provider) {
-        if(!_locationProviders.contains(provider)) {
-            _locationProviders.add(provider);
-        }
-    }
-
-    public void removeLocationProvider(LocationProvider provider) {
-        if(_locationProviders.contains(provider)) {
-            _locationProviders.remove(provider);
-        }
-    }
-
-    public void addInfoProvider(InfoProvider provider) {
+    public void addInfoProvider(PlayerInfoProvider provider) {
         if(!_infoProviders.contains(provider)) {
             _infoProviders.add(provider);
         }
     }
 
-    public void removeInfoProvider(InfoProvider provider) {
+    public void removeInfoProvider(PlayerInfoProvider provider) {
         if(_infoProviders.contains(provider)) {
             _infoProviders.remove(provider);
         }
@@ -415,13 +401,10 @@ public class PlayerModule extends BaseModule implements Listener
         response.put("locations", locationData);
             
         List<InfoEntry> _infos = new ArrayList<>();
-        for(InfoProvider iprov : _infoProviders) {
-            iprov.onPlayerInfoRequest(player, _infos);
-        }
-
         List<Waypoint> _waypoints = new ArrayList<>();
-        for(LocationProvider lprov : _locationProviders) {
-            lprov.onLocationRequest(player, _waypoints);
+        for(PlayerInfoProvider iprov : _infoProviders) {
+            iprov.onResolvePlayerInfo(player, _infos);
+            iprov.onResolvePlayerLocation(player, _waypoints);
         }
         synchronized(lplayer._cachedWaypoints) {
             lplayer._cachedWaypoints = _waypoints;

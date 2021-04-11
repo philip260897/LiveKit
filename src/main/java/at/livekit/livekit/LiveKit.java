@@ -16,10 +16,9 @@ import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 import at.livekit.api.core.ILiveKit;
-import at.livekit.api.map.InfoProvider;
-import at.livekit.api.map.LocationProvider;
 import at.livekit.api.map.POI;
-import at.livekit.api.map.POIProvider;
+import at.livekit.api.map.POIInfoProvider;
+import at.livekit.api.map.PlayerInfoProvider;
 import at.livekit.api.map.Waypoint;
 import at.livekit.modules.BaseModule;
 import at.livekit.modules.ModuleManager;
@@ -755,26 +754,14 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
         }
     }
 
-	@Override
-	public void addLocationProvider(LocationProvider provider) {
-		PlayerModule module = (PlayerModule)_modules.getModule("PlayerModule");
-        if(module != null) module.addLocationProvider(provider);
-	}
-
-	@Override
-	public void removeLocationProvider(LocationProvider provider) {
-		PlayerModule module = (PlayerModule)_modules.getModule("PlayerModule");
-        if(module != null) module.removeLocationProvider(provider);
-	}
-
     @Override
-	public void addInfoProvider(InfoProvider provider) {
+	public void addPlayerInfoProvider(PlayerInfoProvider provider) {
 		PlayerModule module = (PlayerModule)_modules.getModule("PlayerModule");
         if(module != null) module.addInfoProvider(provider);
 	}
 
 	@Override
-	public void removeInfoProvider(InfoProvider provider) {
+	public void removePlayerInfoProvider(PlayerInfoProvider provider) {
 		PlayerModule module = (PlayerModule)_modules.getModule("PlayerModule");
         if(module != null) module.removeInfoProvider(provider);
 	}
@@ -793,6 +780,18 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
         if(module != null && module.isEnabled()) {
             module.removePOI(waypoint);
         }
+    }
+
+    @Override
+    public void addPOIInfoProvider(POIInfoProvider provider) {
+		POIModule module = (POIModule)_modules.getModule("POIModule");
+        if(module != null) module.addInfoProvider(provider);
+    }
+
+    @Override
+    public void removePOIInfoProvider(POIInfoProvider provider) {
+		POIModule module = (POIModule)_modules.getModule("POIModule");
+        if(module != null) module.removeInfoProvider(provider);
     }
 
 	/*@Override

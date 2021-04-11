@@ -13,12 +13,14 @@ import org.bukkit.event.world.SpawnChangeEvent;
 
 import at.livekit.api.core.Color;
 import at.livekit.api.core.Privacy;
+import at.livekit.api.map.InfoEntry;
 import at.livekit.api.map.POI;
+import at.livekit.api.map.POIInfoProvider;
 import at.livekit.api.map.POIProvider;
 import at.livekit.api.map.Waypoint;
 import at.livekit.plugin.Plugin;
 
-public class POISpawnProvider /*extends POIProvider*/ implements Listener {
+public class POISpawnProvider extends POIInfoProvider implements Listener {
 
     /*public POISpawnProvider() {
         super(Plugin.getInstance(), "World Spawn Provider");
@@ -33,6 +35,8 @@ public class POISpawnProvider /*extends POIProvider*/ implements Listener {
     private List<POI> _spawnPoints = new ArrayList<>();
 
     public POISpawnProvider() {
+        super(Plugin.getInstance(), "POI Spawn Provider");
+
         for(World world : Bukkit.getWorlds()) {
             registerSpawnpoint(world);
         }
@@ -63,5 +67,14 @@ public class POISpawnProvider /*extends POIProvider*/ implements Listener {
         POI spawn = new POI(world.getSpawnLocation(), "Spawn", "Spawn point of "+world.getName(), Color.fromChatColor(ChatColor.DARK_AQUA), true);
         Plugin.getInstance().getLiveKit().addPointOfInterest(spawn);
         _spawnPoints.add(spawn);
+    }
+
+    @Override
+    public void onResolvePOIInfo(POI poi, List<InfoEntry> entries) {
+        POI worldSpawn = spawnPoint(Bukkit.getWorld("world"));
+        if(poi.equals(worldSpawn)) {
+            entries.add(new InfoEntry("Spawns", "96"));
+            entries.add(new InfoEntry("Status", ChatColor.GREEN+"Available"));
+        }
     }
 }

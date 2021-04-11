@@ -37,9 +37,8 @@ import at.livekit.modules.BaseModule;
 import at.livekit.modules.PlayerModule;
 import at.livekit.modules.LiveMapModule;
 import at.livekit.modules.PlayerModule.LPlayer;
-import at.livekit.provider.LocationBedSpawnProvider;
+import at.livekit.provider.BasicPlayerInfoProvider;
 import at.livekit.provider.POISpawnProvider;
-import at.livekit.provider.PlayerInfoProvider;
 import at.livekit.utils.HeadLibraryEvent;
 import at.livekit.utils.HeadLibraryV2;
 import at.livekit.utils.Metrics;
@@ -108,18 +107,17 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 			Metrics metrics = new Metrics(this, 10516);
 		}catch(Exception ex){Plugin.debug("bStats could not be initialized! "+ex.getMessage());}
 
-		this.getLiveKit().addLocationProvider(new LocationBedSpawnProvider());
-		this.getLiveKit().addInfoProvider(new PlayerInfoProvider());
+		//this.getLiveKit().addLocationProvider(new LocationBedSpawnProvider());
+		this.getLiveKit().addPlayerInfoProvider(new BasicPlayerInfoProvider());
 
 		//POI
-		Bukkit.getServer().getPluginManager().registerEvents(new POISpawnProvider(), Plugin.getInstance());
-		POI spawn = new POI(new Location(Bukkit.getWorld("world"), 0, 65, 0), "Origin", "The origin of world", Color.fromChatColor(ChatColor.DARK_PURPLE), false);
-		List<InfoEntry> info = new ArrayList<InfoEntry>();
-		info.add(new InfoEntry("Players spawned", "69", Privacy.PUBLIC));
-		info.add(new InfoEntry("World", "world", Privacy.PUBLIC));
-		info.add(new InfoEntry("Location", spawn.getLocation().getBlockX() + ", " + spawn.getLocation().getBlockY() + ", "+ spawn.getLocation().getBlockZ(), Privacy.PUBLIC));
-		spawn.setAdditionalInfo(info);
-        Plugin.getInstance().getLiveKit().addPointOfInterest(spawn);
+		POISpawnProvider provider = new POISpawnProvider();
+		this.getLiveKit().addPOIInfoProvider(provider);
+		Bukkit.getServer().getPluginManager().registerEvents(provider, Plugin.getInstance());
+
+		//POI
+		POI center = new POI(new Location(Bukkit.getWorld("world"), 0, 65, 0), "Origin", "The origin of world", Color.fromChatColor(ChatColor.DARK_PURPLE), false);
+        Plugin.getInstance().getLiveKit().addPointOfInterest(center);
     }
     
     @Override
