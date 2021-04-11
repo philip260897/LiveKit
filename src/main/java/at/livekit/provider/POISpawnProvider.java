@@ -12,12 +12,9 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.world.SpawnChangeEvent;
 
 import at.livekit.api.core.Color;
-import at.livekit.api.core.Privacy;
 import at.livekit.api.map.InfoEntry;
 import at.livekit.api.map.POI;
 import at.livekit.api.map.POIInfoProvider;
-import at.livekit.api.map.POIProvider;
-import at.livekit.api.map.Waypoint;
 import at.livekit.plugin.Plugin;
 
 public class POISpawnProvider extends POIInfoProvider implements Listener {
