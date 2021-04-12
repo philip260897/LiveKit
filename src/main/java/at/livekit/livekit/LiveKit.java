@@ -20,6 +20,8 @@ import at.livekit.api.map.POI;
 import at.livekit.api.map.POIInfoProvider;
 import at.livekit.api.map.PlayerInfoProvider;
 import at.livekit.api.map.Waypoint;
+import at.livekit.authentication.Pin;
+import at.livekit.authentication.Session;
 import at.livekit.modules.BaseModule;
 import at.livekit.modules.ModuleManager;
 import at.livekit.modules.POIModule;
@@ -119,7 +121,7 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
     }
 
     public void onEnable() throws Exception {
-        PlayerAuth.initialize();
+        //PlayerAuth.initialize();
 
         _modules.onEnable(invokationMap);
         Method[] methods = this.getClass().getDeclaredMethods();
@@ -341,9 +343,9 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
                 }
             }
         }catch(Exception ex){ex.printStackTrace();}
-        try{
+        /*try{
             PlayerAuth.save();
-        }catch(Exception ex){ex.printStackTrace();}
+        }catch(Exception ex){ex.printStackTrace();}*/
         try{
             if(_modules != null)
                 _modules.onDisable(invokationMap);
@@ -598,7 +600,7 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
     @Action(name = "Login", sync = false)
     public IPacket login(Identity in, ActionPacket action) {
         NIOClient<Identity> client = action.client;
-        PlayerAuth identity = null;
+        String identity = null;
         JSONObject o = action.getData();
 
         String pin = o.has("pin")&&!o.isNull("pin") ? o.getString("pin") : null;
@@ -633,18 +635,44 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
 
         if(!anonymous) {
             if(pin != null) {
-                identity = PlayerAuth.validateClaim(pin);
+                //identity = PlayerAuth.validateClaim(pin);
+
+                try{
+                    List<Pin> pins = Plugin.getStorage().loadPins();
+                    for(Pin p : pins) {
+                        if(p.getPin().equals(pin)) {
+                            identity = p.getUUID();
+                        }
+                    }
+                }catch(Exception ex){ex.printStackTrace();}
+
             } else {
-                identity = PlayerAuth.get(uuid);
-                if(identity.isValidSession(authorization)) {
+                //identity = PlayerAuth.get(uuid);
+                identity = uuid;
+                
+                boolean success = false;
+
+                try{
+                    List<Session> sessions = Plugin.getStorage().loadSessions(identity);
+                    for(Session session : sessions) {
+                        if(session.getAuthentication().equals(authorization)) {
+                            Plugin.getStorage().deleteSession(identity, session);
+                            success = true;
+                        }
+                    }
+                }catch(Exception ex){ex.printStackTrace();}
+
+                if(!success) identity = null;
+
+                /*if(identity.isValidSession(authorization)) {
                     identity.removeSession(authorization);
                 } else {
                     identity = null;
-                }
+                }*/
             }
             if(identity != null) {
                 //client.setIdentifier(new Identity(identity.getUUID()));
-                client.getIdentifier().identify(identity.getUUID());
+                client.getIdentifier().identify(identity);
                 client.getIdentifier().loadPermissionsAsync();
                 client.getIdentifier().updateSubscriptions(_modules.getDefaultSubscriptions());
                 client.getIdentifier().updateSubscriptions(subscriptions);
@@ -654,8 +682,12 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
                     _server.send(client.getIdentifier(), _modules.onJoinAsync(client.getIdentifier()));
                 }catch(Exception ex){ex.printStackTrace();}
 
+                Session session = Session.createNew(null, null);
+                try{
+                    Plugin.getStorage().createSession(identity, session);
+                }catch(Exception ex){ex.printStackTrace();}
             
-                return new IdentityPacket(identity.getUUID(), client.getIdentifier().getName(), HeadLibraryV2.get(client.getIdentifier().getName()), identity.generateSessionKey());
+                return new IdentityPacket(identity, client.getIdentifier().getName(), HeadLibraryV2.get(client.getIdentifier().getName()), session.getAuthentication());
             }
         } 
         else
@@ -710,6 +742,8 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
     private Map<Identity, IPacket> invokeActions(Map<Identity, ActionPacket> actions, boolean sync) {
         HashMap<Identity, IPacket> results = new HashMap<Identity, IPacket>();
         
+        
+
         for(Entry<Identity, ActionPacket> entry : actions.entrySet()) {
             ActionPacket action = entry.getValue();
             Identity identity = entry.getKey();

@@ -6,6 +6,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.logging.Logger;
 
+import com.google.common.util.concurrent.Futures;
+
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -24,9 +26,11 @@ import at.livekit.api.core.Privacy;
 import at.livekit.api.map.InfoEntry;
 import at.livekit.api.map.POI;
 import at.livekit.api.map.Waypoint;
+import at.livekit.authentication.AuthenticationHandler;
+import at.livekit.authentication.Pin;
+import at.livekit.authentication.Session;
 import at.livekit.livekit.Identity;
 import at.livekit.livekit.LiveKit;
-import at.livekit.livekit.PlayerAuth;
 import at.livekit.map.RenderBounds;
 import at.livekit.map.RenderJob;
 import at.livekit.map.RenderScheduler;
@@ -39,9 +43,13 @@ import at.livekit.modules.LiveMapModule;
 import at.livekit.modules.PlayerModule.LPlayer;
 import at.livekit.provider.BasicPlayerInfoProvider;
 import at.livekit.provider.POISpawnProvider;
+import at.livekit.storage.IStorageAdapter;
+import at.livekit.storage.JSONStorage;
+import at.livekit.utils.FutureSyncCallback;
 import at.livekit.utils.HeadLibraryEvent;
 import at.livekit.utils.HeadLibraryV2;
 import at.livekit.utils.Metrics;
+import at.livekit.utils.Utils;
 
 public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugin {
 
@@ -52,6 +60,8 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 	private static ChatColor color = ChatColor.GREEN;
 	private static String prefix;
 	private static String prefixError;
+
+	private static IStorageAdapter storage;
 
 	@Override
 	public void onEnable() {
@@ -71,6 +81,17 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 		Config.initialize();
 		//initialize permission -> disable plugin if permission initialization failed
 		if(!Permissions.initialize()) {
+			logger.severe("Error initializing Permissions, shutting down");
+			getServer().getPluginManager().disablePlugin(this);
+			return;
+		}
+
+		try{
+			storage = new JSONStorage();
+			storage.initialize();
+		}catch(Exception exception){
+			exception.printStackTrace();
+			logger.severe("Error initializing Storage, shutting down");
 			getServer().getPluginManager().disablePlugin(this);
 			return;
 		}
@@ -123,6 +144,8 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
     @Override
     public void onDisable() {
 		LiveKit.getInstance().onDisable();
+
+		storage.dispose();
 			
 		try{
 			HeadLibraryV2.onDisable();
@@ -229,7 +252,12 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 					Player player = (Player) sender;
 					if(!checkPerm(player, "livekit.commands.basic")) return true;
 
-					player.sendMessage(prefix+"Pin: "+PlayerAuth.get(player.getUniqueId().toString()).generateClaimPin()+" (valid for 2 mins)");
+					AuthenticationHandler.generatePin(player, new FutureSyncCallback<Pin>(){
+						@Override
+						public void onSyncResult(Pin result) {
+							player.sendMessage(prefix+"Pin: "+result.getPin()+" (valid for 2 mins)");
+						}
+					}, Utils.errorHandler(sender));
 				}
 				else 
 				{
@@ -247,21 +275,25 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 					List<Identity> identities = LiveKit.getInstance().getConnectedClients(player.getUniqueId().toString());
 					player.sendMessage(prefix+"Info for "+player.getName());
 					
-					PlayerAuth auth = PlayerAuth.get(player.getUniqueId().toString());
-					if(auth != null) {
-						player.sendMessage("Active Session Tokens: "+auth.getSessionKeys().length+" [/livekit clearsessions to clear]");
-					}
-					
-					if(identities != null && identities.size() > 0) {
-						player.sendMessage("Connected clients: "+identities.size());
-						Identity identity = identities.get(0);
-						player.sendMessage("Permissions: ");
-						for(String perm : identity.getPermissions()) {
-							player.sendMessage(perm);
+					AuthenticationHandler.getSessionList(player, new FutureSyncCallback<List<Session>>(){
+						@Override
+						public void onSyncResult(List<Session> result) {
+							if(result != null) {
+								player.sendMessage("Active Session Tokens: "+result.size()+" [/livekit clearsessions to clear]");
+							}
+							
+							if(identities != null && identities.size() > 0) {
+								player.sendMessage("Connected clients: "+identities.size());
+								Identity identity = identities.get(0);
+								player.sendMessage("Permissions: ");
+								for(String perm : identity.getPermissions()) {
+									player.sendMessage(perm);
+								}
+							} else {
+								player.sendMessage("No LiveKit client is connected");
+							}
 						}
-					} else {
-						player.sendMessage("No LiveKit client is connected");
-					}
+					}, Utils.errorHandler(sender));
 				}
 				else
 				{
@@ -275,11 +307,18 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 					Player player = (Player) sender;
 					if(!checkPerm(player, "livekit.commands.basic")) return true;
 
-					PlayerAuth auth = PlayerAuth.get(player.getUniqueId().toString());
-					if(auth != null) {
-						auth.clearSessionKeys();
-						player.sendMessage(prefix+"Active Session Tokens: "+auth.getSessionKeys().length);
-					}
+					AuthenticationHandler.clearSessionList(player, new FutureSyncCallback<Void>(){
+						@Override
+						public void onSyncResult(Void result) {
+							AuthenticationHandler.getSessionList(player, new FutureSyncCallback<List<Session>>(){
+								@Override
+								public void onSyncResult(List<Session> result) {
+									player.sendMessage(prefix+"Active Session Tokens: "+result.size());
+								}
+								
+							}, Utils.errorHandler(sender));
+						}
+					}, Utils.errorHandler(sender));
 				}
 				else
 				{
@@ -765,6 +804,14 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 
 	public static Plugin getInstance() {
 		return instance;
+	}
+
+	public static IStorageAdapter getStorage() {
+		return storage;
+	}
+
+	public static String getPrefixError() {
+		return prefixError;
 	}
 
 	public static void log(String message) {

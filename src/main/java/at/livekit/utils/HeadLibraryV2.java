@@ -128,6 +128,14 @@ public class HeadLibraryV2 implements Runnable
             this.failed = head == null;
         }
 
+        public String getName() {
+            return name;
+        }
+
+        public String getHead() {
+            return head;
+        }
+
         public static HeadInfo fromJson(JSONObject json) {
             HeadInfo info = new HeadInfo(null);
             info.name = json.getString("name");

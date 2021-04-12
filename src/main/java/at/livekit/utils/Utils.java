@@ -3,14 +3,40 @@ package at.livekit.utils;
 import java.io.File;
 import java.nio.file.Files;
 import java.security.SecureRandom;
+import java.util.concurrent.Callable;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.command.CommandSender;
+import org.bukkit.scheduler.BukkitTask;
+
+import at.livekit.plugin.Plugin;
 
 
 
 public class Utils 
 {
+    public static FutureSyncCallback<Exception> errorHandler(CommandSender sender) {
+        return new FutureSyncCallback<Exception>(){
+            @Override
+            public void onSyncResult(Exception result) {
+                sender.sendMessage(Plugin.getPrefixError()+"Something went wrong!");
+            }
+        };
+    }
+
     public static String generateRandom(int length) {
+        SecureRandom r = new SecureRandom();
+        String alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789abcdefghijklmnopqrstuvwxyz";
+        //String alphabet = "1234567890";
+        String pin = "";
+        for (int i = 0; i < length; i++) {
+            pin += alphabet.charAt(r.nextInt(alphabet.length()));
+        }
+        return pin;
+    } 
+
+    public static String generateRandomNumbers(int length) {
         SecureRandom r = new SecureRandom();
         //String alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789abcdefghijklmnopqrstuvwxyz";
         String alphabet = "1234567890";
@@ -77,4 +103,36 @@ public class Utils
         }
         return timestamp;
     }*/
+
+    public static <T> BukkitTask executeAsyncForSyncResult(Callable<T> task, FutureSyncCallback<T> onResult, FutureSyncCallback<Exception> onError) {
+        return Bukkit.getScheduler().runTaskAsynchronously(Plugin.getInstance(), new Runnable(){
+            @Override
+            public void run() {
+                try{
+                    final T result = task.call();
+
+                    if(onResult != null) {
+                        Bukkit.getScheduler().callSyncMethod(Plugin.getInstance(), new Callable<Void>(){
+                            @Override
+                            public Void call() throws Exception {
+                                onResult.onSyncResult(result);
+                                return null;
+                            }
+                        });
+                    }
+                }catch(Exception ex) {
+                    ex.printStackTrace();
+                    if(onError != null) {
+                        Bukkit.getScheduler().callSyncMethod(Plugin.getInstance(), new Callable<Void>(){
+                            @Override
+                            public Void call() throws Exception {
+                                onError.onSyncResult(ex);
+                                return null;
+                            }
+                        });
+                    }
+                }
+            }
+        });
+    }
 }
