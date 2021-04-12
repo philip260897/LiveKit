@@ -5,6 +5,8 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.bukkit.Bukkit;
+import org.bukkit.World;
 import org.json.JSONObject;
 import at.livekit.map.RenderBounds;
 import at.livekit.plugin.Plugin;
@@ -102,5 +104,41 @@ public class Legacy
         File file = new File(Plugin.getInstance().getDataFolder(), "heads/");
         for(File h : file.listFiles()) h.delete();
         file.delete();
+    }
+
+    public static boolean hasLegacySessions() {
+        File file = new File(Plugin.getInstance().getDataFolder(), "sessions.json");
+        return file.exists();
+    }
+
+    public static void deleteLegacySessions() {
+        File file = new File(Plugin.getInstance().getDataFolder(), "sessions.json");
+        if(file.exists()) file.delete();
+    }
+
+    public static boolean hasLegacyWorlds() {
+        File mapFolder = new File(Plugin.getInstance().getDataFolder(), "map");
+        if(mapFolder.exists() && mapFolder.isDirectory()) {
+            File[] folders = mapFolder.listFiles();
+
+            for(File file : folders) {
+                if(Bukkit.getWorld(file.getName()) != null) return true;
+            }
+        }
+        return false;
+    }
+
+    public static void convertLegacyWorldNames() {
+        File mapFolder = new File(Plugin.getInstance().getDataFolder(), "map");
+        if(mapFolder.exists() && mapFolder.isDirectory()) {
+            File[] folders = mapFolder.listFiles();
+
+            for(File file : folders) {
+                World world = Bukkit.getWorld(file.getName());
+                if(world != null) {
+                    file.renameTo(new File(Plugin.getInstance().getDataFolder(), "map/"+world.getUID().toString()));
+                }
+            }
+        }
     }
 }

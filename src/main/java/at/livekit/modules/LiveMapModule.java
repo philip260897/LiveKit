@@ -147,7 +147,7 @@ public class LiveMapModule extends BaseModule implements Listener
 
         World w = Bukkit.getWorld(world);
         if(w != null) {
-            renderWorld = new RenderWorld(world);
+            renderWorld = new RenderWorld(world, w.getUID().toString());
             Chunk[] chunks = w.getLoadedChunks();
             for(Chunk c : chunks) renderWorld.updateChunk(c, true);
         }
@@ -264,7 +264,7 @@ public class LiveMapModule extends BaseModule implements Listener
             this.x = x;
             this.z = z;
             this.data = data;
-            invalidate();
+            //invalidate();
         }
 
         public RegionData(File file) {
@@ -289,7 +289,7 @@ public class LiveMapModule extends BaseModule implements Listener
             return data;
         }
 
-        public void save(File dir) {
+        /*public void save(File dir) {
             try{
                 File file = new File(dir, x+"_"+z+".region");
                 if(!file.exists()) file.createNewFile();
@@ -300,7 +300,7 @@ public class LiveMapModule extends BaseModule implements Listener
             }catch(Exception ex){
                 ex.printStackTrace();
             }
-        }
+        }*/
 
         public int getX() {
             return x;

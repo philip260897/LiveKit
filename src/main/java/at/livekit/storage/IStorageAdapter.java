@@ -36,6 +36,8 @@ public interface IStorageAdapter
 
     public HeadInfo loadPlayerHead(String uuid) throws Exception;
 
+    public List<HeadInfo> loadPlayerHeads() throws Exception;
+
 
     //Player 'Cloud' inventories
 
@@ -52,7 +54,7 @@ public interface IStorageAdapter
     public List<Waypoint> loadPlayerPins(OfflinePlayer player) throws Exception;
 
 
-    public void saveRegion(RegionData region) throws Exception;
+   // public void saveRegion(String world, RegionData region) throws Exception;
 
-    public RegionData loadRegion(String world, int regionX, int regionZ) throws Exception;
+    //public RegionData loadRegion(String world, int regionX, int regionZ) throws Exception;
 }

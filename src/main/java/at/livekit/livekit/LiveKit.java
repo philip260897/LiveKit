@@ -1,6 +1,7 @@
 package at.livekit.livekit;
 
 import org.bukkit.Bukkit;
+import org.bukkit.scheduler.BukkitRunnable;
 import org.json.JSONObject;
 import java.lang.reflect.Method;
 
@@ -12,6 +13,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
@@ -63,6 +66,8 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
     private List<String> _moduleUpdates = new ArrayList<String>();
     private List<String> _moduleFull = new ArrayList<String>();
     private List<String> _commands = new ArrayList<String>();
+
+    private ExecutorService executor;
 
 
     private List<ActionPacket> _packetsIncoming = new ArrayList<ActionPacket>();
@@ -135,6 +140,8 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
             }
         }
 
+        executor = Executors.newSingleThreadExecutor();
+
         /*synchronized(invokationMap) {
             for(Entry<String,ActionMethod> entry : invokationMap.entrySet()) {
                 System.out.println(entry.getKey()+"=>"+entry.getValue().sync());
@@ -184,7 +191,10 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
     private Future<Void> _futureModuleUpdates;
 
     private Map<Identity, ActionPacket> syncActions = new HashMap<Identity, ActionPacket>();
+    private Map<Identity, ActionPacket> asyncActions = new HashMap<Identity, ActionPacket>();
     private Future<Map<Identity,IPacket>> _futureSyncActions;
+    private Future<Map<Identity,IPacket>> _futureAsyncActions;
+
     @Override
     public void run() {
         while(!abort) {
@@ -264,7 +274,7 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
 
             long commands = System.currentTimeMillis();
 
-            Map<Identity, ActionPacket> asyncActions = new HashMap<Identity, ActionPacket>();
+            //Map<Identity, ActionPacket> asyncActions = new HashMap<Identity, ActionPacket>();
             
             if(_futureSyncActions != null) {
                 if(_futureSyncActions.isDone()) {
@@ -277,7 +287,19 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
                 }
             }
 
+            if(_futureAsyncActions != null) {
+                if(_futureAsyncActions.isDone()) {
+                    try{
+                        _server.send(_futureAsyncActions.get());
+                    }catch(Exception ex){ex.printStackTrace();}
+
+                    _futureAsyncActions = null;
+                    asyncActions.clear();
+                }
+            }
+
             synchronized(_packetsIncoming) {
+
                 int i = 0;
                 while(i < _packetsIncoming.size()) {
                     ActionPacket action = _packetsIncoming.get(i);
@@ -295,16 +317,19 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
                         if(syncActions.containsKey(action.client.getIdentifier()) || _futureSyncActions != null) i++;
                         else syncActions.put(action.client.getIdentifier(), _packetsIncoming.remove(i));
                     } else {
-                        if(asyncActions.containsKey(action.client.getIdentifier())) i++;
+                        if(asyncActions.containsKey(action.client.getIdentifier()) || _futureAsyncActions != null) i++;
                         else asyncActions.put(action.client.getIdentifier(), _packetsIncoming.remove(i));
                     }
                 }
             }
             
-            _server.send(invokeActions(asyncActions, false));
+            //_server.send(invokeActions(asyncActions, false));
 
             if(_futureSyncActions == null && syncActions.size() != 0) {
                 _futureSyncActions = invokeActionsSync(syncActions);
+            }
+            if(_futureAsyncActions == null && asyncActions.size() != 0) {
+                _futureAsyncActions = invokeActionsAsync(asyncActions);
             }
                 /*while(_packetsIncoming.size() > 0 && (System.currentTimeMillis()-start < tickTime)) {
                     RequestPacket packet = (RequestPacket) _packetsIncoming.remove(0);
@@ -368,6 +393,10 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
 
                 if(invokationMap.size() > 0)  throw new Exception("Invokation leak?");
             }
+        }catch(Exception ex){ex.printStackTrace();}
+
+        try{
+            executor.shutdownNow();
         }catch(Exception ex){ex.printStackTrace();}
 
         LiveKit.instance = null;
@@ -640,8 +669,16 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
                 try{
                     List<Pin> pins = Plugin.getStorage().loadPins();
                     for(Pin p : pins) {
-                        if(p.getPin().equals(pin)) {
+                        if(p.getPin().equals(pin) && p.isValid()) {
                             identity = p.getUUID();
+                        }
+                    }
+
+                    if(identity != null) {
+                        List<Session> sessions = Plugin.getStorage().loadSessions(identity);
+                        while(sessions.size() >= 5) {
+                            Session session = sessions.remove(0);
+                            Plugin.getStorage().deleteSession(identity, session);
                         }
                     }
                 }catch(Exception ex){ex.printStackTrace();}
@@ -655,14 +692,18 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
                 try{
                     List<Session> sessions = Plugin.getStorage().loadSessions(identity);
                     for(Session session : sessions) {
+                        
                         if(session.getAuthentication().equals(authorization)) {
                             Plugin.getStorage().deleteSession(identity, session);
                             success = true;
                         }
                     }
+
+
                 }catch(Exception ex){ex.printStackTrace();}
 
                 if(!success) identity = null;
+                System.out.println(identity);
 
                 /*if(identity.isValidSession(authorization)) {
                     identity.removeSession(authorization);
@@ -687,7 +728,7 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
                     Plugin.getStorage().createSession(identity, session);
                 }catch(Exception ex){ex.printStackTrace();}
             
-                return new IdentityPacket(identity, client.getIdentifier().getName(), HeadLibraryV2.get(client.getIdentifier().getName()), session.getAuthentication());
+                return new IdentityPacket(identity, client.getIdentifier().getName(), HeadLibraryV2.get(client.getIdentifier().getName(), true), session.getAuthentication());
             }
         } 
         else
@@ -728,6 +769,13 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
     @Action(name = "TestSync", sync = true)
     public IPacket testSync(Identity identity, ActionPacket action) {
         return new StatusPacket(1, "This just computed on the main thread!");
+    }
+
+    
+    private Future<Map<Identity, IPacket>> invokeActionsAsync(Map<Identity, ActionPacket> actions) {
+        return executor.submit(()->{
+            return invokeActions(actions, false);
+        });
     }
 
     private Future<Map<Identity,IPacket>> invokeActionsSync(Map<Identity, ActionPacket> actions) {

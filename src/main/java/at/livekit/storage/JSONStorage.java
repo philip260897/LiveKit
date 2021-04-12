@@ -1,6 +1,7 @@
 package at.livekit.storage;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
@@ -23,9 +24,13 @@ import at.livekit.authentication.Session;
 import at.livekit.modules.LiveMapModule.RegionData;
 import at.livekit.plugin.Plugin;
 import at.livekit.utils.Legacy;
+import at.livekit.utils.Utils;
 import at.livekit.utils.HeadLibraryV2.HeadInfo;
 
 public class JSONStorage implements IStorageAdapter {
+
+    private static boolean DEBUG_DELAY = false;
+    private static long DEBUG_DELAY_MS = 3000;
 
     private File _fileSessions;
     private File _filePlayerHeads;
@@ -61,23 +66,36 @@ public class JSONStorage implements IStorageAdapter {
     }
 
     private void initFiles() throws IOException {
-        _fileSessions = new File(Plugin.getInstance().getDataFolder(), "sessions.json");
-        if(!_fileSessions.exists()) _fileSessions.createNewFile();
+        if(Legacy.hasLegacySessions()) {
+            Plugin.log("Detected legacy session store... deleting");
+            Legacy.deleteLegacySessions();
+
+            if(Legacy.hasLegacyWorlds()) {
+                Plugin.log("Detected legacy world names... converting");
+                Legacy.convertLegacyWorldNames();
+            }
+        }
+
+
+        _fileSessions = new File(Plugin.getInstance().getDataFolder(), "sessions-v2.json");
+        //if(!_fileSessions.exists()) _fileSessions.createNewFile();
 
         _filePlayerHeads = new File(Plugin.getInstance().getDataFolder(), "heads.json");
-        if(!_filePlayerHeads.exists()) _filePlayerHeads.createNewFile();
+        //if(!_filePlayerHeads.exists()) _filePlayerHeads.createNewFile();
 
         _filePOIs = new File(Plugin.getInstance().getDataFolder(), "poi.json");
-        if(!_filePOIs.exists()) _filePOIs.createNewFile();
+        //if(!_filePOIs.exists()) _filePOIs.createNewFile();
 
         _filePlayerPins = new File(Plugin.getInstance().getDataFolder(), "player_pins.json");
-        if(!_filePlayerPins.exists()) _filePlayerPins.createNewFile();
+        //if(!_filePlayerPins.exists()) _filePlayerPins.createNewFile();
 
         _folderMap = new File(Plugin.getInstance().getDataFolder(), "map");
-        if(!_folderMap.exists()) _folderMap.mkdir();
+        //if(!_folderMap.exists()) _folderMap.mkdir();
     }
 
     private void loadSessions() throws Exception {
+        if(!_fileSessions.exists()) return;
+
         String jsonText = new String(Files.readAllBytes(_fileSessions.toPath()), StandardCharsets.UTF_8);
         JSONObject root = new JSONObject(jsonText);
         JSONArray array = root.getJSONArray("sessions");
@@ -90,7 +108,7 @@ public class JSONStorage implements IStorageAdapter {
 
             for(int j = 0; j < sessions.length(); j++) {
                 JSONObject sessionEntry = sessions.getJSONObject(j);
-                Session session = new Session(sessionEntry.getLong("timestamp"), sessionEntry.getLong("last"), sessionEntry.getString("auth"), sessionEntry.getString("ip"), sessionEntry.getString("data"));
+                Session session = new Session(sessionEntry.getLong("timestamp"), sessionEntry.getLong("last"), sessionEntry.getString("auth"), null, null);
                 ps.add(session);
             }
 
@@ -113,12 +131,13 @@ public class JSONStorage implements IStorageAdapter {
                 JSONObject sess = new JSONObject();
                 sess.put("auth", session.getAuthentication());
                 sess.put("timestamp", session.getTimestamp());
-                sess.put("ip", session.getIP());
-                sess.put("data", session.getData());
+                //sess.put("ip", session.getIP());
+                //sess.put("data", session.getData());
                 sess.put("last", session.getLast());
                 playerSessions.put(sess);
             }
             jentry.put("sessions", playerSessions);
+            sessions.put(jentry);
         }
 
         Files.write(_fileSessions.toPath(), root.toString().getBytes(), new OpenOption[] { StandardOpenOption.CREATE, StandardOpenOption.WRITE });
@@ -126,6 +145,8 @@ public class JSONStorage implements IStorageAdapter {
 
     @Override
     public void deleteSession(String uuid, Session session) throws Exception {
+        if(JSONStorage.DEBUG_DELAY) Thread.sleep(JSONStorage.DEBUG_DELAY_MS);
+        
         synchronized(_cachedSessions) {
             if(_cachedSessions.containsKey(uuid)) {
                 List<Session> sessions = _cachedSessions.get(uuid);
@@ -138,6 +159,8 @@ public class JSONStorage implements IStorageAdapter {
 
     @Override
     public void createSession(String uuid, Session session) throws Exception {
+        if(JSONStorage.DEBUG_DELAY) Thread.sleep(JSONStorage.DEBUG_DELAY_MS);
+        
         synchronized(_cachedSessions) {
             if(!_cachedSessions.containsKey(uuid)) {
                 _cachedSessions.put(uuid, new ArrayList<Session>());
@@ -152,7 +175,9 @@ public class JSONStorage implements IStorageAdapter {
 
     @Override
     public List<Session> loadSessions(String uuid) throws Exception {
-       List<Session> _sessions = new ArrayList<Session>();
+        if(JSONStorage.DEBUG_DELAY) Thread.sleep(JSONStorage.DEBUG_DELAY_MS);
+       
+        List<Session> _sessions = new ArrayList<Session>();
         synchronized(_cachedSessions) {
             if(!_cachedSessions.containsKey(uuid)) {
                 _cachedSessions.put(uuid, new ArrayList<Session>());
@@ -166,6 +191,8 @@ public class JSONStorage implements IStorageAdapter {
 
     @Override
     public void deletePin(String uuid, Pin pin) throws Exception {
+        if(JSONStorage.DEBUG_DELAY) Thread.sleep(JSONStorage.DEBUG_DELAY_MS);
+        
         synchronized(_cachedPins) {
             if(_cachedPins.containsKey(uuid)) {
                 _cachedPins.remove(uuid);
@@ -175,6 +202,8 @@ public class JSONStorage implements IStorageAdapter {
 
     @Override
     public void createPin(String uuid, Pin pin) throws Exception {
+        if(JSONStorage.DEBUG_DELAY) Thread.sleep(JSONStorage.DEBUG_DELAY_MS);
+        
         synchronized(_cachedPins) {
             if(_cachedPins.containsKey(uuid)) {
                 _cachedPins.remove(uuid);
@@ -185,6 +214,8 @@ public class JSONStorage implements IStorageAdapter {
 
     @Override
     public List<Pin> loadPins() throws Exception {
+        if(JSONStorage.DEBUG_DELAY) Thread.sleep(JSONStorage.DEBUG_DELAY_MS);
+        
         List<Pin> pins = new ArrayList<Pin>();
         synchronized(_cachedPins) {
             for(Pin pin : _cachedPins.values()) {
@@ -196,12 +227,12 @@ public class JSONStorage implements IStorageAdapter {
 
 
     private void loadHeads() throws Exception {
-        if(_filePlayerHeads.exists()) {
-            JSONArray root = new JSONArray(new String(Files.readAllBytes(_filePlayerHeads.toPath())));
-            for(int i = 0; i < root.length(); i++) {
-                HeadInfo info = HeadInfo.fromJson(root.getJSONObject(i));
-                _cachedHeads.put(info.getName(), info);
-            }
+        if(!_filePlayerHeads.exists()) return;
+
+        JSONArray root = new JSONArray(new String(Files.readAllBytes(_filePlayerHeads.toPath())));
+        for(int i = 0; i < root.length(); i++) {
+            HeadInfo info = HeadInfo.fromJson(root.getJSONObject(i));
+            _cachedHeads.put(info.getName(), info);
         }
 
         if(Legacy.hasLegacyHeads()) {
@@ -233,7 +264,9 @@ public class JSONStorage implements IStorageAdapter {
     }
 
     @Override
-    public void savePlayerHead(String uuid, HeadInfo info) {
+    public void savePlayerHead(String uuid, HeadInfo info) throws Exception {
+        if(JSONStorage.DEBUG_DELAY) Thread.sleep(JSONStorage.DEBUG_DELAY_MS);
+        
         synchronized(_cachedHeads) {
             if(_cachedHeads.containsKey(uuid)) {
                 _cachedHeads.remove(uuid);
@@ -243,13 +276,24 @@ public class JSONStorage implements IStorageAdapter {
     }
 
     @Override
-    public HeadInfo loadPlayerHead(String uuid) {
+    public HeadInfo loadPlayerHead(String uuid) throws Exception {
+        if(JSONStorage.DEBUG_DELAY) Thread.sleep(JSONStorage.DEBUG_DELAY_MS);
+        
         synchronized(_cachedHeads) {
             return _cachedHeads.get(uuid);
         }
     }
 
-
+    @Override
+    public List<HeadInfo> loadPlayerHeads() throws Exception {
+        if(JSONStorage.DEBUG_DELAY) Thread.sleep(JSONStorage.DEBUG_DELAY_MS);
+        
+        List<HeadInfo> heads = new ArrayList<HeadInfo>();
+        synchronized(_cachedHeads) {
+            for(HeadInfo h : _cachedHeads.values()) heads.add(h);
+        }
+        return heads;
+    }
 
     @Override
     public void savePOIs(List<POI> pois) {
@@ -275,24 +319,25 @@ public class JSONStorage implements IStorageAdapter {
         return null;
     }
 
-    @Override
-    public void saveRegion(RegionData region) {
-        // TODO Auto-generated method stub
-        
+    /*@Override
+    public void saveRegion(String world, RegionData region) throws Exception {
+        File file = new File(_folderMap, world+"/"+ region.getX()+"_"+region.getZ()+".region");
+        if(!file.exists()) file.createNewFile();
+
+        try (FileOutputStream fos = new FileOutputStream(file)) {
+            fos.write(region.data);
+        } catch(Exception ex){ex.printStackTrace();}
     }
 
     @Override
-    public RegionData loadRegion(String world, int regionX, int regionZ) {
-        // TODO Auto-generated method stub
+    public RegionData loadRegion(String world, int regionX, int regionZ) throws Exception{
+        File file = new File(_folderMap, world+"/"+ regionX +"_"+regionZ+".region");
+        if(file.exists()) {
+            byte[] data = Files.readAllBytes(file.toPath());
+            RegionData region = new RegionData(regionX, regionZ, data);
+            region.timestamp = Utils.decodeTimestamp(data);
+            return region;
+        }
         return null;
-    }
-
-
-
- 
-
-
-
-
-    
+    }*/
 }

@@ -2,6 +2,7 @@ package at.livekit.map;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -27,6 +28,7 @@ public class RenderWorld
     private static int TIMEOUT_LOADING = 10 * 1000;
 
     private String world;
+    private String worldUID;
     private File workingDirectory;
 
     private List<Offset> _blockQueue = new ArrayList<Offset>();
@@ -40,9 +42,10 @@ public class RenderWorld
     private RenderBounds _bounds;
     private RenderJob _job;
 
-    public RenderWorld(String world) {
+    public RenderWorld(String world, String worldUID) {
         this.world = world;
-        this.workingDirectory = new File(Plugin.getInstance().getDataFolder(), "map/"+world);
+        this.worldUID = worldUID;
+        this.workingDirectory = new File(Plugin.getInstance().getDataFolder(), "map/"+worldUID);
         if(!this.workingDirectory.exists()) this.workingDirectory.mkdirs();
 
         RenderBounds bounds = null;
@@ -355,26 +358,52 @@ public class RenderWorld
 			public void run() {
 				boolean createNew = true;
                 RegionData region = null;
-                //if(regionExists(x, z)) {
-                    File file = new File(workingDirectory, x+"_"+z+".region");
-                    try{
-                        if(file.exists()) {
-                            byte[] data = Files.readAllBytes(file.toPath());
-                            region = new RegionData(x, z, data);
-                            region.timestamp = Utils.decodeTimestamp(data);
+
+                RegionData dead = null;
+                synchronized(_loadedRegions) {
+                    dead = _loadedRegions.stream().filter(r->r.getX() == x && r.getZ() == z).findFirst().orElse(null);
+                }
+                if(dead != null) {
+                    Plugin.debug("Reviving dead region "+x + " " + z);
+                    region = new RegionData(x, z, dead.data);
+                    region.timestamp = dead.timestamp;
+                    region.invalidate();
+                    createNew = false;
+                    synchronized(_loadedRegions) {
+                        _loadedRegions.remove(dead);
+                        _loadedRegions.add(region);
+                    }
+                    return;
+                }
+                
+                try{
+                    //region = Plugin.getStorage().loadRegion(worldUID, x, z);
+                    File file = new File(workingDirectory,x +"_"+z+".region");
+                    if(file.exists()) {
+                        byte[] data = Files.readAllBytes(file.toPath());
+                        region = new RegionData(x, z, data);
+                        region.timestamp = Utils.decodeTimestamp(data);
+                        region.invalidate();
+                    }
+
+
+                    if(region != null) {
+                        synchronized(_loadedRegions) {
                             createNew = false;
-                            synchronized(_loadedRegions) {
-                                _loadedRegions.add(region);
-                            }
+                            _loadedRegions.add(region);
                         }
-                    }catch(Exception ex){ex.printStackTrace();}
-                //}
+                        return;
+                    }
+                }catch(Exception ex){ex.printStackTrace();};
+
                 if(createNew) region = createRegion(x, z);
 			}
         });
     }
 
     private void unloadRegionAsync(RegionData region) {
+        
+
         Bukkit.getScheduler().runTaskAsynchronously(Plugin.getInstance(), new Runnable(){
             @Override
             public void run() {
@@ -383,6 +412,7 @@ public class RenderWorld
 
                 Plugin.debug("Unloading region "+region.getX()+" "+region.getZ());
                 saveRegion(region);
+                
 
                 synchronized(_loadedRegions) {
                     _loadedRegions.remove(region);
@@ -392,7 +422,17 @@ public class RenderWorld
     }
 
     private void saveRegion(RegionData region) {
-        region.save(workingDirectory);
+        //region.save(workingDirectory);
+        try{
+           // Plugin.getStorage().saveRegion(worldUID, region);
+
+            File file = new File(workingDirectory,region.getX()+"_"+region.getZ()+".region");
+            if(!file.exists()) file.createNewFile();
+    
+            try (FileOutputStream fos = new FileOutputStream(file)) {
+                fos.write(region.data);
+            } catch(Exception ex){ex.printStackTrace();}
+        }catch(Exception ex){ex.printStackTrace();}
     }
 
     public void shutdown() {

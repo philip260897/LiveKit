@@ -189,7 +189,7 @@ public class PlayerModule extends BaseModule implements Listener
         /*if(!HeadLibrary.has(p.getName())) { 
 			HeadLibrary.resolveAsync(p.getName());
 		} */
-		player.updateHead(HeadLibraryV2.get(p.getName()));
+		player.updateHead(HeadLibraryV2.get(p.getName(), p.isOnline()));
         player.updateOnline(true);
 
         ItemStack itemInHand = p.getInventory().getItemInMainHand();
@@ -641,7 +641,7 @@ public class PlayerModule extends BaseModule implements Listener
             /*if(!HeadLibrary.has(player.getName())) { 
                 HeadLibrary.resolveAsync(player.getName());
             } */
-            p.updateHead(HeadLibraryV2.get(player.getName()));
+            p.updateHead(HeadLibraryV2.get(player.getName(), player.isOnline()));
             
 
             if(player.getPlayer() != null) {
