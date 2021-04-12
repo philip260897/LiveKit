@@ -2,14 +2,11 @@ package at.livekit.utils;
 
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.PrintWriter;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map.Entry;
 
 import javax.imageio.ImageIO;
 import org.bukkit.OfflinePlayer;
