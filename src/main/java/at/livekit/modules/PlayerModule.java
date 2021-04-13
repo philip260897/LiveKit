@@ -14,6 +14,7 @@ import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
@@ -278,6 +279,8 @@ public class PlayerModule extends BaseModule implements Listener
 
     @Override
     public void onDisable(Map<String,ActionMethod> signature) {
+        HandlerList.unregisterAll(this);
+        
         _players.clear();
         super.onDisable(signature);
     }
@@ -439,7 +442,7 @@ public class PlayerModule extends BaseModule implements Listener
                 }
             }
 
-            JSONObject bedlocation = new JSONObject();
+            /*JSONObject bedlocation = new JSONObject();
             bedlocation.put("uuid", waypoint.getUUID().toString());
             bedlocation.put("name", waypoint.getName());
             bedlocation.put("description", waypoint.getDescription());
@@ -448,8 +451,8 @@ public class PlayerModule extends BaseModule implements Listener
             bedlocation.put("z", waypoint.getLocation().getBlockZ());
             bedlocation.put("color", waypoint.getColor().getHEX());
             bedlocation.put("world", waypoint.getLocation().getWorld().getName());
-            bedlocation.put("teleport", waypoint.canTeleport());
-            locationData.put(bedlocation);
+            bedlocation.put("teleport", waypoint.canTeleport());*/
+            locationData.put(waypoint.toJson());
         }
         
 
