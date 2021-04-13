@@ -20,7 +20,7 @@ public class WeatherTimeModule extends BaseModule
     private String world;
 
     public WeatherTimeModule(String world, ModuleListener listener) {
-        super(1, "Weather/Time", "livekit.module.players", UpdateRate.ONCE_PERSEC, listener, world);
+        super(1, "Weather/Time", "livekit.module.weathertime", UpdateRate.ONCE_PERSEC, listener, world);
         this.world = world;
     }
 

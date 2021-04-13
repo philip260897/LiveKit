@@ -44,12 +44,16 @@ public interface IStorageAdapter
 
     //Per Server specific
 
-    public void savePOIs(List<POI> pois) throws Exception;
+    public void savePOI(POI poi) throws Exception;
+
+    public void deletePOI(POI poi) throws Exception;
 
     public List<POI> loadPOIs() throws Exception;
 
 
-    public void savePlayerPins(OfflinePlayer player, List<Waypoint> waypoints) throws Exception;
+    public void savePlayerPin(OfflinePlayer player, Waypoint waypoints) throws Exception;
+
+    public void deletePlayerPin(OfflinePlayer player, Waypoint waypoint) throws Exception;
 
     public List<Waypoint> loadPlayerPins(OfflinePlayer player) throws Exception;
 

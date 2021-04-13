@@ -128,7 +128,7 @@ public class POIModule extends BaseModule {
 
         synchronized(_pois) {
             for(POI waypoint : _pois) {
-                JSONObject poi = new JSONObject();
+                /*JSONObject poi = new JSONObject();
                 poi.put("uuid", waypoint.getUUID().toString());
                 poi.put("name", waypoint.getName());
                 poi.put("description", waypoint.getDescription());
@@ -137,8 +137,8 @@ public class POIModule extends BaseModule {
                 poi.put("z", waypoint.getLocation().getBlockZ());
                 poi.put("color", waypoint.getColor().getHEX());
                 poi.put("world", waypoint.getLocation().getWorld().getName());
-                poi.put("teleport", waypoint.canTeleport());
-                pois.put(poi);
+                poi.put("teleport", waypoint.canTeleport());*/
+                pois.put(waypoint.toJson());
             }
         }
         json.put("pois", pois);

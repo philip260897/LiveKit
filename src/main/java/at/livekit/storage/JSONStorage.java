@@ -1,7 +1,6 @@
 package at.livekit.storage;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
@@ -21,10 +20,8 @@ import at.livekit.api.map.POI;
 import at.livekit.api.map.Waypoint;
 import at.livekit.authentication.Pin;
 import at.livekit.authentication.Session;
-import at.livekit.modules.LiveMapModule.RegionData;
 import at.livekit.plugin.Plugin;
 import at.livekit.utils.Legacy;
-import at.livekit.utils.Utils;
 import at.livekit.utils.HeadLibraryV2.HeadInfo;
 
 public class JSONStorage implements IStorageAdapter {
@@ -42,6 +39,8 @@ public class JSONStorage implements IStorageAdapter {
     private HashMap<String, Pin> _cachedPins = new HashMap<String, Pin>();
 
     private HashMap<String, HeadInfo> _cachedHeads = new HashMap<String, HeadInfo>();
+    private List<POI> _cachedPOIS = new ArrayList<POI>();
+    private HashMap<String, List<Waypoint>> _cachedPlayerPins = new HashMap<>();
 
     public JSONStorage() throws IOException {
         
@@ -52,6 +51,8 @@ public class JSONStorage implements IStorageAdapter {
         initFiles();
         loadSessions();
         loadHeads();
+        loadPointsOfInterest();
+        loadPlayerPins();
     }
 
     @Override
@@ -62,6 +63,14 @@ public class JSONStorage implements IStorageAdapter {
 
         try{
             saveHeads();
+        }catch(Exception ex){ex.printStackTrace();}
+
+        try {
+            savePointsOfInterest();
+        }catch(Exception ex){ex.printStackTrace();}
+
+        try {
+            savePlayerPins();
         }catch(Exception ex){ex.printStackTrace();}
     }
 
@@ -99,20 +108,22 @@ public class JSONStorage implements IStorageAdapter {
         String jsonText = new String(Files.readAllBytes(_fileSessions.toPath()), StandardCharsets.UTF_8);
         JSONObject root = new JSONObject(jsonText);
         JSONArray array = root.getJSONArray("sessions");
-        for(int i = 0; i < array.length(); i++) {
-            JSONObject playerEntry = array.getJSONObject(i);
-            String playerId = playerEntry.getString("playerId");
-            JSONArray sessions = playerEntry.getJSONArray("sessions");
+        synchronized(_cachedSessions) {
+            for(int i = 0; i < array.length(); i++) {
+                JSONObject playerEntry = array.getJSONObject(i);
+                String playerId = playerEntry.getString("playerId");
+                JSONArray sessions = playerEntry.getJSONArray("sessions");
 
-            List<Session> ps = new ArrayList<Session>();
+                List<Session> ps = new ArrayList<Session>();
 
-            for(int j = 0; j < sessions.length(); j++) {
-                JSONObject sessionEntry = sessions.getJSONObject(j);
-                Session session = new Session(sessionEntry.getLong("timestamp"), sessionEntry.getLong("last"), sessionEntry.getString("auth"), null, null);
-                ps.add(session);
+                for(int j = 0; j < sessions.length(); j++) {
+                    JSONObject sessionEntry = sessions.getJSONObject(j);
+                    Session session = new Session(sessionEntry.getLong("timestamp"), sessionEntry.getLong("last"), sessionEntry.getString("auth"), null, null);
+                    ps.add(session);
+                }
+
+                _cachedSessions.put(playerId, ps);
             }
-
-            _cachedSessions.put(playerId, ps);
         }
     }
 
@@ -122,22 +133,24 @@ public class JSONStorage implements IStorageAdapter {
         JSONObject root = new JSONObject();
         JSONArray sessions = new JSONArray();
         root.put("sessions", sessions);
-        
-        for(Entry<String, List<Session>> entry : _cachedSessions.entrySet()) {
-            JSONObject jentry = new JSONObject();
-            JSONArray playerSessions = new JSONArray();
-            jentry.put("playerId", entry.getKey());
-            for(Session session : entry.getValue()) {
-                JSONObject sess = new JSONObject();
-                sess.put("auth", session.getAuthentication());
-                sess.put("timestamp", session.getTimestamp());
-                //sess.put("ip", session.getIP());
-                //sess.put("data", session.getData());
-                sess.put("last", session.getLast());
-                playerSessions.put(sess);
+
+        synchronized(_cachedSessions) {
+            for(Entry<String, List<Session>> entry : _cachedSessions.entrySet()) {
+                JSONObject jentry = new JSONObject();
+                JSONArray playerSessions = new JSONArray();
+                jentry.put("playerId", entry.getKey());
+                for(Session session : entry.getValue()) {
+                    JSONObject sess = new JSONObject();
+                    sess.put("auth", session.getAuthentication());
+                    sess.put("timestamp", session.getTimestamp());
+                    //sess.put("ip", session.getIP());
+                    //sess.put("data", session.getData());
+                    sess.put("last", session.getLast());
+                    playerSessions.put(sess);
+                }
+                jentry.put("sessions", playerSessions);
+                sessions.put(jentry);
             }
-            jentry.put("sessions", playerSessions);
-            sessions.put(jentry);
         }
 
         Files.write(_fileSessions.toPath(), root.toString().getBytes(), new OpenOption[] { StandardOpenOption.CREATE, StandardOpenOption.WRITE });
@@ -230,16 +243,20 @@ public class JSONStorage implements IStorageAdapter {
         if(!_filePlayerHeads.exists()) return;
 
         JSONArray root = new JSONArray(new String(Files.readAllBytes(_filePlayerHeads.toPath())));
-        for(int i = 0; i < root.length(); i++) {
-            HeadInfo info = HeadInfo.fromJson(root.getJSONObject(i));
-            _cachedHeads.put(info.getName(), info);
+        synchronized(_cachedHeads) {
+            for(int i = 0; i < root.length(); i++) {
+                HeadInfo info = HeadInfo.fromJson(root.getJSONObject(i));
+                _cachedHeads.put(info.getName(), info);
+            }
         }
 
         if(Legacy.hasLegacyHeads()) {
             Plugin.log("Legacy Heads detected. Converting.");
-            for(HeadInfo info : Legacy.getLegacyHeads()) {
-                if(!_cachedHeads.containsKey(info.getName())) {
-                    _cachedHeads.put(info.getName(), info);
+            synchronized(_cachedHeads) {
+                for(HeadInfo info : Legacy.getLegacyHeads()) {
+                    if(!_cachedHeads.containsKey(info.getName())) {
+                        _cachedHeads.put(info.getName(), info);
+                    }
                 }
             }
             Legacy.deleteLegacyHeads();
@@ -295,28 +312,138 @@ public class JSONStorage implements IStorageAdapter {
         return heads;
     }
 
-    @Override
-    public void savePOIs(List<POI> pois) {
-        // TODO Auto-generated method stub
-        
+    private void loadPointsOfInterest() throws Exception{
+        if(!_filePOIs.exists()) return;
+
+        String jsonText = new String(Files.readAllBytes(_filePOIs.toPath()), StandardCharsets.UTF_8);
+        JSONArray root = new JSONArray(jsonText);
+        synchronized(_cachedPOIS) {
+            for(int i = 0; i < root.length(); i++) {
+                _cachedPOIS.add(POI.fromJson(root.getJSONObject(i)));
+            }
+        }
+    }
+
+    private void savePointsOfInterest() throws Exception{
+        if(!_filePOIs.exists()) _filePOIs.createNewFile();
+
+        JSONArray array = new JSONArray();
+        synchronized(_cachedPOIS) {
+            for(POI poi : _cachedPOIS) {
+                array.put(poi.toJson());
+            }
+        }
+
+        PrintWriter writer = new PrintWriter(_filePOIs);
+        writer.write(array.toString());
+        writer.flush();
+        writer.close();
     }
 
     @Override
-    public List<POI> loadPOIs() {
-        // TODO Auto-generated method stub
-        return null;
+    public void savePOI(POI poi) throws Exception {
+        if(JSONStorage.DEBUG_DELAY) Thread.sleep(JSONStorage.DEBUG_DELAY_MS);
+
+        synchronized(_cachedPOIS) {
+            if(!_cachedPOIS.contains(poi)) {
+                _cachedPOIS.add(poi);
+            }
+        }
     }
 
     @Override
-    public void savePlayerPins(OfflinePlayer player, List<Waypoint> waypoints) {
-        // TODO Auto-generated method stub
-        
+    public void deletePOI(POI poi) throws Exception {
+        if(JSONStorage.DEBUG_DELAY) Thread.sleep(JSONStorage.DEBUG_DELAY_MS);
+
+        synchronized(_cachedPOIS) {
+            if(_cachedPOIS.contains(poi)) {
+                _cachedPOIS.remove(poi);
+            }
+        }
     }
 
     @Override
-    public List<Waypoint> loadPlayerPins(OfflinePlayer player) {
-        // TODO Auto-generated method stub
-        return null;
+    public List<POI> loadPOIs() throws Exception {
+        if(JSONStorage.DEBUG_DELAY) Thread.sleep(JSONStorage.DEBUG_DELAY_MS);
+
+        List<POI> pois = new ArrayList<POI>();
+        synchronized(_cachedPOIS) {
+            for(POI poi : _cachedPOIS) {
+                pois.add(poi);
+            }
+        }
+        return pois;
+    }
+
+    private void loadPlayerPins() throws Exception{
+        if(!_filePlayerPins.exists()) return;
+
+        String jsonText = new String(Files.readAllBytes(_filePlayerPins.toPath()), StandardCharsets.UTF_8);
+        JSONArray root = new JSONArray(jsonText);
+        synchronized(_cachedPOIS) {
+            for(int i = 0; i < root.length(); i++) {
+                _cachedPOIS.add(POI.fromJson(root.getJSONObject(i)));
+            }
+        }
+    }
+
+    private void savePlayerPins() throws Exception{
+        if(!_filePOIs.exists()) _filePOIs.createNewFile();
+
+        JSONArray array = new JSONArray();
+        synchronized(_cachedPlayerPins) {
+            for(Entry<String, List<Waypoint>> entry : _cachedPlayerPins.entrySet()) {
+                JSONObject jentry = new JSONObject();
+                array.put(jentry);
+                jentry.put("playerId", entry.getKey());
+                JSONArray wparray = new JSONArray();
+                jentry.put("pins", wparray);
+                for(Waypoint wp : entry.getValue()) wparray.put(wp.toJson());
+            }
+        }
+
+        PrintWriter writer = new PrintWriter(_filePOIs);
+        writer.write(array.toString());
+        writer.flush();
+        writer.close();
+    }
+
+    @Override
+    public void savePlayerPin(OfflinePlayer player, Waypoint waypoint) throws Exception {
+        if(JSONStorage.DEBUG_DELAY) Thread.sleep(JSONStorage.DEBUG_DELAY_MS);
+
+        synchronized(_cachedPlayerPins) {
+            if(!_cachedPlayerPins.containsKey(player.getUniqueId().toString())) {
+                _cachedPlayerPins.put(player.getUniqueId().toString(), new ArrayList<Waypoint>());
+            }
+            _cachedPlayerPins.get(player.getUniqueId().toString()).add(waypoint);
+        }
+    }
+
+    @Override
+    public void deletePlayerPin(OfflinePlayer player, Waypoint waypoint) throws Exception {
+        if(JSONStorage.DEBUG_DELAY) Thread.sleep(JSONStorage.DEBUG_DELAY_MS);
+
+        synchronized(_cachedPlayerPins) {
+            if(_cachedPlayerPins.containsKey(player.getUniqueId().toString())) {
+                _cachedPlayerPins.get(player.getUniqueId().toString()).remove(waypoint);
+            }
+        }
+    }
+
+    @Override
+    public List<Waypoint> loadPlayerPins(OfflinePlayer player) throws Exception {
+        if(JSONStorage.DEBUG_DELAY) Thread.sleep(JSONStorage.DEBUG_DELAY_MS);
+
+        List<Waypoint> waypoints = new ArrayList<Waypoint>();
+
+        synchronized(_cachedPlayerPins) {
+            if(_cachedPlayerPins.containsKey(player.getUniqueId().toString())) {
+                waypoints.addAll(_cachedPlayerPins.get(player.getUniqueId().toString()));
+            }
+        }
+
+        return waypoints;
     }
 
     /*@Override

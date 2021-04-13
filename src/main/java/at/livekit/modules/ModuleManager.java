@@ -297,7 +297,7 @@ public class ModuleManager
 			public Void call() throws Exception {
                 //long start = System.currentTimeMillis();
                 for(BaseModule module : getModules()) {
-                    if(module.canUpdate(getSettings().liveMapTickRate)) {
+                    if(module.isEnabled() && module.canUpdate(getSettings().liveMapTickRate)) {
                         module.update();
                     }
                 }

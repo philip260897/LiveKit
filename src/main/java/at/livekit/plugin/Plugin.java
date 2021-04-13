@@ -735,7 +735,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 			if(sender instanceof Player) {
 				Player player = (Player)sender;
 				sender.sendMessage(mWorld.getHighestBlockAt(player.getLocation()).getType().name());
-			}
+			}*/
 		}
 		if(args.length == 3) {
 			if(args[0].equalsIgnoreCase("modules")) {
@@ -756,7 +756,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 
 				return true;
 			}
-			if(args[0].equalsIgnoreCase("load")) {
+			/*if(args[0].equalsIgnoreCase("load")) {
 				if(!checkPerm(sender, "livekit.commands.admin")) return true;
 				
 				if(sender instanceof Player) {

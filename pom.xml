@@ -27,6 +27,7 @@
 	</resource>
 	</resources>
 	<plugins>
+  
       <!--plugin>
       <groupId>org.apache.maven.plugins</groupId>
       <artifactId>maven-shade-plugin</artifactId>
@@ -121,7 +122,6 @@
 	    <artifactId>json</artifactId>
 	    <version>20190722</version>
 	</dependency>
-
   	<!-- https://mvnrepository.com/artifact/org.jsoup/jsoup -->
 	<dependency>
 	    <groupId>org.jsoup</groupId>
