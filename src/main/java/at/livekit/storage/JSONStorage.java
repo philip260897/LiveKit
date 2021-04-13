@@ -380,15 +380,21 @@ public class JSONStorage implements IStorageAdapter {
 
         String jsonText = new String(Files.readAllBytes(_filePlayerPins.toPath()), StandardCharsets.UTF_8);
         JSONArray root = new JSONArray(jsonText);
-        synchronized(_cachedPOIS) {
+        synchronized(_cachedPlayerPins) {
             for(int i = 0; i < root.length(); i++) {
-                _cachedPOIS.add(POI.fromJson(root.getJSONObject(i)));
+                JSONObject pentry = root.getJSONObject(i);
+                JSONArray wp = pentry.getJSONArray("pins");
+                List<Waypoint> waypoints=  new ArrayList<Waypoint>();
+                for(int j = 0; j < wp.length(); j++) {
+                    waypoints.add(Waypoint.fromJson(wp.getJSONObject(j)));
+                }
+                _cachedPlayerPins.put(pentry.getString("playerId"), waypoints);
             }
         }
     }
 
     private void savePlayerPins() throws Exception{
-        if(!_filePOIs.exists()) _filePOIs.createNewFile();
+        if(!_filePlayerPins.exists()) _filePlayerPins.createNewFile();
 
         JSONArray array = new JSONArray();
         synchronized(_cachedPlayerPins) {
@@ -402,7 +408,7 @@ public class JSONStorage implements IStorageAdapter {
             }
         }
 
-        PrintWriter writer = new PrintWriter(_filePOIs);
+        PrintWriter writer = new PrintWriter(_filePlayerPins);
         writer.write(array.toString());
         writer.flush();
         writer.close();
