@@ -25,8 +25,11 @@ public class Permissions
 		permissions.add("livekit.module.weathertime");
         permissions.add("livekit.module.admin");
         permissions.add("livekit.module.chat");
+        permissions.add("livekit.module.poi");
+        
         
         permissions.add("livekit.chat.write");
+        permissions.add("livekit.player.pins");
 
         if(use) {
             if(Bukkit.getPluginManager().getPlugin("Vault") == null) {

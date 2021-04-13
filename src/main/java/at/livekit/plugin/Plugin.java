@@ -43,6 +43,7 @@ import at.livekit.modules.LiveMapModule;
 import at.livekit.modules.PlayerModule.LPlayer;
 import at.livekit.provider.BasicPlayerInfoProvider;
 import at.livekit.provider.POISpawnProvider;
+import at.livekit.provider.PlayerPinProvider;
 import at.livekit.storage.IStorageAdapter;
 import at.livekit.storage.JSONStorage;
 import at.livekit.utils.FutureSyncCallback;
@@ -139,6 +140,10 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 		//POI
 		POI center = new POI(new Location(Bukkit.getWorld("world"), 0, 65, 0), "Origin", "The origin of world", Color.fromChatColor(ChatColor.DARK_PURPLE), false);
         Plugin.getInstance().getLiveKit().addPointOfInterest(center);
+
+		//Player Pin Provider
+		//PlayerPinProvider playerPins = new PlayerPinProvider();
+		this.getLiveKit().addPlayerInfoProvider(new PlayerPinProvider());
     }
     
     @Override
@@ -163,6 +168,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 			if(!handled) handled = handleUserCommands(sender, command, label, args);
 			if(!handled) handled = handleMapCommands(sender, command, label, args);
 			if(!handled) handled = handleAdminCommands(sender, command, label, args);
+			if(!handled) handled = handlePlayerPinCommands(sender, command, label, args);
 
 
 			if(args.length == 1) {
@@ -781,6 +787,78 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 		return false;
 	}
 
+	private boolean handlePlayerPinCommands(CommandSender sender, Command command, String label, String[] args) {
+		if(!(sender instanceof Player)) {
+            return false;
+        }
+
+        Player player = (Player)sender;
+
+        if(args.length == 1) {
+            if(args[0].equalsIgnoreCase("pins")) {
+				if(!checkPerm(sender, "livekit.player.pins")) return true;
+
+                PlayerPinProvider.listPlayerPinsAsync(player, new FutureSyncCallback<List<Waypoint>>(){
+                    @Override
+                    public void onSyncResult(List<Waypoint> result) {
+                        player.sendMessage(Plugin.getPrefix()+"Your pins:");
+                        for(int i = 0; i < result.size(); i++) {
+                            player.sendMessage(ChatColor.GREEN+"["+ChatColor.RESET+(i+1)+ChatColor.GREEN+"] "+ChatColor.RESET+result.get(i).getName() + " - " + ((int)result.get(i).getLocation().distance(player.getLocation()))+"m");
+                        }
+                    }
+                }, Utils.errorHandler(sender));
+
+                return true;
+            }
+        }
+
+        if(args.length >= 2) {
+            if(args[0].equalsIgnoreCase("setpin")) {
+				if(!checkPerm(sender, "livekit.player.pins")) return true;
+
+                String name = args[1];
+                for(int i = 2; i < args.length; i++) name+=" "+args[i];
+
+                final Waypoint waypoint = new Waypoint(player.getLocation(), name, "Custom set pin", Color.fromChatColor(ChatColor.AQUA), false, Privacy.PRIVATE);
+                PlayerPinProvider.setPlayerPinAsync(player, waypoint, new FutureSyncCallback<Void>(){
+                    @Override
+                    public void onSyncResult(Void result) {
+                        player.sendMessage(Plugin.getPrefix()+"Pin "+ChatColor.AQUA+waypoint.getName()+ChatColor.RESET+" has been set!");
+                    }
+                }, Utils.errorHandler(sender));
+            
+                return true;
+            }
+            if(args[0].equalsIgnoreCase("removepin")) {
+				if(!checkPerm(sender, "livekit.player.pins")) return true;
+
+                try{
+                    int id = Integer.parseInt(args[1]) - 1;
+
+                    PlayerPinProvider.listPlayerPinsAsync(player, new FutureSyncCallback<List<Waypoint>>(){
+                        @Override
+                        public void onSyncResult(List<Waypoint> result) {
+                            if(id >= result.size()) player.sendMessage(Plugin.getPrefixError()+"Wrong Pin ID! '/livekit pins' to list available pins");
+                            Waypoint toRemove = result.get(id);
+
+                            PlayerPinProvider.removePlayerPinAsync(player, toRemove, new FutureSyncCallback<Void>(){
+                                @Override
+                                public void onSyncResult(Void result) {
+                                    player.sendMessage(Plugin.getPrefix()+"Pin "+ChatColor.AQUA+toRemove.getName()+ChatColor.RESET+" has been removed!");
+                                }
+                            }, Utils.errorHandler(sender));
+                        }
+                    }, Utils.errorHandler(sender));
+
+                }catch(Exception ex){ex.printStackTrace(); player.sendMessage(Plugin.getPrefixError()+"Wrong Pin ID!");}
+
+                return true;
+            }
+        }
+
+        return false;
+	}
+
 	private boolean checkPerm(CommandSender sender, String permission) {
 		return checkPerm(sender, permission, true);
 	}
@@ -812,6 +890,10 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 
 	public static String getPrefixError() {
 		return prefixError;
+	}
+
+	public static String getPrefix() {
+		return prefix;
 	}
 
 	public static void log(String message) {

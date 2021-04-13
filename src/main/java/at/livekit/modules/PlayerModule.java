@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.Map.Entry;
+import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
 import org.bukkit.Bukkit;
@@ -31,6 +32,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import at.livekit.api.core.Privacy;
+import at.livekit.api.map.AsyncPlayerInfoProvider;
 import at.livekit.api.map.InfoEntry;
 import at.livekit.api.map.PlayerInfoProvider;
 import at.livekit.api.map.Waypoint;
@@ -377,35 +379,53 @@ public class PlayerModule extends BaseModule implements Listener
         return new StatusPacket(1);
     }
 
-    @Action(name = "GetPlayerInfo")
+    @Action(name = "GetPlayerInfo", sync = false)
     public IPacket actionPlayerInfo(Identity identity, ActionPacket packet) {
         String uuid = packet.getData().getString("uuid");
         OfflinePlayer player = Bukkit.getOfflinePlayer(UUID.fromString(uuid));
         if(player == null) return new StatusPacket(0, "Player not found");
         if(!player.isOnline() && !identity.hasPermission("livekit.module.admin")) return new StatusPacket(0, "Permission denied");
-        
-        Player onlinePlayer = (player.isOnline() ?  player.getPlayer() : null);
 
         JSONObject response = new JSONObject();
-        if(identity.hasPermission("livekit.module.admin") || uuid.equals(identity.getUuid())) {
-            response.put("firstPlayed", player.getFirstPlayed());
-            response.put("lastPlayed", player.getLastPlayed());
-            response.put("banned", player.isBanned());
-            if(onlinePlayer != null) response.put("gamemode", onlinePlayer.getGameMode().name());
-        }
-
-        LPlayer lplayer = getPlayer(uuid);
-        if(lplayer == null) return new StatusPacket(0, "Invalid Player requested");
-
         JSONArray infoData = new JSONArray();
         response.put("info", infoData);
 
         JSONArray locationData = new JSONArray();
         response.put("locations", locationData);
-            
+
         List<InfoEntry> _infos = new ArrayList<>();
         List<Waypoint> _waypoints = new ArrayList<>();
+
+        try{
+        
+            Bukkit.getScheduler().callSyncMethod(Plugin.getInstance(), new Callable<Void>(){
+                @Override
+                public Void call() throws Exception {
+                    Player onlinePlayer = (player.isOnline() ?  player.getPlayer() : null);
+
+                    if(identity.hasPermission("livekit.module.admin") || uuid.equals(identity.getUuid())) {
+                        response.put("firstPlayed", player.getFirstPlayed());
+                        response.put("lastPlayed", player.getLastPlayed());
+                        response.put("banned", player.isBanned());
+                        if(onlinePlayer != null) response.put("gamemode", onlinePlayer.getGameMode().name());
+                    }
+
+                    for(PlayerInfoProvider iprov : _infoProviders) {
+                        if(iprov instanceof AsyncPlayerInfoProvider) continue;
+                        iprov.onResolvePlayerInfo(player, _infos);
+                        iprov.onResolvePlayerLocation(player, _waypoints);
+                    }
+                    return null;
+                }
+            }).get();
+
+        }catch(Exception ex){ex.printStackTrace();}
+
+        LPlayer lplayer = getPlayer(uuid);
+        if(lplayer == null) return new StatusPacket(0, "Invalid Player requested");
+
         for(PlayerInfoProvider iprov : _infoProviders) {
+            if(!(iprov instanceof AsyncPlayerInfoProvider)) continue;
             iprov.onResolvePlayerInfo(player, _infos);
             iprov.onResolvePlayerLocation(player, _waypoints);
         }

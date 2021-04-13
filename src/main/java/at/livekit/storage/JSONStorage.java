@@ -26,7 +26,7 @@ import at.livekit.utils.HeadLibraryV2.HeadInfo;
 
 public class JSONStorage implements IStorageAdapter {
 
-    private static boolean DEBUG_DELAY = false;
+    private static boolean DEBUG_DELAY = true;
     private static long DEBUG_DELAY_MS = 3000;
 
     private File _fileSessions;
