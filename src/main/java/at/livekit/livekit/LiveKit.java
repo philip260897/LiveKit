@@ -1,6 +1,7 @@
 package at.livekit.livekit;
 
 import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.json.JSONObject;
 import java.lang.reflect.Method;
@@ -42,6 +43,7 @@ import at.livekit.packets.RequestPacket;
 import at.livekit.packets.ServerSettingsPacket;
 import at.livekit.packets.StatusPacket;
 import at.livekit.plugin.Config;
+import at.livekit.plugin.Permissions;
 import at.livekit.plugin.Plugin;
 import at.livekit.utils.HeadLibraryV2;
 
@@ -839,13 +841,23 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
     @Override
 	public void addPlayerInfoProvider(PlayerInfoProvider provider) {
 		PlayerModule module = (PlayerModule)_modules.getModule("PlayerModule");
-        if(module != null) module.addInfoProvider(provider);
+        if(module != null) {
+            if(provider.getPermission() != null) {
+                Permissions.registerPermission(provider.getPermission());
+            }
+            module.addInfoProvider(provider);
+        }
 	}
 
 	@Override
 	public void removePlayerInfoProvider(PlayerInfoProvider provider) {
 		PlayerModule module = (PlayerModule)_modules.getModule("PlayerModule");
-        if(module != null) module.removeInfoProvider(provider);
+        if(module != null) {
+            if(provider.getPermission() != null) {
+                Permissions.unregisterPermission(provider.getPermission());
+            }
+            module.removeInfoProvider(provider);
+        }
 	}
 
     @Override
@@ -867,13 +879,39 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
     @Override
     public void addPOIInfoProvider(POIInfoProvider provider) {
 		POIModule module = (POIModule)_modules.getModule("POIModule");
-        if(module != null) module.addInfoProvider(provider);
+        if(module != null) {
+            if(provider.getPermission() != null) {
+                Permissions.registerPermission(provider.getPermission());
+            }
+            module.addInfoProvider(provider);
+        }
     }
 
     @Override
     public void removePOIInfoProvider(POIInfoProvider provider) {
 		POIModule module = (POIModule)_modules.getModule("POIModule");
-        if(module != null) module.removeInfoProvider(provider);
+        if(module != null) {
+            if(provider.getPermission() != null) {
+                Permissions.unregisterPermission(provider.getPermission());
+            }
+            module.removeInfoProvider(provider);
+        }
+    }
+
+    @Override
+    public void notifyPOIInfoChange(POI poi) {
+        POIModule module = (POIModule)_modules.getModule("POIModule");
+        if(module != null) {
+            module.notifyDownstream(poi);
+        }
+    }
+
+    @Override
+    public void notifyPlayerInfoChange(OfflinePlayer player) {
+        PlayerModule module = (PlayerModule)_modules.getModule("PlayerModule");
+        if(module != null) {
+            module.notifyDownstream(player);
+        }
     }
 
 	/*@Override

@@ -32,7 +32,7 @@ public class POISpawnProvider extends POIInfoProvider implements Listener {
     private List<POI> _spawnPoints = new ArrayList<>();
 
     public POISpawnProvider() {
-        super(Plugin.getInstance(), "POI Spawn Provider");
+        super(Plugin.getInstance(), "POI Spawn Provider", null);
 
         for(World world : Bukkit.getWorlds()) {
             registerSpawnpoint(world);
@@ -61,17 +61,18 @@ public class POISpawnProvider extends POIInfoProvider implements Listener {
     }
 
     private void registerSpawnpoint(World world) {
-        POI spawn = new POI(world.getSpawnLocation(), "Spawn", "Spawn point of "+world.getName(), Color.fromChatColor(ChatColor.DARK_AQUA), true);
+        POI spawn = new POI(world.getSpawnLocation(), "Spawn", "Spawn point of "+world.getName(), Color.fromChatColor(ChatColor.DARK_PURPLE), true);
         Plugin.getInstance().getLiveKit().addPointOfInterest(spawn);
         _spawnPoints.add(spawn);
     }
 
     @Override
     public void onResolvePOIInfo(POI poi, List<InfoEntry> entries) {
-        POI worldSpawn = spawnPoint(Bukkit.getWorld("world"));
+        /*POI worldSpawn = spawnPoint(Bukkit.getWorld("world"));
         if(poi.equals(worldSpawn)) {
             entries.add(new InfoEntry("Spawns", "96"));
             entries.add(new InfoEntry("Status", ChatColor.GREEN+"Available"));
-        }
+        }*/
+        entries.add(new InfoEntry("World", poi.getLocation().getWorld().getName()));
     }
 }

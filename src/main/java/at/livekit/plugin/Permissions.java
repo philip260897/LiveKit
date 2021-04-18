@@ -57,9 +57,26 @@ public class Permissions
     public static boolean has(OfflinePlayer player, String permission) {
         if(player.isOp()) return true;
         if(use) {
+            
             return perms.playerHas(Bukkit.getWorlds().get(0).getName(), player, permission);
         } else {
             return defaultPermissions.contains(permission);
+        }
+    }
+
+    public static void registerPermission(String permission) {
+        synchronized(permissions) {
+            if(!permissions.contains(permission)) {
+                permissions.add(permission);
+            }
+        }
+    }
+
+    public static void unregisterPermission(String permission) {
+        synchronized(permission) {
+            if(permissions.contains(permission)) {
+                permissions.remove(permission);
+            }
         }
     }
 }

@@ -12,10 +12,10 @@ import at.livekit.plugin.Plugin;
 import at.livekit.utils.FutureSyncCallback;
 import at.livekit.utils.Utils;
 
-public class PlayerPinProvider extends AsyncPlayerInfoProvider {
+public class BasicPlayerPinProvider extends AsyncPlayerInfoProvider {
 
-    public PlayerPinProvider() {
-        super(Plugin.getInstance(), "Player Pin provider");
+    public BasicPlayerPinProvider() {
+        super(Plugin.getInstance(), "Player Pin provider", "livekit.player.pins");
     }
 
     public static BukkitTask listPlayerPinsAsync(OfflinePlayer player, FutureSyncCallback<List<Waypoint>> onResult, FutureSyncCallback<Exception> onError) {

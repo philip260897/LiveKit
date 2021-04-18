@@ -22,7 +22,7 @@ public class BasicPlayerInfoProvider extends PlayerInfoProvider {
     private static SimpleDateFormat _formatter = new SimpleDateFormat("dd MMMM yyyy");
 
     public BasicPlayerInfoProvider() {
-        super(Plugin.getInstance(), "Default Player Info Provider");
+        super(Plugin.getInstance(), "Default Player Info Provider", null);
     }
 
     @Override

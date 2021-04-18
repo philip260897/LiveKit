@@ -49,24 +49,39 @@ public class PlayerModule extends BaseModule implements Listener
     private List<PlayerInfoProvider> _infoProviders = new ArrayList<PlayerInfoProvider>();
     private Map<String,LPlayer> _players = new HashMap<String, LPlayer>();
 
+    private List<String> _downstreamUpdate = new ArrayList<String>();
+
     public PlayerModule(ModuleListener listener) {
         super(1, "Players", "livekit.module.players", UpdateRate.MAX, listener);
     }
      
     public void clearProviders() {
-        _infoProviders.clear();
+        synchronized(_infoProviders) {
+            _infoProviders.clear();
+        }
     }
 
     public void addInfoProvider(PlayerInfoProvider provider) {
-        if(!_infoProviders.contains(provider)) {
-            _infoProviders.add(provider);
+        synchronized(_infoProviders) {
+            if(!_infoProviders.contains(provider)) {
+                _infoProviders.add(provider);
+            }
         }
     }
 
     public void removeInfoProvider(PlayerInfoProvider provider) {
-        if(_infoProviders.contains(provider)) {
-            _infoProviders.remove(provider);
+        synchronized(_infoProviders) {
+            if(_infoProviders.contains(provider)) {
+                _infoProviders.remove(provider);
+            }
         }
+    }
+
+    public void notifyDownstream(OfflinePlayer player) {
+        synchronized(_downstreamUpdate) {
+            _downstreamUpdate.add(player.getUniqueId().toString());
+        }
+        notifyChange();
     }
 
     public LPlayer getPlayer(String uuid) {
@@ -310,6 +325,13 @@ public class PlayerModule extends BaseModule implements Listener
     @Override
     public Map<Identity,IPacket> onUpdateAsync(List<Identity> identities) {
         Map<Identity, IPacket> responses = new HashMap<Identity,IPacket>();
+        
+        JSONArray downstreamUpdate = new JSONArray();
+        synchronized(_downstreamUpdate) {
+            for(String s : _downstreamUpdate) downstreamUpdate.put(s);
+            _downstreamUpdate.clear();
+        }
+        
         synchronized(_players) {
 
             for(Identity identity : identities) {
@@ -329,6 +351,7 @@ public class PlayerModule extends BaseModule implements Listener
                     players.put(jp);
                 }
                 json.put("players", players);
+                json.put("downstream", downstreamUpdate);
                 responses.put(identity, new ModuleUpdatePacket(this, json, false));
             //return new ModuleUpdatePacket(this, json);
            }
@@ -410,10 +433,14 @@ public class PlayerModule extends BaseModule implements Listener
                         if(onlinePlayer != null) response.put("gamemode", onlinePlayer.getGameMode().name());
                     }
 
-                    for(PlayerInfoProvider iprov : _infoProviders) {
-                        if(iprov instanceof AsyncPlayerInfoProvider) continue;
-                        iprov.onResolvePlayerInfo(player, _infos);
-                        iprov.onResolvePlayerLocation(player, _waypoints);
+                    synchronized(_infoProviders) {
+                        for(PlayerInfoProvider iprov : _infoProviders) {
+                            if(iprov instanceof AsyncPlayerInfoProvider) continue;
+                            if(iprov.getPermission() != null && !identity.hasPermission(iprov.getPermission()) && !identity.hasPermission("livekit.module.admin")) continue;
+
+                            iprov.onResolvePlayerInfo(player, _infos);
+                            iprov.onResolvePlayerLocation(player, _waypoints);
+                        }
                     }
                     return null;
                 }
@@ -424,10 +451,14 @@ public class PlayerModule extends BaseModule implements Listener
         LPlayer lplayer = getPlayer(uuid);
         if(lplayer == null) return new StatusPacket(0, "Invalid Player requested");
 
-        for(PlayerInfoProvider iprov : _infoProviders) {
-            if(!(iprov instanceof AsyncPlayerInfoProvider)) continue;
-            iprov.onResolvePlayerInfo(player, _infos);
-            iprov.onResolvePlayerLocation(player, _waypoints);
+        synchronized(_infoProviders) {
+            for(PlayerInfoProvider iprov : _infoProviders) {
+                if(!(iprov instanceof AsyncPlayerInfoProvider)) continue;
+                if(iprov.getPermission() != null && !identity.hasPermission(iprov.getPermission()) && !identity.hasPermission("livekit.module.admin")) continue;
+
+                iprov.onResolvePlayerInfo(player, _infos);
+                iprov.onResolvePlayerLocation(player, _waypoints);
+            }
         }
         synchronized(lplayer._cachedWaypoints) {
             lplayer._cachedWaypoints = _waypoints;

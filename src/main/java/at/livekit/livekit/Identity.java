@@ -22,6 +22,7 @@ public class Identity
     private boolean identified = false;
 
     private List<String> permissions = new ArrayList<String>();
+    //private OfflinePlayer offlinePlayer = null;
 
     //TODO: how to handle disabled modules ? changed subscriptions ?
     private HashMap<String, String> subscriptions = new HashMap<>();
@@ -125,4 +126,26 @@ public class Identity
             permissions.addAll(Config.getAnonymousPermissions());
         }
     }
+
+    /*public void loadPermissionsSync() {
+        if(isAnonymous()) {
+            synchronized(permissions) {
+                this.permissions = new ArrayList<String>();
+                this.permissions.addAll(Config.getAnonymousPermissions());
+            }
+        } 
+        else
+        {
+            this.offlinePlayer = Bukkit.getOfflinePlayer(UUID.fromString(uuid));
+
+            synchronized(permissions) {
+                this.permissions = new ArrayList<String>();
+                for(String permission : Permissions.permissions) {
+                    if(Permissions.has(offlinePlayer, permission)) {
+                        permissions.add(permission);
+                    }
+                }
+            }
+        }
+    }*/
 }
