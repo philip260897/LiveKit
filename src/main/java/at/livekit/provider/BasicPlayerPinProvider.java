@@ -15,7 +15,7 @@ import at.livekit.utils.Utils;
 public class BasicPlayerPinProvider extends AsyncPlayerInfoProvider {
 
     public BasicPlayerPinProvider() {
-        super(Plugin.getInstance(), "Player Pin provider", "livekit.player.pins");
+        super(Plugin.getInstance(), "Player Pin provider", "livekit.poi.personalpins");
     }
 
     public static BukkitTask listPlayerPinsAsync(OfflinePlayer player, FutureSyncCallback<List<Waypoint>> onResult, FutureSyncCallback<Exception> onError) {

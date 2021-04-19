@@ -18,7 +18,7 @@ permissions:
   - livekit.module.chat
   - livekit.module.poi
   - livekit.chat.write
-  - livekit.player.pins;
+  - livekit.poi.personalpins;
 modules:
   LiveMapModule:
     enabled: true

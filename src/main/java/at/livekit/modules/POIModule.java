@@ -155,7 +155,7 @@ public class POIModule extends BaseModule {
     }
 
     private boolean hasEditPermission(Identity identity) {
-        return (identity.hasPermission("livekit.poi.edit") || identity.hasPermission("livekit.module.admin"));
+        return (identity.hasPermission("livekit.poi.edit"));
     }
 
     @Override

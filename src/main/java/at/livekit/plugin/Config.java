@@ -107,13 +107,30 @@ public class Config
             save = true;
         }
 
+        List<String> permissions = getDefaultPermissions();
+        if(permissions.contains("livekit.modules.chat")) {
+            Plugin.debug("Fixing chat module permissions");
+            permissions.remove("livekit.modules.chat");
+            permissions.add("livekit.module.chat");
+            config.set("permissions.default", permissions);
+            save = true;
+        }
+
+        if(config.get("modules.POIModule") == null) {
+            Plugin.log("Upgrading config to new version...");
+            config.set("modules.POIModule.enabled", true);
+            List<String> perms = getDefaultPermissions();
+            perms.add("livekit.module.poi");
+            perms.add("livekit.poi.personalpins");
+            config.set("permissions.default", perms);
+            save = true;
+        }
+
         try{
             if(save) {
                 //config.options().header(config.options().header());
                 config.save(configFile);
             }
         }catch(Exception ex){ex.printStackTrace();}
-
-        //TODO: Convert world => worlds
     }
 }

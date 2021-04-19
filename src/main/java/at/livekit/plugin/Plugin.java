@@ -797,7 +797,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 
         if(args.length == 1) {
             if(args[0].equalsIgnoreCase("pins")) {
-				if(!checkPerm(sender, "livekit.player.pins")) return true;
+				if(!checkPerm(sender, "livekit.poi.personalpins")) return true;
 
                 BasicPlayerPinProvider.listPlayerPinsAsync(player, new FutureSyncCallback<List<Waypoint>>(){
                     @Override
@@ -815,7 +815,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 
         if(args.length >= 2) {
             if(args[0].equalsIgnoreCase("setpin")) {
-				if(!checkPerm(sender, "livekit.player.pins")) return true;
+				if(!checkPerm(sender, "livekit.poi.personalpins")) return true;
 
                 String name = args[1];
                 for(int i = 2; i < args.length; i++) name+=" "+args[i];
@@ -833,7 +833,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
                 return true;
             }
             if(args[0].equalsIgnoreCase("removepin")) {
-				if(!checkPerm(sender, "livekit.player.pins")) return true;
+				if(!checkPerm(sender, "livekit.poi.personalpins")) return true;
 
                 try{
                     int id = Integer.parseInt(args[1]) - 1;
