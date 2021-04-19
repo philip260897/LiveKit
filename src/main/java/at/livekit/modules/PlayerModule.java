@@ -13,6 +13,8 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
@@ -118,7 +120,7 @@ public class PlayerModule extends BaseModule implements Listener
             }
         }
 
-        /*synchronized(_players) {
+       /* synchronized(_players) {
             //List<LivingEntity> living = ;
             //System.out.println(living.size());
             for(Entity e : Bukkit.getWorld("world").getEntities()) {
@@ -133,7 +135,7 @@ public class PlayerModule extends BaseModule implements Listener
                             if(_players.size() >= 500) continue;
 
                             player = new LPlayer(entity.getUniqueId().toString());
-                            player.head = HeadLibrary.DEFAULT_HEAD;
+                            player.head = HeadLibraryV2.DEFAULT;
                             player.headDirty = true;
                             player.name = entity.getType().name();
                             player.online = true;
@@ -146,7 +148,7 @@ public class PlayerModule extends BaseModule implements Listener
                         }
                         if(player.health != entity.getHealth()) player.updateHealth(entity.getHealth(), entity.getMaxHealth());
                         if(player.x != entity.getLocation().getX() || player.y != entity.getLocation().getY() || player.z != entity.getLocation().getZ())
-                            player.updateLocation(entity.getLocation().getX(), entity.getLocation().getY(), entity.getLocation().getZ());
+                            player.updateLocation(entity.getLocation().getX(), entity.getLocation().getY(), entity.getLocation().getZ(), entity.getLocation().getYaw());
                         
                         if(player.isDirty()) needsUpdate = true;
                     }
