@@ -154,7 +154,7 @@ public class PlayerModule extends BaseModule implements Listener
                     }
                 }
             }
-        }*/
+        }*/ 
         
         if(needsUpdate) notifyChange();
         super.update();

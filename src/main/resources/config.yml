@@ -32,3 +32,4 @@ modules:
     enabled: true
   POIModule:
     enabled: true
+    perosnalpins: 5

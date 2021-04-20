@@ -344,9 +344,14 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 					sender.sendMessage("You don't have the needed permission "+ChatColor.GREEN+"livekit.commands.basic"+ChatColor.RESET+" to access LiveKit");
 					if(Config.allowAnonymous())sender.sendMessage("However, anonymous joining is enabled!");
 				}
+				if(checkPerm(sender, "livekit.poi.personalpins", false)) {
+					sender.sendMessage(ChatColor.GREEN+"/livekit setpin <name>"+ChatColor.RESET+" - Set a personal pin at your current location");
+					sender.sendMessage(ChatColor.GREEN+"/livekit pins"+ChatColor.RESET+" - List of all your set pins");
+					sender.sendMessage(ChatColor.GREEN+"/livekit removepin <id>"+ChatColor.RESET+" - Remove a pin. Obtain the <id> from /livekit pins");
+				}
 				if(checkPerm(sender, "livekit.commands.admin", false)) {
 					sender.sendMessage(prefixError+"Admin Commands:"+ChatColor.RESET);
-					sender.sendMessage(ChatColor.GREEN+"/livekit reload"+ChatColor.RESET+" - Reload LiveKit plugin");
+					//sender.sendMessage(ChatColor.GREEN+"/livekit reload"+ChatColor.RESET+" - Reload LiveKit plugin");
 					sender.sendMessage(ChatColor.GREEN+"/livekit map"+ChatColor.RESET+" - Display info about live map");
 					sender.sendMessage(ChatColor.GREEN+"/livekit map cpu <time in %>"+ChatColor.RESET+" - Speed up rendering performance at the cost of server lag. Use with care. Default: 40%");
 					sender.sendMessage(ChatColor.GREEN+"/livekit <world>"+ChatColor.RESET+" - Show general info and rendering status of <world>");
@@ -819,14 +824,26 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 
                 String name = args[1];
                 for(int i = 2; i < args.length; i++) name+=" "+args[i];
-
-                final Waypoint waypoint = new Waypoint(player.getLocation(), name, "Custom set pin", Color.fromChatColor(ChatColor.DARK_AQUA), false, Privacy.PRIVATE);
-                BasicPlayerPinProvider.setPlayerPinAsync(player, waypoint, new FutureSyncCallback<Void>(){
+				
+				final String finalName = name;
+				BasicPlayerPinProvider.listPlayerPinsAsync(player, new FutureSyncCallback<List<Waypoint>>(){
                     @Override
-                    public void onSyncResult(Void result) {
-                        player.sendMessage(Plugin.getPrefix()+"Pin "+ChatColor.AQUA+waypoint.getName()+ChatColor.RESET+" has been set!");
-						
-						getLiveKit().notifyPlayerInfoChange(player);
+                    public void onSyncResult(List<Waypoint> result) {
+                        if(result.size() < Config.getPersonalPinLimit()) {
+							
+							final Waypoint waypoint = new Waypoint(player.getLocation(), finalName, "Custom set pin", Color.fromChatColor(ChatColor.DARK_AQUA), false, Privacy.PRIVATE);
+							BasicPlayerPinProvider.setPlayerPinAsync(player, waypoint, new FutureSyncCallback<Void>(){
+								@Override
+								public void onSyncResult(Void result) {
+									player.sendMessage(Plugin.getPrefix()+"Pin "+ChatColor.AQUA+waypoint.getName()+ChatColor.RESET+" has been set!");
+									
+									getLiveKit().notifyPlayerInfoChange(player);
+								}
+							}, Utils.errorHandler(sender));
+
+						} else {
+							player.sendMessage(prefixError+"You've reached your personal pin limit of "+Config.getPersonalPinLimit()+"! Remove a pin to set a new one.");
+						}
                     }
                 }, Utils.errorHandler(sender));
             
@@ -855,7 +872,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
                         }
                     }, Utils.errorHandler(sender));
 
-                }catch(Exception ex){ex.printStackTrace(); player.sendMessage(Plugin.getPrefixError()+"Wrong Pin ID!");}
+                }catch(Exception ex){/*ex.printStackTrace();*/ player.sendMessage(Plugin.getPrefixError()+"Wrong Pin ID!");}
 
                 return true;
             }

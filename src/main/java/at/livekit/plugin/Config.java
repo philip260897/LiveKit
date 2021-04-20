@@ -66,6 +66,10 @@ public class Config
     public static String getPassword() {
         return config.getString("server.password");
     }
+
+    public static int getPersonalPinLimit() {
+        return config.getInt("modules.POIModule.personalpins");
+    }
     
     /*public static String getModuleString(String name, String setting) {
         return config.getString("modules."+name+"."+setting);
@@ -119,9 +123,10 @@ public class Config
         if(config.get("modules.POIModule") == null) {
             Plugin.log("Upgrading config to new version...");
             config.set("modules.POIModule.enabled", true);
+            config.set("modules.POIModule.personalpins", 5);
             List<String> perms = getDefaultPermissions();
-            perms.add("livekit.module.poi");
-            perms.add("livekit.poi.personalpins");
+            if(!perms.contains("livekit.module.poi")) perms.add("livekit.module.poi");
+            if(!perms.contains("livekit.poi.personalpins")) perms.add("livekit.poi.personalpins");
             config.set("permissions.default", perms);
             save = true;
         }
