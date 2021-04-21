@@ -1,5 +1,7 @@
 package at.livekit.packets;
 
+import java.nio.charset.StandardCharsets;
+
 import org.apache.commons.lang.NotImplementedException;
 import org.json.JSONObject;
 
@@ -17,7 +19,7 @@ public class Packet implements IPacket {
 
     @Override
     public byte[] data() {
-        return (toJson().toString()+"\n").getBytes();
+        return (toJson().toString()+"\n").getBytes(StandardCharsets.UTF_8);
     }
 
     @Override

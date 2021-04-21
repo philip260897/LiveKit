@@ -2,7 +2,6 @@ package at.livekit.livekit;
 
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
-import org.bukkit.scheduler.BukkitRunnable;
 import org.json.JSONObject;
 import java.lang.reflect.Method;
 
@@ -23,7 +22,6 @@ import at.livekit.api.core.ILiveKit;
 import at.livekit.api.map.POI;
 import at.livekit.api.map.POIInfoProvider;
 import at.livekit.api.map.PlayerInfoProvider;
-import at.livekit.api.map.Waypoint;
 import at.livekit.authentication.Pin;
 import at.livekit.authentication.Session;
 import at.livekit.modules.BaseModule;
@@ -705,7 +703,7 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
                 }catch(Exception ex){ex.printStackTrace();}
 
                 if(!success) identity = null;
-                System.out.println(identity);
+                //System.out.println(identity);
 
                 /*if(identity.isValidSession(authorization)) {
                     identity.removeSession(authorization);

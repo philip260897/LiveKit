@@ -1,6 +1,7 @@
 package at.livekit.utils;
 
 import java.io.File;
+import java.nio.file.CopyOption;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
@@ -136,7 +137,10 @@ public class Legacy
             for(File file : folders) {
                 World world = Bukkit.getWorld(file.getName());
                 if(world != null) {
-                    file.renameTo(new File(Plugin.getInstance().getDataFolder(), "map/"+world.getUID().toString()));
+                    //file.renameTo(new File(Plugin.getInstance().getDataFolder(), "map/"+world.getUID().toString()));
+                    try{
+                        Files.move(file.toPath(), new File(Plugin.getInstance().getDataFolder(), "map/"+world.getUID().toString()).toPath());
+                    }catch(Exception ex){ex.printStackTrace();}
                 }
             }
         }
