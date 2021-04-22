@@ -5,6 +5,7 @@ import java.util.concurrent.Callable;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.scheduler.BukkitTask;
 
+import at.livekit.api.core.Color;
 import at.livekit.api.map.AsyncPlayerInfoProvider;
 import at.livekit.api.map.InfoEntry;
 import at.livekit.api.map.Waypoint;
@@ -13,6 +14,8 @@ import at.livekit.utils.FutureSyncCallback;
 import at.livekit.utils.Utils;
 
 public class BasicPlayerPinProvider extends AsyncPlayerInfoProvider {
+
+    public static Color PLAYER_PIN_COLOR = Color.fromHEX("#5D4037");
 
     public BasicPlayerPinProvider() {
         super(Plugin.getInstance(), "Player Pin provider", "livekit.poi.personalpins");

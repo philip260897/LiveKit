@@ -671,6 +671,8 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
                     for(Pin p : pins) {
                         if(p.getPin().equals(pin) && p.isValid()) {
                             identity = p.getUUID();
+
+                            Plugin.getStorage().deletePin(p.getUUID(), p);
                         }
                     }
 

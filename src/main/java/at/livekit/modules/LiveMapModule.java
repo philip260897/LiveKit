@@ -23,6 +23,7 @@ import org.bukkit.event.block.BlockFormEvent;
 import org.bukkit.event.block.BlockGrowEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.BlockSpreadEvent;
+import org.bukkit.event.block.LeavesDecayEvent;
 import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.ChunkPopulateEvent;
 import org.bukkit.event.world.StructureGrowEvent;
@@ -544,6 +545,15 @@ public class LiveMapModule extends BaseModule implements Listener
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onBlockFadeEvent(BlockFadeEvent event) {
+        if(!isEnabled() || !event.getBlock().getWorld().getName().equals(world)) return;
+    
+        if(event.getBlock().getY() == event.getBlock().getWorld().getHighestBlockAt(event.getBlock().getX(), event.getBlock().getZ()).getY()) {
+            renderWorld.updateBlock(event.getBlock());
+        }    
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onLeavesDecayEvent(LeavesDecayEvent event) {
         if(!isEnabled() || !event.getBlock().getWorld().getName().equals(world)) return;
     
         if(event.getBlock().getY() == event.getBlock().getWorld().getHighestBlockAt(event.getBlock().getX(), event.getBlock().getZ()).getY()) {

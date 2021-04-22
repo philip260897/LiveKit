@@ -15,6 +15,7 @@ import at.livekit.api.core.Color;
 import at.livekit.api.map.InfoEntry;
 import at.livekit.api.map.POI;
 import at.livekit.api.map.POIInfoProvider;
+import at.livekit.plugin.Config;
 import at.livekit.plugin.Plugin;
 
 public class POISpawnProvider extends POIInfoProvider implements Listener {
@@ -61,7 +62,7 @@ public class POISpawnProvider extends POIInfoProvider implements Listener {
     }
 
     private void registerSpawnpoint(World world) {
-        POI spawn = new POI(world.getSpawnLocation(), "Spawn", "Spawn point of "+world.getName(), Color.fromChatColor(ChatColor.DARK_PURPLE), true);
+        POI spawn = new POI(world.getSpawnLocation(), "Spawn", "Spawn point of "+world.getName(), BasicPOIProvider.POI_COLOR, Config.canTeleportSpawn());
         Plugin.getInstance().getLiveKit().addPointOfInterest(spawn);
         _spawnPoints.add(spawn);
     }

@@ -16,7 +16,7 @@ import at.livekit.utils.Utils;
 
 public class BasicPOIProvider extends AsyncPOIInfoProvider {
 
-    public static Color POI_COLOR = Color.fromChatColor(ChatColor.DARK_PURPLE);
+    public static Color POI_COLOR = Color.fromChatColor(ChatColor.DARK_RED);
 
     public BasicPOIProvider() {
         super(Plugin.getInstance(), "Basic POI Provider", "livekit.module.poi");

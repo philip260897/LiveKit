@@ -70,6 +70,14 @@ public class Config
     public static int getPersonalPinLimit() {
         return config.getInt("modules.POIModule.personalpins");
     }
+
+    public static boolean canTeleportBed() {
+        return config.getBoolean("modules.POIModule.teleport_bed");
+    }
+
+    public static boolean canTeleportSpawn() {
+        return config.getBoolean("modules.POIModule.teleport_spawn");
+    }
     
     /*public static String getModuleString(String name, String setting) {
         return config.getString("modules."+name+"."+setting);
@@ -124,6 +132,8 @@ public class Config
             Plugin.log("Upgrading config to new version...");
             config.set("modules.POIModule.enabled", true);
             config.set("modules.POIModule.personalpins", 5);
+            config.set("modules.POIModule.teleport_spawn", false);
+            config.set("modules.POIModule.teleport_bed", false);
             List<String> perms = getDefaultPermissions();
             if(!perms.contains("livekit.module.poi")) perms.add("livekit.module.poi");
             if(!perms.contains("livekit.poi.personalpins")) perms.add("livekit.poi.personalpins");

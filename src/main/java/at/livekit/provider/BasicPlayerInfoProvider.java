@@ -15,6 +15,7 @@ import at.livekit.api.core.Privacy;
 import at.livekit.api.map.InfoEntry;
 import at.livekit.api.map.PlayerInfoProvider;
 import at.livekit.api.map.Waypoint;
+import at.livekit.plugin.Config;
 import at.livekit.plugin.Plugin;
 
 public class BasicPlayerInfoProvider extends PlayerInfoProvider {
@@ -40,7 +41,7 @@ public class BasicPlayerInfoProvider extends PlayerInfoProvider {
     public void onResolvePlayerLocation(OfflinePlayer player, List<Waypoint> waypoints) {
         Location location = player.getBedSpawnLocation();
         if(location != null) {
-            Waypoint waypoint = new Waypoint(location, "Bed Spawn", "Bed Spawn Location of "+player.getName(), Color.fromChatColor(ChatColor.GREEN), true, Privacy.PRIVATE);
+            Waypoint waypoint = new Waypoint(location, "Bed Spawn", "Bed Spawn Location of "+player.getName(), BasicPlayerPinProvider.PLAYER_PIN_COLOR, Config.canTeleportBed(), Privacy.PRIVATE);
             waypoints.add(waypoint);
         }
     }

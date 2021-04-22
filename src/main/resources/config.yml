@@ -33,3 +33,5 @@ modules:
   POIModule:
     enabled: true
     perosnalpins: 5
+    teleport_spawn: false
+    teleport_bed: false

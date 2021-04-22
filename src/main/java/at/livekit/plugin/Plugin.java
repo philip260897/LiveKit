@@ -807,10 +807,14 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
                 BasicPlayerPinProvider.listPlayerPinsAsync(player, new FutureSyncCallback<List<Waypoint>>(){
                     @Override
                     public void onSyncResult(List<Waypoint> result) {
-                        player.sendMessage(Plugin.getPrefix()+"Your pins:");
-                        for(int i = 0; i < result.size(); i++) {
-                            player.sendMessage(ChatColor.GREEN+"["+ChatColor.RESET+(i+1)+ChatColor.GREEN+"] "+ChatColor.RESET+result.get(i).getName() + " - " + ((int)result.get(i).getLocation().distance(player.getLocation()))+"m");
-                        }
+                        if(result.size() != 0) {
+							player.sendMessage(Plugin.getPrefix()+"Your pins:");
+							for(int i = 0; i < result.size(); i++) {
+								player.sendMessage(ChatColor.GREEN+"["+ChatColor.RESET+(i+1)+ChatColor.GREEN+"] "+ChatColor.RESET+result.get(i).getName() + " - " + ((int)result.get(i).getLocation().distance(player.getLocation()))+"m");
+							}
+						} else {
+							player.sendMessage(prefix+"You have not set any pins yet! Start with "+ChatColor.AQUA+"/livekit setpin <name>");
+						}
                     }
                 }, Utils.errorHandler(sender));
 
@@ -831,7 +835,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
                     public void onSyncResult(List<Waypoint> result) {
                         if(result.size() < Config.getPersonalPinLimit()) {
 							
-							final Waypoint waypoint = new Waypoint(player.getLocation(), finalName, "Custom set pin", Color.fromChatColor(ChatColor.DARK_AQUA), false, Privacy.PRIVATE);
+							final Waypoint waypoint = new Waypoint(player.getLocation(), finalName, "Custom set pin", BasicPlayerPinProvider.PLAYER_PIN_COLOR, false, Privacy.PRIVATE);
 							BasicPlayerPinProvider.setPlayerPinAsync(player, waypoint, new FutureSyncCallback<Void>(){
 								@Override
 								public void onSyncResult(Void result) {
@@ -1003,7 +1007,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 	}
 
 	public static void debug(String message) {
-		logger.warning(message);
+		//logger.warning(message);
 	}
 
 	@Override

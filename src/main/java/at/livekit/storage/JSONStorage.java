@@ -230,7 +230,7 @@ public class JSONStorage implements IStorageAdapter {
         if(JSONStorage.DEBUG_DELAY) Thread.sleep(JSONStorage.DEBUG_DELAY_MS);
         
         List<Pin> pins = new ArrayList<Pin>();
-        pins.add(new Pin("867678c4-391b-42a9-a4cb-3ad14089f3f6", "123456", System.currentTimeMillis()));
+        //pins.add(new Pin("867678c4-391b-42a9-a4cb-3ad14089f3f6", "123456", System.currentTimeMillis()));
         synchronized(_cachedPins) {
             for(Pin pin : _cachedPins.values()) {
                 pins.add(pin);
