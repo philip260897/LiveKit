@@ -23,6 +23,7 @@ import org.bukkit.event.block.BlockFormEvent;
 import org.bukkit.event.block.BlockGrowEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.BlockSpreadEvent;
+import org.bukkit.event.block.LeavesDecayEvent;
 import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.ChunkPopulateEvent;
 import org.bukkit.event.world.StructureGrowEvent;
@@ -147,7 +148,7 @@ public class LiveMapModule extends BaseModule implements Listener
 
         World w = Bukkit.getWorld(world);
         if(w != null) {
-            renderWorld = new RenderWorld(world);
+            renderWorld = new RenderWorld(world, w.getUID().toString());
             Chunk[] chunks = w.getLoadedChunks();
             for(Chunk c : chunks) renderWorld.updateChunk(c, true);
         }
@@ -264,7 +265,7 @@ public class LiveMapModule extends BaseModule implements Listener
             this.x = x;
             this.z = z;
             this.data = data;
-            invalidate();
+            //invalidate();
         }
 
         public RegionData(File file) {
@@ -289,7 +290,7 @@ public class LiveMapModule extends BaseModule implements Listener
             return data;
         }
 
-        public void save(File dir) {
+        /*public void save(File dir) {
             try{
                 File file = new File(dir, x+"_"+z+".region");
                 if(!file.exists()) file.createNewFile();
@@ -300,7 +301,7 @@ public class LiveMapModule extends BaseModule implements Listener
             }catch(Exception ex){
                 ex.printStackTrace();
             }
-        }
+        }*/
 
         public int getX() {
             return x;
@@ -544,6 +545,15 @@ public class LiveMapModule extends BaseModule implements Listener
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onBlockFadeEvent(BlockFadeEvent event) {
+        if(!isEnabled() || !event.getBlock().getWorld().getName().equals(world)) return;
+    
+        if(event.getBlock().getY() == event.getBlock().getWorld().getHighestBlockAt(event.getBlock().getX(), event.getBlock().getZ()).getY()) {
+            renderWorld.updateBlock(event.getBlock());
+        }    
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onLeavesDecayEvent(LeavesDecayEvent event) {
         if(!isEnabled() || !event.getBlock().getWorld().getName().equals(world)) return;
     
         if(event.getBlock().getY() == event.getBlock().getWorld().getHighestBlockAt(event.getBlock().getX(), event.getBlock().getZ()).getY()) {

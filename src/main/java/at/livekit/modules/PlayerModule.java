@@ -6,14 +6,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.Map.Entry;
+import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
@@ -28,6 +32,12 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.json.JSONArray;
 import org.json.JSONObject;
+
+import at.livekit.api.core.Privacy;
+import at.livekit.api.map.AsyncPlayerInfoProvider;
+import at.livekit.api.map.InfoEntry;
+import at.livekit.api.map.PlayerInfoProvider;
+import at.livekit.api.map.Waypoint;
 import at.livekit.livekit.Identity;
 import at.livekit.plugin.Plugin;
 import at.livekit.packets.ActionPacket;
@@ -37,12 +47,45 @@ import at.livekit.utils.HeadLibraryV2;
 
 public class PlayerModule extends BaseModule implements Listener
 {
+
+    private List<PlayerInfoProvider> _infoProviders = new ArrayList<PlayerInfoProvider>();
     private Map<String,LPlayer> _players = new HashMap<String, LPlayer>();
+
+    private List<String> _downstreamUpdate = new ArrayList<String>();
 
     public PlayerModule(ModuleListener listener) {
         super(1, "Players", "livekit.module.players", UpdateRate.MAX, listener);
     }
      
+    public void clearProviders() {
+        synchronized(_infoProviders) {
+            _infoProviders.clear();
+        }
+    }
+
+    public void addInfoProvider(PlayerInfoProvider provider) {
+        synchronized(_infoProviders) {
+            if(!_infoProviders.contains(provider)) {
+                _infoProviders.add(provider);
+            }
+        }
+    }
+
+    public void removeInfoProvider(PlayerInfoProvider provider) {
+        synchronized(_infoProviders) {
+            if(_infoProviders.contains(provider)) {
+                _infoProviders.remove(provider);
+            }
+        }
+    }
+
+    public void notifyDownstream(OfflinePlayer player) {
+        synchronized(_downstreamUpdate) {
+            _downstreamUpdate.add(player.getUniqueId().toString());
+        }
+        notifyChange();
+    }
+
     public LPlayer getPlayer(String uuid) {
         return _players.get(uuid);
     }
@@ -59,22 +102,25 @@ public class PlayerModule extends BaseModule implements Listener
     @Override
     public void update() {
         boolean needsUpdate = false;
+        Location _loc = null;
 
         for(LPlayer player : _players.values()) {
             Player p = Bukkit.getPlayer(UUID.fromString(player.uuid));
             if(p != null) {
+                _loc = p.getLocation();
+
                 if(p.getHealth() != player.health) needsUpdate = true;
                 if(p.getHealthScale() != player.healthMax) needsUpdate = true;
                 if(p.getExhaustion() != player.exhaustion) needsUpdate = true;
-                if(p.getLocation().getYaw() != player.dir) needsUpdate = true;
+                if(_loc.getX() != player.x || _loc.getY() != player.y || _loc.getZ() != player.z || _loc.getYaw() != player.dir) needsUpdate = true;
 
                 player.updateExhaustion(p.getExhaustion());
                 player.updateHealth(p.getHealth(), p.getHealthScale());
-                player.updateLocation(p.getLocation().getX(), p.getLocation().getY(), p.getLocation().getZ(), p.getLocation().getYaw() );
+                player.updateLocation(_loc.getX(), _loc.getY(), _loc.getZ(), _loc.getYaw() );
             }
         }
 
-        /*synchronized(_players) {
+       /* synchronized(_players) {
             //List<LivingEntity> living = ;
             //System.out.println(living.size());
             for(Entity e : Bukkit.getWorld("world").getEntities()) {
@@ -89,7 +135,7 @@ public class PlayerModule extends BaseModule implements Listener
                             if(_players.size() >= 500) continue;
 
                             player = new LPlayer(entity.getUniqueId().toString());
-                            player.head = HeadLibrary.DEFAULT_HEAD;
+                            player.head = HeadLibraryV2.DEFAULT;
                             player.headDirty = true;
                             player.name = entity.getType().name();
                             player.online = true;
@@ -102,13 +148,13 @@ public class PlayerModule extends BaseModule implements Listener
                         }
                         if(player.health != entity.getHealth()) player.updateHealth(entity.getHealth(), entity.getMaxHealth());
                         if(player.x != entity.getLocation().getX() || player.y != entity.getLocation().getY() || player.z != entity.getLocation().getZ())
-                            player.updateLocation(entity.getLocation().getX(), entity.getLocation().getY(), entity.getLocation().getZ());
+                            player.updateLocation(entity.getLocation().getX(), entity.getLocation().getY(), entity.getLocation().getZ(), entity.getLocation().getYaw());
                         
                         if(player.isDirty()) needsUpdate = true;
                     }
                 }
             }
-        }*/
+        }*/ 
         
         if(needsUpdate) notifyChange();
         super.update();
@@ -163,7 +209,7 @@ public class PlayerModule extends BaseModule implements Listener
         /*if(!HeadLibrary.has(p.getName())) { 
 			HeadLibrary.resolveAsync(p.getName());
 		} */
-		player.updateHead(HeadLibraryV2.get(p.getName()));
+		player.updateHead(HeadLibraryV2.get(p.getName(), p.isOnline()));
         player.updateOnline(true);
 
         ItemStack itemInHand = p.getInventory().getItemInMainHand();
@@ -252,6 +298,8 @@ public class PlayerModule extends BaseModule implements Listener
 
     @Override
     public void onDisable(Map<String,ActionMethod> signature) {
+        HandlerList.unregisterAll(this);
+        
         _players.clear();
         super.onDisable(signature);
     }
@@ -279,6 +327,13 @@ public class PlayerModule extends BaseModule implements Listener
     @Override
     public Map<Identity,IPacket> onUpdateAsync(List<Identity> identities) {
         Map<Identity, IPacket> responses = new HashMap<Identity,IPacket>();
+        
+        JSONArray downstreamUpdate = new JSONArray();
+        synchronized(_downstreamUpdate) {
+            for(String s : _downstreamUpdate) downstreamUpdate.put(s);
+            _downstreamUpdate.clear();
+        }
+        
         synchronized(_players) {
 
             for(Identity identity : identities) {
@@ -298,6 +353,7 @@ public class PlayerModule extends BaseModule implements Listener
                     players.put(jp);
                 }
                 json.put("players", players);
+                json.put("downstream", downstreamUpdate);
                 responses.put(identity, new ModuleUpdatePacket(this, json, false));
             //return new ModuleUpdatePacket(this, json);
            }
@@ -316,34 +372,142 @@ public class PlayerModule extends BaseModule implements Listener
         return null;
     }
 
-    @Action(name = "GetPlayerInfo")
+    private Waypoint getWaypointByUUID(String playerUUID, UUID waypointUuid) {
+        LPlayer player = getPlayer(playerUUID);
+        if(player == null || player._cachedWaypoints == null) return null;
+
+        synchronized(player._cachedWaypoints) {
+            for(Waypoint waypoint : player._cachedWaypoints) {
+                if(waypoint.getUUID().equals(waypointUuid)) {
+                    return waypoint;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    @Action(name="Teleport")
+    protected IPacket teleportWaypoint(Identity identity, ActionPacket packet) {
+        String wp = packet.getData().getString("waypoint");
+        Waypoint waypoint = getWaypointByUUID(identity.getUuid(), UUID.fromString(wp));
+
+        if(waypoint == null) return new StatusPacket(0, "Waypoint not found!");
+        if(waypoint.canTeleport() == false && !identity.hasPermission("livekit.module.admin")) return new StatusPacket(0, "Can't teleport to this waypoint");
+
+        OfflinePlayer player = Bukkit.getOfflinePlayer(UUID.fromString(identity.getUuid()));
+        if(player == null || !player.isOnline()) return new StatusPacket(0, "Player is offline");
+
+        Player online = player.getPlayer();
+        online.teleport(waypoint.getLocation());
+
+        return new StatusPacket(1);
+    }
+
+    @Action(name = "GetPlayerInfo", sync = false)
     public IPacket actionPlayerInfo(Identity identity, ActionPacket packet) {
         String uuid = packet.getData().getString("uuid");
         OfflinePlayer player = Bukkit.getOfflinePlayer(UUID.fromString(uuid));
         if(player == null) return new StatusPacket(0, "Player not found");
         if(!player.isOnline() && !identity.hasPermission("livekit.module.admin")) return new StatusPacket(0, "Permission denied");
-        
-        JSONObject response = new JSONObject();
-        if(identity.hasPermission("livekit.module.admin") || uuid.equals(identity.getUuid())) {
-            response.put("firstPlayed", player.getFirstPlayed());
-            response.put("lastPlayed", player.getLastPlayed());
-            response.put("banned", player.isBanned());
 
-            JSONArray locationData = new JSONArray();
-            response.put("locations", locationData);
-            Location bedspawn = player.getBedSpawnLocation();
-            if(bedspawn != null) {
-                JSONObject bedlocation = new JSONObject();
-                bedlocation.put("type", "loc");
-                bedlocation.put("name", "Bed Spawn");
-                bedlocation.put("description", "Bed Spawn location of "+player.getName());
-                bedlocation.put("x", bedspawn.getBlockX());
-                bedlocation.put("y", bedspawn.getBlockY());
-                bedlocation.put("z", bedspawn.getBlockZ());
-                bedlocation.put("world", bedspawn.getWorld().getName());
-                locationData.put(bedlocation);
+        JSONObject response = new JSONObject();
+        JSONArray infoData = new JSONArray();
+        response.put("info", infoData);
+
+        JSONArray locationData = new JSONArray();
+        response.put("locations", locationData);
+
+        List<InfoEntry> _infos = new ArrayList<>();
+        List<Waypoint> _waypoints = new ArrayList<>();
+
+        try{
+        
+            Bukkit.getScheduler().callSyncMethod(Plugin.getInstance(), new Callable<Void>(){
+                @Override
+                public Void call() throws Exception {
+                    Player onlinePlayer = (player.isOnline() ?  player.getPlayer() : null);
+
+                    if(identity.hasPermission("livekit.module.admin") || uuid.equals(identity.getUuid())) {
+                        response.put("firstPlayed", player.getFirstPlayed());
+                        response.put("lastPlayed", player.getLastPlayed());
+                        response.put("banned", player.isBanned());
+                        if(onlinePlayer != null) response.put("gamemode", onlinePlayer.getGameMode().name());
+                    }
+
+                    synchronized(_infoProviders) {
+                        for(PlayerInfoProvider iprov : _infoProviders) {
+                            if(iprov instanceof AsyncPlayerInfoProvider) continue;
+                            if(iprov.getPermission() != null && !identity.hasPermission(iprov.getPermission()) && !identity.hasPermission("livekit.module.admin")) continue;
+
+                            iprov.onResolvePlayerInfo(player, _infos);
+                            iprov.onResolvePlayerLocation(player, _waypoints);
+                        }
+                    }
+                    return null;
+                }
+            }).get();
+
+        }catch(Exception ex){ex.printStackTrace();}
+
+        LPlayer lplayer = getPlayer(uuid);
+        if(lplayer == null) return new StatusPacket(0, "Invalid Player requested");
+
+        synchronized(_infoProviders) {
+            for(PlayerInfoProvider iprov : _infoProviders) {
+                if(!(iprov instanceof AsyncPlayerInfoProvider)) continue;
+                if(iprov.getPermission() != null && !identity.hasPermission(iprov.getPermission()) && !identity.hasPermission("livekit.module.admin")) continue;
+
+                iprov.onResolvePlayerInfo(player, _infos);
+                iprov.onResolvePlayerLocation(player, _waypoints);
             }
         }
+        synchronized(lplayer._cachedWaypoints) {
+            lplayer._cachedWaypoints = _waypoints;
+        }
+
+        for(InfoEntry entry : _infos) {
+            if(entry.getName() == null) continue;
+            if(entry.getValue() == null) continue;
+            if(entry.getPrivacy() == null) continue;
+            
+            if(entry.getPrivacy() == Privacy.PRIVATE) {
+                if(!identity.hasPermission("livekit.module.admin") ) {
+                    if(!uuid.equals(identity.getUuid())) continue;
+                }
+            }
+
+            JSONObject jentry = new JSONObject();
+            jentry.put("name", entry.getName());
+            jentry.put("value", entry.getValue());
+            jentry.put("priority", 50);
+            infoData.put(jentry);
+        }
+
+        for(Waypoint waypoint : _waypoints) {
+            if(waypoint.getLocation() == null) continue;
+            if(waypoint.getName() == null) continue;
+            if(waypoint.getPrivacy() == null) continue;
+            
+            if(waypoint.getPrivacy() == Privacy.PRIVATE) {
+                if(!identity.hasPermission("livekit.module.admin") ) {
+                    if(!uuid.equals(identity.getUuid())) continue;
+                }
+            }
+
+            /*JSONObject bedlocation = new JSONObject();
+            bedlocation.put("uuid", waypoint.getUUID().toString());
+            bedlocation.put("name", waypoint.getName());
+            bedlocation.put("description", waypoint.getDescription());
+            bedlocation.put("x", waypoint.getLocation().getBlockX());
+            bedlocation.put("y", waypoint.getLocation().getBlockY());
+            bedlocation.put("z", waypoint.getLocation().getBlockZ());
+            bedlocation.put("color", waypoint.getColor().getHEX());
+            bedlocation.put("world", waypoint.getLocation().getWorld().getName());
+            bedlocation.put("teleport", waypoint.canTeleport());*/
+            locationData.put(waypoint.toJson());
+        }
+        
 
         return packet.response(response);
     }
@@ -404,6 +568,9 @@ public class PlayerModule extends BaseModule implements Listener
         public LItem itemHeld;
 
         public List<PlayerAction> actions = new ArrayList<PlayerAction>();
+
+        //used for caching player specific waypoints
+        protected List<Waypoint> _cachedWaypoints = new ArrayList<Waypoint>();
 
        // public long lastOnline = 0;
        // public long firstPlayed = 0;
@@ -530,7 +697,7 @@ public class PlayerModule extends BaseModule implements Listener
             /*if(!HeadLibrary.has(player.getName())) { 
                 HeadLibrary.resolveAsync(player.getName());
             } */
-            p.updateHead(HeadLibraryV2.get(player.getName()));
+            p.updateHead(HeadLibraryV2.get(player.getName(), player.isOnline()));
             
 
             if(player.getPlayer() != null) {

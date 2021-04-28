@@ -11,13 +11,13 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
+import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import at.livekit.livekit.Identity;
-import at.livekit.modules.BaseModule.Action;
 import at.livekit.packets.ActionPacket;
 import at.livekit.packets.IPacket;
 import at.livekit.packets.StatusPacket;
@@ -41,12 +41,14 @@ public class ChatModule extends BaseModule implements Listener {
     @Override
     public void onEnable(Map<String, ActionMethod> signature) {
         Bukkit.getServer().getPluginManager().registerEvents(this, Plugin.getInstance());
-
+        
         super.onEnable(signature);
     }
 
     @Override
     public void onDisable(Map<String, ActionMethod> signature) {
+        HandlerList.unregisterAll(this);
+
         _backlog.clear();
         _updates.clear();
         super.onDisable(signature);

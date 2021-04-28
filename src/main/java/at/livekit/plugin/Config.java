@@ -66,6 +66,18 @@ public class Config
     public static String getPassword() {
         return config.getString("server.password");
     }
+
+    public static int getPersonalPinLimit() {
+        return config.getInt("modules.POIModule.personalpins");
+    }
+
+    public static boolean canTeleportBed() {
+        return config.getBoolean("modules.POIModule.teleport_bed");
+    }
+
+    public static boolean canTeleportSpawn() {
+        return config.getBoolean("modules.POIModule.teleport_spawn");
+    }
     
     /*public static String getModuleString(String name, String setting) {
         return config.getString("modules."+name+"."+setting);
@@ -107,13 +119,33 @@ public class Config
             save = true;
         }
 
+        List<String> permissions = getDefaultPermissions();
+        if(permissions.contains("livekit.modules.chat")) {
+            Plugin.debug("Fixing chat module permissions");
+            permissions.remove("livekit.modules.chat");
+            permissions.add("livekit.module.chat");
+            config.set("permissions.default", permissions);
+            save = true;
+        }
+
+        if(config.get("modules.POIModule") == null) {
+            Plugin.log("Upgrading config to new version...");
+            config.set("modules.POIModule.enabled", true);
+            config.set("modules.POIModule.personalpins", 5);
+            config.set("modules.POIModule.teleport_spawn", false);
+            config.set("modules.POIModule.teleport_bed", false);
+            List<String> perms = getDefaultPermissions();
+            if(!perms.contains("livekit.module.poi")) perms.add("livekit.module.poi");
+            if(!perms.contains("livekit.poi.personalpins")) perms.add("livekit.poi.personalpins");
+            config.set("permissions.default", perms);
+            save = true;
+        }
+
         try{
             if(save) {
                 //config.options().header(config.options().header());
                 config.save(configFile);
             }
         }catch(Exception ex){ex.printStackTrace();}
-
-        //TODO: Convert world => worlds
     }
 }

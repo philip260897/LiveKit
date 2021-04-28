@@ -2,19 +2,13 @@ package at.livekit.utils;
 
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.PrintWriter;
 import java.net.URL;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map.Entry;
 
 import javax.imageio.ImageIO;
-
-import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -25,7 +19,7 @@ import at.livekit.plugin.Plugin;
 
 public class HeadLibraryV2 implements Runnable
 {
-    private static String DEFAULT = "iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAA1ElEQVR4XmPQV+D9ry3H+19fnv+/hgz3fxUJjv9qUlxgMS1Z3v8MIAYMG6sI/nfSEvpvryX6X0eOD6wBrGBbZ87/vX1F/49Na/i/t7sIyC75v6Ys6r+JqtB/hlW1af+3tOT+B9FrG3L/zymK+b+7s+j/nEwfMGYASYJAkG3n/63V6WBJEBsEQJoY5iS7/d9cnfR/e1PR/ywHAzDe15Hzf1GW+/+GYJP/DBPinP9Pi3f4X+5kioL74+z+NwZb/mfId9X5n+usBeaAcJWf8f/mUGswBrEBqAeFqNKFJtgAAAAASUVORK5CYII=";
+    public static String DEFAULT = "iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAA1ElEQVR4XmPQV+D9ry3H+19fnv+/hgz3fxUJjv9qUlxgMS1Z3v8MIAYMG6sI/nfSEvpvryX6X0eOD6wBrGBbZ87/vX1F/49Na/i/t7sIyC75v6Ys6r+JqtB/hlW1af+3tOT+B9FrG3L/zymK+b+7s+j/nEwfMGYASYJAkG3n/63V6WBJEBsEQJoY5iS7/d9cnfR/e1PR/ywHAzDe15Hzf1GW+/+GYJP/DBPinP9Pi3f4X+5kioL74+z+NwZb/mfId9X5n+usBeaAcJWf8f/mUGswBrEBqAeFqNKFJtgAAAAASUVORK5CYII=";
     private static final String SKIN_URL = "https://sessionserver.mojang.com/session/minecraft/profile";
     
 
@@ -41,35 +35,9 @@ public class HeadLibraryV2 implements Runnable
     }
 
     public static void onEnable() {
-        try{
-
-            File file = new File(Plugin.getInstance().getDataFolder(), "heads.json");
-            if(file.exists()) {
-                JSONArray root = new JSONArray(new String(Files.readAllBytes(file.toPath())));
-                for(int i = 0; i < root.length(); i++) {
-                    HeadInfo info = HeadInfo.fromJson(root.getJSONObject(i));
-                    _cache.put(info.name, info);
-                }
-            }
-
-            if(Legacy.hasLegacyHeads()) {
-                Plugin.log("Legacy Heads detected. Converting.");
-                for(HeadInfo info : Legacy.getLegacyHeads()) {
-                    if(!_cache.containsKey(info.name)) {
-                        _cache.put(info.name, info);
-                    }
-                }
-                Legacy.deleteLegacyHeads();
-                save();
-            }
-
-            abort = false;
-            thread = new Thread(new HeadLibraryV2());
-            thread.start();
-
-        }catch(Exception ex){
-            ex.printStackTrace();
-        }
+        abort = false;
+        thread = new Thread(new HeadLibraryV2());
+        thread.start();
     }   
     
     public static void onDisable() {
@@ -89,24 +57,34 @@ public class HeadLibraryV2 implements Runnable
     }
 
     public static String get(OfflinePlayer player) {
-        return get(player.getName());
+        return get(player.getName(), player.isOnline());
     }
 
-    public static String get(String playerName) {
+    public static String get(String playerName, boolean online) {
+        String returnValue = DEFAULT;
+        boolean resolve = true;
+        
         synchronized(_cache) {
             if(_cache.containsKey(playerName)) {
                 HeadInfo info = _cache.get(playerName);
-                if(info.head != null) return info.head;
-                if(info.failed == true) return DEFAULT;
+                if(info.head != null) {
+                    returnValue = info.head;
+                    if(!info.needsUpdate() || !online) {
+                        resolve = false;
+                    }
+                }
+                if(info.failed == true) resolve = false;
             }
         }
-        synchronized(_queue) {
-            if(!_queue.contains(playerName)) {
-                _queue.add(playerName);
-                _queue.notifyAll();
+        if(resolve) {
+            synchronized(_queue) {
+                if(!_queue.contains(playerName)) {
+                    _queue.add(playerName);
+                    _queue.notifyAll();
+                }
             }
         }
-        return DEFAULT;
+        return returnValue;
     }
     
 
@@ -116,6 +94,7 @@ public class HeadLibraryV2 implements Runnable
         private String head = null;
         private boolean first = true;
         private boolean failed = false;
+        private long timestamp = 0;
 
         public HeadInfo(String name) {
             this.name = name;
@@ -128,12 +107,25 @@ public class HeadLibraryV2 implements Runnable
             this.failed = head == null;
         }
 
+        public String getName() {
+            return name;
+        }
+
+        public String getHead() {
+            return head;
+        }
+
+        public boolean needsUpdate() {
+            return (System.currentTimeMillis() - timestamp > 24*60*60*1000);
+        }
+
         public static HeadInfo fromJson(JSONObject json) {
             HeadInfo info = new HeadInfo(null);
             info.name = json.getString("name");
             if(json.has("head")) info.head = json.getString("head");
             info.first = json.getBoolean("first");
             info.failed = json.getBoolean("failed");
+            if(json.has("timestamp")) info.timestamp = json.getLong("timestamp");
             return info;
         }
 
@@ -143,6 +135,7 @@ public class HeadLibraryV2 implements Runnable
             if(head != null) json.put("head", head);
             json.put("first", first);
             json.put("failed", failed);
+            json.put("timestamp", timestamp);
             return json;
         }
     }
@@ -151,6 +144,17 @@ public class HeadLibraryV2 implements Runnable
     private static boolean abort = false;
     @Override
     public void run() {
+        try{
+            List<HeadInfo> heads = Plugin.getStorage().loadPlayerHeads();
+            synchronized(_cache) {
+                for(HeadInfo head : heads) {
+                    _cache.put(head.getName(), head);
+                }
+            }
+        }catch(Exception ex){
+            ex.printStackTrace();
+        }
+
         while(!abort) {
 
             String name = null;
@@ -168,22 +172,51 @@ public class HeadLibraryV2 implements Runnable
                     }
                 }
 
-                if(info == null || (info.head == null && info.failed == false)) {
-                    Plugin.debug("[HeadResolver] Resolving "+name);
+                if(info == null) {
+                    try{
+                        info = Plugin.getStorage().loadPlayerHead(name);
+                    }catch(Exception ex){ex.printStackTrace();}
+                }
+
+                if(info == null || (info.head == null && info.failed == false) || (info.head != null && info.needsUpdate())) {
+                    Plugin.debug("[HeadResolver] Resolving "+name+ " update="+(info != null ? info.needsUpdate():false));
                     if(info == null) {
                         info = new HeadInfo(name);
-                        synchronized(_cache) {
+                        /*synchronized(_cache) {
                             _cache.put(name, info);
-                        }
+                        }*/
                     }
 
                     String head = resolveHeadByName(name);
                     if(head != null) {
                         info.head = head;
                         info.failed = false;
+                        info.timestamp = System.currentTimeMillis();
+
+                        synchronized(_cache) {
+                            if(_cache.containsKey(name)) {
+                                _cache.remove(name);
+                            }
+                            _cache.put(name, info);
+                        }
+                        try{
+                            Plugin.getStorage().savePlayerHead(name, info);
+                        }catch(Exception ex){ex.printStackTrace();}
+
                         if(HeadLibraryV2.listener != null) HeadLibraryV2.listener.onHeadResolved(info.name, info.head);
                     } else {
                         info.failed = (rateLimit == 0);
+                        
+                        synchronized(_cache) {
+                            if(_cache.containsKey(name)) {
+                                _cache.remove(name);
+                            }
+                            _cache.put(name, info);
+                        }
+                        try{
+                            Plugin.getStorage().savePlayerHead(name, info);
+                        }catch(Exception ex){ex.printStackTrace();}
+
                         if(rateLimit != 0) {
                             synchronized(_queue) {
                                 _queue.add(name);
@@ -193,7 +226,12 @@ public class HeadLibraryV2 implements Runnable
                             }catch(InterruptedException ex){}
                         }
                     }
-                    HeadLibraryV2.save();
+
+
+
+                    //HeadLibraryV2.save();
+                } else if(info != null && info.head != null && info.failed == false) {
+                    if(HeadLibraryV2.listener != null) HeadLibraryV2.listener.onHeadResolved(info.name, info.head);
                 }
             } else {
                 try{
@@ -267,7 +305,7 @@ public class HeadLibraryV2 implements Runnable
         return null;
     }
 
-    private static void save() {
+    /*private static void save() {
         try{
             File file = new File(Plugin.getInstance().getDataFolder(), "heads.json");
             if(!file.exists()) file.createNewFile();
@@ -284,5 +322,5 @@ public class HeadLibraryV2 implements Runnable
             writer.flush();
             writer.close();
         }catch(Exception ex){ex.printStackTrace();}
-    }
+    }*/
 }

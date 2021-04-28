@@ -1,6 +1,7 @@
 package at.livekit.livekit;
 
 import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.json.JSONObject;
 import java.lang.reflect.Method;
 
@@ -12,10 +13,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
+
+import at.livekit.api.core.ILiveKit;
+import at.livekit.api.map.POI;
+import at.livekit.api.map.POIInfoProvider;
+import at.livekit.api.map.PlayerInfoProvider;
+import at.livekit.authentication.Pin;
+import at.livekit.authentication.Session;
 import at.livekit.modules.BaseModule;
 import at.livekit.modules.ModuleManager;
+import at.livekit.modules.POIModule;
+import at.livekit.modules.PlayerModule;
 import at.livekit.modules.BaseModule.Action;
 import at.livekit.modules.BaseModule.ActionMethod;
 import at.livekit.modules.BaseModule.ModuleListener;
@@ -29,10 +41,11 @@ import at.livekit.packets.RequestPacket;
 import at.livekit.packets.ServerSettingsPacket;
 import at.livekit.packets.StatusPacket;
 import at.livekit.plugin.Config;
+import at.livekit.plugin.Permissions;
 import at.livekit.plugin.Plugin;
 import at.livekit.utils.HeadLibraryV2;
 
-public class LiveKit implements ModuleListener, NIOServerEvent<Identity>, Runnable {
+public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identity>, Runnable {
 
     private static LiveKit instance;
 
@@ -53,6 +66,8 @@ public class LiveKit implements ModuleListener, NIOServerEvent<Identity>, Runnab
     private List<String> _moduleUpdates = new ArrayList<String>();
     private List<String> _moduleFull = new ArrayList<String>();
     private List<String> _commands = new ArrayList<String>();
+
+    private ExecutorService executor;
 
 
     private List<ActionPacket> _packetsIncoming = new ArrayList<ActionPacket>();
@@ -111,7 +126,7 @@ public class LiveKit implements ModuleListener, NIOServerEvent<Identity>, Runnab
     }
 
     public void onEnable() throws Exception {
-        PlayerAuth.initialize();
+        //PlayerAuth.initialize();
 
         _modules.onEnable(invokationMap);
         Method[] methods = this.getClass().getDeclaredMethods();
@@ -124,6 +139,8 @@ public class LiveKit implements ModuleListener, NIOServerEvent<Identity>, Runnab
                 }
             }
         }
+
+        executor = Executors.newSingleThreadExecutor();
 
         /*synchronized(invokationMap) {
             for(Entry<String,ActionMethod> entry : invokationMap.entrySet()) {
@@ -174,7 +191,10 @@ public class LiveKit implements ModuleListener, NIOServerEvent<Identity>, Runnab
     private Future<Void> _futureModuleUpdates;
 
     private Map<Identity, ActionPacket> syncActions = new HashMap<Identity, ActionPacket>();
+    private Map<Identity, ActionPacket> asyncActions = new HashMap<Identity, ActionPacket>();
     private Future<Map<Identity,IPacket>> _futureSyncActions;
+    private Future<Map<Identity,IPacket>> _futureAsyncActions;
+
     @Override
     public void run() {
         while(!abort) {
@@ -254,7 +274,7 @@ public class LiveKit implements ModuleListener, NIOServerEvent<Identity>, Runnab
 
             long commands = System.currentTimeMillis();
 
-            Map<Identity, ActionPacket> asyncActions = new HashMap<Identity, ActionPacket>();
+            //Map<Identity, ActionPacket> asyncActions = new HashMap<Identity, ActionPacket>();
             
             if(_futureSyncActions != null) {
                 if(_futureSyncActions.isDone()) {
@@ -267,7 +287,19 @@ public class LiveKit implements ModuleListener, NIOServerEvent<Identity>, Runnab
                 }
             }
 
+            if(_futureAsyncActions != null) {
+                if(_futureAsyncActions.isDone()) {
+                    try{
+                        _server.send(_futureAsyncActions.get());
+                    }catch(Exception ex){ex.printStackTrace();}
+
+                    _futureAsyncActions = null;
+                    asyncActions.clear();
+                }
+            }
+
             synchronized(_packetsIncoming) {
+
                 int i = 0;
                 while(i < _packetsIncoming.size()) {
                     ActionPacket action = _packetsIncoming.get(i);
@@ -285,16 +317,19 @@ public class LiveKit implements ModuleListener, NIOServerEvent<Identity>, Runnab
                         if(syncActions.containsKey(action.client.getIdentifier()) || _futureSyncActions != null) i++;
                         else syncActions.put(action.client.getIdentifier(), _packetsIncoming.remove(i));
                     } else {
-                        if(asyncActions.containsKey(action.client.getIdentifier())) i++;
+                        if(asyncActions.containsKey(action.client.getIdentifier()) || _futureAsyncActions != null) i++;
                         else asyncActions.put(action.client.getIdentifier(), _packetsIncoming.remove(i));
                     }
                 }
             }
             
-            _server.send(invokeActions(asyncActions, false));
+            //_server.send(invokeActions(asyncActions, false));
 
             if(_futureSyncActions == null && syncActions.size() != 0) {
                 _futureSyncActions = invokeActionsSync(syncActions);
+            }
+            if(_futureAsyncActions == null && asyncActions.size() != 0) {
+                _futureAsyncActions = invokeActionsAsync(asyncActions);
             }
                 /*while(_packetsIncoming.size() > 0 && (System.currentTimeMillis()-start < tickTime)) {
                     RequestPacket packet = (RequestPacket) _packetsIncoming.remove(0);
@@ -333,9 +368,9 @@ public class LiveKit implements ModuleListener, NIOServerEvent<Identity>, Runnab
                 }
             }
         }catch(Exception ex){ex.printStackTrace();}
-        try{
+        /*try{
             PlayerAuth.save();
-        }catch(Exception ex){ex.printStackTrace();}
+        }catch(Exception ex){ex.printStackTrace();}*/
         try{
             if(_modules != null)
                 _modules.onDisable(invokationMap);
@@ -358,6 +393,10 @@ public class LiveKit implements ModuleListener, NIOServerEvent<Identity>, Runnab
 
                 if(invokationMap.size() > 0)  throw new Exception("Invokation leak?");
             }
+        }catch(Exception ex){ex.printStackTrace();}
+
+        try{
+            executor.shutdownNow();
         }catch(Exception ex){ex.printStackTrace();}
 
         LiveKit.instance = null;
@@ -590,7 +629,7 @@ public class LiveKit implements ModuleListener, NIOServerEvent<Identity>, Runnab
     @Action(name = "Login", sync = false)
     public IPacket login(Identity in, ActionPacket action) {
         NIOClient<Identity> client = action.client;
-        PlayerAuth identity = null;
+        String identity = null;
         JSONObject o = action.getData();
 
         String pin = o.has("pin")&&!o.isNull("pin") ? o.getString("pin") : null;
@@ -625,18 +664,58 @@ public class LiveKit implements ModuleListener, NIOServerEvent<Identity>, Runnab
 
         if(!anonymous) {
             if(pin != null) {
-                identity = PlayerAuth.validateClaim(pin);
+                //identity = PlayerAuth.validateClaim(pin);
+
+                try{
+                    List<Pin> pins = Plugin.getStorage().loadPins();
+                    for(Pin p : pins) {
+                        if(p.getPin().equals(pin) && p.isValid()) {
+                            identity = p.getUUID();
+
+                            Plugin.getStorage().deletePin(p.getUUID(), p);
+                        }
+                    }
+
+                    if(identity != null) {
+                        List<Session> sessions = Plugin.getStorage().loadSessions(identity);
+                        while(sessions.size() >= 5) {
+                            Session session = sessions.remove(0);
+                            Plugin.getStorage().deleteSession(identity, session);
+                        }
+                    }
+                }catch(Exception ex){ex.printStackTrace();}
+
             } else {
-                identity = PlayerAuth.get(uuid);
-                if(identity.isValidSession(authorization)) {
+                //identity = PlayerAuth.get(uuid);
+                identity = uuid;
+                
+                boolean success = false;
+
+                try{
+                    List<Session> sessions = Plugin.getStorage().loadSessions(identity);
+                    for(Session session : sessions) {
+                        
+                        if(session.getAuthentication().equals(authorization)) {
+                            Plugin.getStorage().deleteSession(identity, session);
+                            success = true;
+                        }
+                    }
+
+
+                }catch(Exception ex){ex.printStackTrace();}
+
+                if(!success) identity = null;
+                //System.out.println(identity);
+
+                /*if(identity.isValidSession(authorization)) {
                     identity.removeSession(authorization);
                 } else {
                     identity = null;
-                }
+                }*/
             }
             if(identity != null) {
                 //client.setIdentifier(new Identity(identity.getUUID()));
-                client.getIdentifier().identify(identity.getUUID());
+                client.getIdentifier().identify(identity);
                 client.getIdentifier().loadPermissionsAsync();
                 client.getIdentifier().updateSubscriptions(_modules.getDefaultSubscriptions());
                 client.getIdentifier().updateSubscriptions(subscriptions);
@@ -646,8 +725,12 @@ public class LiveKit implements ModuleListener, NIOServerEvent<Identity>, Runnab
                     _server.send(client.getIdentifier(), _modules.onJoinAsync(client.getIdentifier()));
                 }catch(Exception ex){ex.printStackTrace();}
 
+                Session session = Session.createNew(null, null);
+                try{
+                    Plugin.getStorage().createSession(identity, session);
+                }catch(Exception ex){ex.printStackTrace();}
             
-                return new IdentityPacket(identity.getUUID(), client.getIdentifier().getName(), HeadLibraryV2.get(client.getIdentifier().getName()), identity.generateSessionKey());
+                return new IdentityPacket(identity, client.getIdentifier().getName(), HeadLibraryV2.get(client.getIdentifier().getName(), true), session.getAuthentication());
             }
         } 
         else
@@ -690,6 +773,13 @@ public class LiveKit implements ModuleListener, NIOServerEvent<Identity>, Runnab
         return new StatusPacket(1, "This just computed on the main thread!");
     }
 
+    
+    private Future<Map<Identity, IPacket>> invokeActionsAsync(Map<Identity, ActionPacket> actions) {
+        return executor.submit(()->{
+            return invokeActions(actions, false);
+        });
+    }
+
     private Future<Map<Identity,IPacket>> invokeActionsSync(Map<Identity, ActionPacket> actions) {
         return Bukkit.getScheduler().callSyncMethod(Plugin.getInstance(), new Callable<Map<Identity,IPacket>>(){
             @Override
@@ -702,6 +792,8 @@ public class LiveKit implements ModuleListener, NIOServerEvent<Identity>, Runnab
     private Map<Identity, IPacket> invokeActions(Map<Identity, ActionPacket> actions, boolean sync) {
         HashMap<Identity, IPacket> results = new HashMap<Identity, IPacket>();
         
+        
+
         for(Entry<Identity, ActionPacket> entry : actions.entrySet()) {
             ActionPacket action = entry.getValue();
             Identity identity = entry.getKey();
@@ -745,6 +837,102 @@ public class LiveKit implements ModuleListener, NIOServerEvent<Identity>, Runnab
             return invokationMap.get(module+":"+action);
         }
     }
+
+    @Override
+	public void addPlayerInfoProvider(PlayerInfoProvider provider) {
+		PlayerModule module = (PlayerModule)_modules.getModule("PlayerModule");
+        if(module != null) {
+            if(provider.getPermission() != null) {
+                Permissions.registerPermission(provider.getPermission());
+            }
+            module.addInfoProvider(provider);
+        }
+	}
+
+	@Override
+	public void removePlayerInfoProvider(PlayerInfoProvider provider) {
+		PlayerModule module = (PlayerModule)_modules.getModule("PlayerModule");
+        if(module != null) {
+            if(provider.getPermission() != null) {
+                Permissions.unregisterPermission(provider.getPermission());
+            }
+            module.removeInfoProvider(provider);
+        }
+	}
+
+    @Override
+    public void addPointOfInterest(POI waypoint) {
+        POIModule module = (POIModule) _modules.getModule("POIModule");
+        if(module != null && module.isEnabled()) {
+            module.addPOI(waypoint);
+        }
+    }
+
+    @Override
+    public void removePointOfIntereset(POI waypoint) {
+        POIModule module = (POIModule) _modules.getModule("POIModule");
+        if(module != null && module.isEnabled()) {
+            module.removePOI(waypoint);
+        }
+    }
+
+    @Override
+    public void addPOIInfoProvider(POIInfoProvider provider) {
+		POIModule module = (POIModule)_modules.getModule("POIModule");
+        if(module != null) {
+            if(provider.getPermission() != null) {
+                Permissions.registerPermission(provider.getPermission());
+            }
+            module.addInfoProvider(provider);
+        }
+    }
+
+    @Override
+    public void removePOIInfoProvider(POIInfoProvider provider) {
+		POIModule module = (POIModule)_modules.getModule("POIModule");
+        if(module != null) {
+            if(provider.getPermission() != null) {
+                Permissions.unregisterPermission(provider.getPermission());
+            }
+            module.removeInfoProvider(provider);
+        }
+    }
+
+    @Override
+    public void notifyPOIInfoChange(POI poi) {
+        POIModule module = (POIModule)_modules.getModule("POIModule");
+        if(module != null) {
+            module.notifyDownstream(poi);
+        }
+    }
+
+    @Override
+    public void notifyPlayerInfoChange(OfflinePlayer player) {
+        PlayerModule module = (PlayerModule)_modules.getModule("PlayerModule");
+        if(module != null) {
+            module.notifyDownstream(player);
+        }
+    }
+
+	/*@Override
+	public void addPOIProvider(POIProvider arg0) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void removePOIProvider(POIProvider arg0) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void updatePOIs() {
+        POIModule module = (POIModule) _modules.getModule("POIModule");
+        if(module != null && module.isEnabled()) {
+            this.onFullUpdate(module.getType());
+        }
+	}*/
 }
 
 

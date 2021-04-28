@@ -59,6 +59,7 @@ public class ModuleManager
 
         this.registerModule(new AdminModule(listener));
         this.registerModule(new ChatModule(listener));
+        this.registerModule(new POIModule(listener));
 
         /*System.out.println("Subscriptions collected: ");
         for(Entry<String, List<String>> entry : _subscriptions.entrySet()) {
@@ -87,6 +88,13 @@ public class ModuleManager
             if(m.isEnabled()) {
                 m.onDisable(signature);
             }
+
+            if(m instanceof PlayerModule) {
+                ((PlayerModule) m).clearProviders();
+            }
+            /*if(m instanceof POIModule) {
+                ((POIModule) m).clearProviders();
+            }*/
         }
         _modules.clear();
         _subscriptions.clear();
@@ -289,7 +297,7 @@ public class ModuleManager
 			public Void call() throws Exception {
                 //long start = System.currentTimeMillis();
                 for(BaseModule module : getModules()) {
-                    if(module.canUpdate(getSettings().liveMapTickRate)) {
+                    if(module.isEnabled() && module.canUpdate(getSettings().liveMapTickRate)) {
                         module.update();
                     }
                 }

@@ -15,8 +15,10 @@ permissions:
   - livekit.module.map
   - livekit.module.players
   - livekit.module.weathertime
-  - livekit.modules.chat
+  - livekit.module.chat
+  - livekit.module.poi
   - livekit.chat.write
+  - livekit.poi.personalpins;
 modules:
   LiveMapModule:
     enabled: true
@@ -28,3 +30,8 @@ modules:
     enabled: true
   ChatModule:
     enabled: true
+  POIModule:
+    enabled: true
+    perosnalpins: 5
+    teleport_spawn: false
+    teleport_bed: false

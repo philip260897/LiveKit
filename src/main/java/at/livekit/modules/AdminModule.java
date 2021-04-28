@@ -9,6 +9,7 @@ import java.util.UUID;
 import org.bukkit.BanList;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
@@ -112,7 +113,7 @@ public class AdminModule extends BaseModule
             JSONObject p = new JSONObject();
             p.put("uuid", player.getUniqueId().toString());
             p.put("name", player.getName() );
-            p.put("head", HeadLibraryV2.get(player.getName()));
+            p.put("head", HeadLibraryV2.get(player.getName(), player.isOnline()));
             array.put(p);
         }
         data.put("players", array);
@@ -219,6 +220,65 @@ public class AdminModule extends BaseModule
         return new StatusPacket(1, "Player has been kicked!");
     }
 
+    @Action(name="KillPlayer")
+    protected IPacket actionKill(Identity identity, ActionPacket packet) {
+        String uuid = packet.getData().getString("uuid");
+
+        Player player = Bukkit.getServer().getPlayer(UUID.fromString(uuid));
+        if(player == null || !player.isOnline()) return new StatusPacket(0, "Player is offline!"); 
+
+        player.damage(player.getHealth());
+
+        return new StatusPacket(1, "Player has been killed!");
+    }
+
+    @Action(name="SlapPlayer")
+    protected IPacket actionSlap(Identity identity, ActionPacket packet) {
+        String uuid = packet.getData().getString("uuid");
+
+        Player player = Bukkit.getServer().getPlayer(UUID.fromString(uuid));
+        if(player == null || !player.isOnline()) return new StatusPacket(0, "Player is offline!"); 
+
+        player.damage(0.5);
+
+        return new StatusPacket(1, "Player has been slapped!");
+    }
+
+    @Action(name="StrikePlayer")
+    protected IPacket actionStrike(Identity identity, ActionPacket packet) {
+        String uuid = packet.getData().getString("uuid");
+
+        Player player = Bukkit.getServer().getPlayer(UUID.fromString(uuid));
+        if(player == null || !player.isOnline()) return new StatusPacket(0, "Player is offline!"); 
+
+        World world = player.getWorld();
+        world.strikeLightningEffect(player.getLocation());
+        player.damage(1);
+
+        return new StatusPacket(1, "Player has been slapped!");
+    }
+
+    @Action(name="GameModePlayer")
+    protected IPacket actionGamemode(Identity identity, ActionPacket packet) {
+        String uuid = packet.getData().getString("uuid");
+        String gamemode = packet.getData().getString("gamemode");
+
+        Player player = Bukkit.getServer().getPlayer(UUID.fromString(uuid));
+        if(player == null || !player.isOnline()) return new StatusPacket(0, "Player is offline!"); 
+
+        GameMode mode = null;
+        for(GameMode m : GameMode.values()) {
+            if(m.name().toUpperCase().equals(gamemode.toUpperCase())) {
+                mode = m;
+            }
+        }
+        if(mode == null) return new StatusPacket(0, "Gamemode "+gamemode+" not found!"); 
+
+        player.setGameMode(mode);
+
+        return new StatusPacket(1, "Player has been slapped!");
+    }
+
     @Action(name="ListBannedPlayers")
     protected IPacket bannedPlayers(Identity identity, ActionPacket packet) {
         JSONObject data = new JSONObject();
@@ -227,7 +287,7 @@ public class AdminModule extends BaseModule
             JSONObject p = new JSONObject();
             p.put("uuid", player.getUniqueId().toString());
             p.put("name", player.getName() );
-            p.put("head", HeadLibraryV2.get(player.getName()));
+            p.put("head", HeadLibraryV2.get(player.getName(), player.isOnline()));
             array.put(p);
         }
         data.put("players", array);

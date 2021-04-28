@@ -25,8 +25,11 @@ public class Permissions
 		permissions.add("livekit.module.weathertime");
         permissions.add("livekit.module.admin");
         permissions.add("livekit.module.chat");
+        permissions.add("livekit.module.poi");
         
         permissions.add("livekit.chat.write");
+        permissions.add("livekit.poi.personalpins");
+        permissions.add("livekit.poi.edit");
 
         if(use) {
             if(Bukkit.getPluginManager().getPlugin("Vault") == null) {
@@ -54,9 +57,26 @@ public class Permissions
     public static boolean has(OfflinePlayer player, String permission) {
         if(player.isOp()) return true;
         if(use) {
+            
             return perms.playerHas(Bukkit.getWorlds().get(0).getName(), player, permission);
         } else {
             return defaultPermissions.contains(permission);
+        }
+    }
+
+    public static void registerPermission(String permission) {
+        synchronized(permissions) {
+            if(!permissions.contains(permission)) {
+                permissions.add(permission);
+            }
+        }
+    }
+
+    public static void unregisterPermission(String permission) {
+        synchronized(permission) {
+            if(permissions.contains(permission)) {
+                permissions.remove(permission);
+            }
         }
     }
 }

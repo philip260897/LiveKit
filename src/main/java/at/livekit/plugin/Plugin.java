@@ -1,12 +1,16 @@
 package at.livekit.plugin;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.logging.Logger;
 
+import com.google.common.util.concurrent.Futures;
+
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.WorldType;
 import org.bukkit.command.Command;
@@ -15,9 +19,18 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import at.livekit.api.core.Color;
+import at.livekit.api.core.ILiveKit;
+import at.livekit.api.core.ILiveKitPlugin;
+import at.livekit.api.core.Privacy;
+import at.livekit.api.map.InfoEntry;
+import at.livekit.api.map.POI;
+import at.livekit.api.map.Waypoint;
+import at.livekit.authentication.AuthenticationHandler;
+import at.livekit.authentication.Pin;
+import at.livekit.authentication.Session;
 import at.livekit.livekit.Identity;
 import at.livekit.livekit.LiveKit;
-import at.livekit.livekit.PlayerAuth;
 import at.livekit.map.RenderBounds;
 import at.livekit.map.RenderJob;
 import at.livekit.map.RenderScheduler;
@@ -28,11 +41,19 @@ import at.livekit.modules.BaseModule;
 import at.livekit.modules.PlayerModule;
 import at.livekit.modules.LiveMapModule;
 import at.livekit.modules.PlayerModule.LPlayer;
+import at.livekit.provider.BasicPOIProvider;
+import at.livekit.provider.BasicPlayerInfoProvider;
+import at.livekit.provider.BasicPlayerPinProvider;
+import at.livekit.provider.POISpawnProvider;
+import at.livekit.storage.IStorageAdapter;
+import at.livekit.storage.JSONStorage;
+import at.livekit.utils.FutureSyncCallback;
 import at.livekit.utils.HeadLibraryEvent;
 import at.livekit.utils.HeadLibraryV2;
 import at.livekit.utils.Metrics;
+import at.livekit.utils.Utils;
 
-public class Plugin extends JavaPlugin implements CommandExecutor {
+public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugin {
 
 	private static Logger logger;
 	private static Plugin instance;
@@ -41,6 +62,8 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 	private static ChatColor color = ChatColor.GREEN;
 	private static String prefix;
 	private static String prefixError;
+
+	private static IStorageAdapter storage;
 
 	@Override
 	public void onEnable() {
@@ -60,6 +83,17 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 		Config.initialize();
 		//initialize permission -> disable plugin if permission initialization failed
 		if(!Permissions.initialize()) {
+			logger.severe("Error initializing Permissions, shutting down");
+			getServer().getPluginManager().disablePlugin(this);
+			return;
+		}
+
+		try{
+			storage = new JSONStorage();
+			storage.initialize();
+		}catch(Exception exception){
+			exception.printStackTrace();
+			logger.severe("Error initializing Storage, shutting down");
 			getServer().getPluginManager().disablePlugin(this);
 			return;
 		}
@@ -95,11 +129,29 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 		try{
 			Metrics metrics = new Metrics(this, 10516);
 		}catch(Exception ex){Plugin.debug("bStats could not be initialized! "+ex.getMessage());}
+
+		//this.getLiveKit().addLocationProvider(new LocationBedSpawnProvider());
+		this.getLiveKit().addPlayerInfoProvider(new BasicPlayerInfoProvider());
+
+		//POI
+		POISpawnProvider provider = new POISpawnProvider();
+		this.getLiveKit().addPOIInfoProvider(provider);
+		Bukkit.getServer().getPluginManager().registerEvents(provider, Plugin.getInstance());
+
+		//POI
+		//POI center = new POI(new Location(Bukkit.getWorld("world"), 0, 65, 0), "Origin", "The origin of world", Color.fromChatColor(ChatColor.DARK_PURPLE), false);
+        //Plugin.getInstance().getLiveKit().addPointOfInterest(center);
+
+		//Player Pin Provider
+		//PlayerPinProvider playerPins = new PlayerPinProvider();
+		this.getLiveKit().addPlayerInfoProvider(new BasicPlayerPinProvider());
     }
     
     @Override
     public void onDisable() {
 		LiveKit.getInstance().onDisable();
+
+		storage.dispose();
 			
 		try{
 			HeadLibraryV2.onDisable();
@@ -117,10 +169,11 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 			if(!handled) handled = handleUserCommands(sender, command, label, args);
 			if(!handled) handled = handleMapCommands(sender, command, label, args);
 			if(!handled) handled = handleAdminCommands(sender, command, label, args);
+			if(!handled) handled = handlePlayerPinCommands(sender, command, label, args);
 
 
 			if(args.length == 1) {
-				if(args[0].equalsIgnoreCase("reload")) {
+				/*if(args[0].equalsIgnoreCase("reload")) {
 					if(!checkPerm(sender, "livekit.commands.admin")) return true;
 
 					getServer().getPluginManager().disablePlugin(this);
@@ -128,7 +181,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 					sender.sendMessage(prefix+"reload complete!");
 
 					handled = true;
-				}
+				}*/
 				/*if(args[0].equalsIgnoreCase("tp")) {
 					JSONObject object = new JSONObject();
 					
@@ -206,7 +259,12 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 					Player player = (Player) sender;
 					if(!checkPerm(player, "livekit.commands.basic")) return true;
 
-					player.sendMessage(prefix+"Pin: "+PlayerAuth.get(player.getUniqueId().toString()).generateClaimPin()+" (valid for 2 mins)");
+					AuthenticationHandler.generatePin(player, new FutureSyncCallback<Pin>(){
+						@Override
+						public void onSyncResult(Pin result) {
+							player.sendMessage(prefix+"Pin: "+result.getPin()+" (valid for 2 mins)");
+						}
+					}, Utils.errorHandler(sender));
 				}
 				else 
 				{
@@ -224,21 +282,25 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 					List<Identity> identities = LiveKit.getInstance().getConnectedClients(player.getUniqueId().toString());
 					player.sendMessage(prefix+"Info for "+player.getName());
 					
-					PlayerAuth auth = PlayerAuth.get(player.getUniqueId().toString());
-					if(auth != null) {
-						player.sendMessage("Active Session Tokens: "+auth.getSessionKeys().length+" [/livekit clearsessions to clear]");
-					}
-					
-					if(identities != null && identities.size() > 0) {
-						player.sendMessage("Connected clients: "+identities.size());
-						Identity identity = identities.get(0);
-						player.sendMessage("Permissions: ");
-						for(String perm : identity.getPermissions()) {
-							player.sendMessage(perm);
+					AuthenticationHandler.getSessionList(player, new FutureSyncCallback<List<Session>>(){
+						@Override
+						public void onSyncResult(List<Session> result) {
+							if(result != null) {
+								player.sendMessage("Active Session Tokens: "+result.size()+" [/livekit clearsessions to clear]");
+							}
+							
+							if(identities != null && identities.size() > 0) {
+								player.sendMessage("Connected clients: "+identities.size());
+								Identity identity = identities.get(0);
+								player.sendMessage("Permissions: ");
+								for(String perm : identity.getPermissions()) {
+									player.sendMessage(perm);
+								}
+							} else {
+								player.sendMessage("No LiveKit client is connected");
+							}
 						}
-					} else {
-						player.sendMessage("No LiveKit client is connected");
-					}
+					}, Utils.errorHandler(sender));
 				}
 				else
 				{
@@ -252,11 +314,18 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 					Player player = (Player) sender;
 					if(!checkPerm(player, "livekit.commands.basic")) return true;
 
-					PlayerAuth auth = PlayerAuth.get(player.getUniqueId().toString());
-					if(auth != null) {
-						auth.clearSessionKeys();
-						player.sendMessage(prefix+"Active Session Tokens: "+auth.getSessionKeys().length);
-					}
+					AuthenticationHandler.clearSessionList(player, new FutureSyncCallback<Void>(){
+						@Override
+						public void onSyncResult(Void result) {
+							AuthenticationHandler.getSessionList(player, new FutureSyncCallback<List<Session>>(){
+								@Override
+								public void onSyncResult(List<Session> result) {
+									player.sendMessage(prefix+"Active Session Tokens: "+result.size());
+								}
+								
+							}, Utils.errorHandler(sender));
+						}
+					}, Utils.errorHandler(sender));
 				}
 				else
 				{
@@ -275,9 +344,14 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 					sender.sendMessage("You don't have the needed permission "+ChatColor.GREEN+"livekit.commands.basic"+ChatColor.RESET+" to access LiveKit");
 					if(Config.allowAnonymous())sender.sendMessage("However, anonymous joining is enabled!");
 				}
+				if(checkPerm(sender, "livekit.poi.personalpins", false)) {
+					sender.sendMessage(ChatColor.GREEN+"/livekit setpin <name>"+ChatColor.RESET+" - Set a personal pin at your current location");
+					sender.sendMessage(ChatColor.GREEN+"/livekit pins"+ChatColor.RESET+" - List of all your set pins");
+					sender.sendMessage(ChatColor.GREEN+"/livekit removepin <id>"+ChatColor.RESET+" - Remove a pin. Obtain the <id> from /livekit pins");
+				}
 				if(checkPerm(sender, "livekit.commands.admin", false)) {
 					sender.sendMessage(prefixError+"Admin Commands:"+ChatColor.RESET);
-					sender.sendMessage(ChatColor.GREEN+"/livekit reload"+ChatColor.RESET+" - Reload LiveKit plugin");
+					//sender.sendMessage(ChatColor.GREEN+"/livekit reload"+ChatColor.RESET+" - Reload LiveKit plugin");
 					sender.sendMessage(ChatColor.GREEN+"/livekit map"+ChatColor.RESET+" - Display info about live map");
 					sender.sendMessage(ChatColor.GREEN+"/livekit map cpu <time in %>"+ChatColor.RESET+" - Speed up rendering performance at the cost of server lag. Use with care. Default: 40%");
 					sender.sendMessage(ChatColor.GREEN+"/livekit <world>"+ChatColor.RESET+" - Show general info and rendering status of <world>");
@@ -673,7 +747,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 			if(sender instanceof Player) {
 				Player player = (Player)sender;
 				sender.sendMessage(mWorld.getHighestBlockAt(player.getLocation()).getType().name());
-			}
+			}*/
 		}
 		if(args.length == 3) {
 			if(args[0].equalsIgnoreCase("modules")) {
@@ -694,7 +768,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 
 				return true;
 			}
-			if(args[0].equalsIgnoreCase("load")) {
+			/*if(args[0].equalsIgnoreCase("load")) {
 				if(!checkPerm(sender, "livekit.commands.admin")) return true;
 				
 				if(sender instanceof Player) {
@@ -718,6 +792,174 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 		}
 		return false;
 	}
+
+	private boolean handlePlayerPinCommands(CommandSender sender, Command command, String label, String[] args) {
+		if(!(sender instanceof Player)) {
+            return false;
+        }
+
+        Player player = (Player)sender;
+
+        if(args.length == 1) {
+            if(args[0].equalsIgnoreCase("pins")) {
+				if(!checkPerm(sender, "livekit.poi.personalpins")) return true;
+
+                BasicPlayerPinProvider.listPlayerPinsAsync(player, new FutureSyncCallback<List<Waypoint>>(){
+                    @Override
+                    public void onSyncResult(List<Waypoint> result) {
+                        if(result.size() != 0) {
+							player.sendMessage(Plugin.getPrefix()+"Your pins:");
+							for(int i = 0; i < result.size(); i++) {
+								player.sendMessage(ChatColor.GREEN+"["+ChatColor.RESET+(i+1)+ChatColor.GREEN+"] "+ChatColor.RESET+result.get(i).getName() + " - " + ((int)result.get(i).getLocation().distance(player.getLocation()))+"m");
+							}
+						} else {
+							player.sendMessage(prefix+"You have not set any pins yet! Start with "+ChatColor.AQUA+"/livekit setpin <name>");
+						}
+                    }
+                }, Utils.errorHandler(sender));
+
+                return true;
+            }
+        }
+
+        if(args.length >= 2) {
+            if(args[0].equalsIgnoreCase("setpin")) {
+				if(!checkPerm(sender, "livekit.poi.personalpins")) return true;
+
+                String name = args[1];
+                for(int i = 2; i < args.length; i++) name+=" "+args[i];
+				
+				final String finalName = name;
+				BasicPlayerPinProvider.listPlayerPinsAsync(player, new FutureSyncCallback<List<Waypoint>>(){
+                    @Override
+                    public void onSyncResult(List<Waypoint> result) {
+                        if(result.size() < Config.getPersonalPinLimit()) {
+							
+							final Waypoint waypoint = new Waypoint(player.getLocation(), finalName, "Custom set pin", BasicPlayerPinProvider.PLAYER_PIN_COLOR, false, Privacy.PRIVATE);
+							BasicPlayerPinProvider.setPlayerPinAsync(player, waypoint, new FutureSyncCallback<Void>(){
+								@Override
+								public void onSyncResult(Void result) {
+									player.sendMessage(Plugin.getPrefix()+"Pin "+ChatColor.AQUA+waypoint.getName()+ChatColor.RESET+" has been set!");
+									
+									getLiveKit().notifyPlayerInfoChange(player);
+								}
+							}, Utils.errorHandler(sender));
+
+						} else {
+							player.sendMessage(prefixError+"You've reached your personal pin limit of "+Config.getPersonalPinLimit()+"! Remove a pin to set a new one.");
+						}
+                    }
+                }, Utils.errorHandler(sender));
+            
+                return true;
+            }
+            if(args[0].equalsIgnoreCase("removepin")) {
+				if(!checkPerm(sender, "livekit.poi.personalpins")) return true;
+
+                try{
+                    int id = Integer.parseInt(args[1]) - 1;
+
+                    BasicPlayerPinProvider.listPlayerPinsAsync(player, new FutureSyncCallback<List<Waypoint>>(){
+                        @Override
+                        public void onSyncResult(List<Waypoint> result) {
+                            if(id >= result.size()) player.sendMessage(Plugin.getPrefixError()+"Wrong Pin ID! '/livekit pins' to list available pins");
+                            Waypoint toRemove = result.get(id);
+
+                            BasicPlayerPinProvider.removePlayerPinAsync(player, toRemove, new FutureSyncCallback<Void>(){
+                                @Override
+                                public void onSyncResult(Void result) {
+                                    player.sendMessage(Plugin.getPrefix()+"Pin "+ChatColor.AQUA+toRemove.getName()+ChatColor.RESET+" has been removed!");
+									
+									getLiveKit().notifyPlayerInfoChange(player);
+                                }
+                            }, Utils.errorHandler(sender));
+                        }
+                    }, Utils.errorHandler(sender));
+
+                }catch(Exception ex){/*ex.printStackTrace();*/ player.sendMessage(Plugin.getPrefixError()+"Wrong Pin ID!");}
+
+                return true;
+            }
+        }
+
+        return false;
+	}
+
+	/*private boolean handlePOICommands(CommandSender sender, Command command, String label, String[] args) {
+		if(!(sender instanceof Player)) {
+            return false;
+        }
+
+        Player player = (Player)sender;
+
+        /*if(args.length == 1) {
+            if(args[0].equalsIgnoreCase("pois")) {
+				if(!checkPerm(sender, "livekit.module.admin")) return true;
+
+                BasicPOIProvider.listPOIAsync(new FutureSyncCallback<List<POI>>(){
+                    @Override
+                    public void onSyncResult(List<POI> result) {
+                        player.sendMessage(Plugin.getPrefix()+"Your pins:");
+                        for(int i = 0; i < result.size(); i++) {
+                            player.sendMessage(ChatColor.GREEN+"["+ChatColor.RESET+(i+1)+ChatColor.GREEN+"] "+ChatColor.RESET+result.get(i).getName() + " - " + ((int)result.get(i).getLocation().distance(player.getLocation()))+"m");
+                        }
+                    }
+                }, Utils.errorHandler(sender));
+
+                return true;
+            }
+        }*/
+
+        /*if(args.length >= 2) {
+            if(args[0].equalsIgnoreCase("setpoi")) {
+				if(!checkPerm(sender, "livekit.module.admin")) return true;
+
+                String name = args[1];
+                for(int i = 2; i < args.length; i++) name+=" "+args[i];
+
+                final Waypoint waypoint = new Waypoint(player.getLocation(), name, "Custom set pin", Color.fromChatColor(ChatColor.AQUA), false, Privacy.PRIVATE);
+                BasicPlayerPinProvider.setPlayerPinAsync(player, waypoint, new FutureSyncCallback<Void>(){
+                    @Override
+                    public void onSyncResult(Void result) {
+                        player.sendMessage(Plugin.getPrefix()+"Pin "+ChatColor.AQUA+waypoint.getName()+ChatColor.RESET+" has been set!");
+						
+						getLiveKit().notifyPlayerInfoChange(player);
+                    }
+                }, Utils.errorHandler(sender));
+            
+                return true;
+            }
+            if(args[0].equalsIgnoreCase("removepin")) {
+				if(!checkPerm(sender, "livekit.player.pins")) return true;
+
+                try{
+                    int id = Integer.parseInt(args[1]) - 1;
+
+                    BasicPlayerPinProvider.listPlayerPinsAsync(player, new FutureSyncCallback<List<Waypoint>>(){
+                        @Override
+                        public void onSyncResult(List<Waypoint> result) {
+                            if(id >= result.size()) player.sendMessage(Plugin.getPrefixError()+"Wrong Pin ID! '/livekit pins' to list available pins");
+                            Waypoint toRemove = result.get(id);
+
+                            BasicPlayerPinProvider.removePlayerPinAsync(player, toRemove, new FutureSyncCallback<Void>(){
+                                @Override
+                                public void onSyncResult(Void result) {
+                                    player.sendMessage(Plugin.getPrefix()+"Pin "+ChatColor.AQUA+toRemove.getName()+ChatColor.RESET+" has been removed!");
+									
+									getLiveKit().notifyPlayerInfoChange(player);
+                                }
+                            }, Utils.errorHandler(sender));
+                        }
+                    }, Utils.errorHandler(sender));
+
+                }catch(Exception ex){ex.printStackTrace(); player.sendMessage(Plugin.getPrefixError()+"Wrong Pin ID!");}
+
+                return true;
+            }
+        }
+
+        return false;
+	}*/
 
 	private boolean checkPerm(CommandSender sender, String permission) {
 		return checkPerm(sender, permission, true);
@@ -744,6 +986,18 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 		return instance;
 	}
 
+	public static IStorageAdapter getStorage() {
+		return storage;
+	}
+
+	public static String getPrefixError() {
+		return prefixError;
+	}
+
+	public static String getPrefix() {
+		return prefix;
+	}
+
 	public static void log(String message) {
 		logger.info(message);
 	}
@@ -754,5 +1008,10 @@ public class Plugin extends JavaPlugin implements CommandExecutor {
 
 	public static void debug(String message) {
 		//logger.warning(message);
+	}
+
+	@Override
+	public ILiveKit getLiveKit() {
+		return LiveKit.getInstance();
 	}
 }
