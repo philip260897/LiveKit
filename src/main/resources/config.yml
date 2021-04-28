@@ -35,3 +35,5 @@ modules:
     perosnalpins: 5
     teleport_spawn: false
     teleport_bed: false
+  ConsoleModule:
+    enabled: false

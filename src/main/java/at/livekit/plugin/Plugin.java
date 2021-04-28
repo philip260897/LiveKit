@@ -5,10 +5,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.logging.Handler;
+import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
 import com.google.common.util.concurrent.Futures;
 
+import org.apache.logging.log4j.core.Appender;
+import org.apache.logging.log4j.core.LogEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -39,6 +43,7 @@ import at.livekit.map.RenderWorld;
 import at.livekit.map.RenderBounds.RenderShape;
 import at.livekit.map.RenderJob.RenderJobMode;
 import at.livekit.modules.BaseModule;
+import at.livekit.modules.ConsoleModule;
 import at.livekit.modules.PlayerModule;
 import at.livekit.modules.LiveMapModule;
 import at.livekit.modules.PlayerModule.LPlayer;
@@ -48,9 +53,11 @@ import at.livekit.provider.BasicPlayerPinProvider;
 import at.livekit.provider.POISpawnProvider;
 import at.livekit.storage.IStorageAdapter;
 import at.livekit.storage.JSONStorage;
+import at.livekit.utils.ConsoleListener;
 import at.livekit.utils.FutureSyncCallback;
 import at.livekit.utils.HeadLibraryEvent;
 import at.livekit.utils.HeadLibraryV2;
+import at.livekit.utils.LogServerAppender;
 import at.livekit.utils.Metrics;
 import at.livekit.utils.OutputStreamFilter;
 import at.livekit.utils.Utils;
@@ -67,12 +74,14 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 
 	private static IStorageAdapter storage;
 
+	private static LogServerAppender appender;
+
 	@Override
 	public void onEnable() {
 		instance = this;
 		logger = getLogger();
 
-		System.setOut(new OutputStreamFilter(System.out));
+		
 
 		//create config folder if doesn't exist
 		if(!getDataFolder().exists()) {
@@ -101,6 +110,8 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 			getServer().getPluginManager().disablePlugin(this);
 			return;
 		}
+
+		System.out.println("System out printlning");
 
 		/*List<String> worlds = Config.getLiveMapWorlds();
 		for(String world : worlds) {
@@ -149,10 +160,77 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 		//Player Pin Provider
 		//PlayerPinProvider playerPins = new PlayerPinProvider();
 		this.getLiveKit().addPlayerInfoProvider(new BasicPlayerPinProvider());
+
+		ConsoleListener.registerListener();
+
+		/*boolean there = false;
+		if(System.out instanceof OutputStreamFilter) {
+			//System.out.println("PREVIOUS OUTPUTSTREAM FILTER STILL DA");
+			there = true;
+		}
+		System.setOut(OutputStreamFilter.getInstance(System.out));
+		
+		
+		System.out.println("Testing forking :) "+there);*/
+
+		
+
+		/*Logger.getLogger("Minecraft").addHandler(new Handler(){
+
+			@Override
+			public void publish(LogRecord record) {
+				System.out.println("LOGGING: "+record.getMessage());
+			}
+
+			@Override
+			public void flush() {
+				// TODO Auto-generated method stub
+				
+			}
+
+			@Override
+			public void close() throws SecurityException {
+				// TODO Auto-generated method stub
+				
+			}
+			
+		});*/
+		/*List<String> logEntries = new ArrayList<>();
+		Appender oldAppender = null;
+		org.apache.logging.log4j.core.Logger log = (org.apache.logging.log4j.core.Logger) org.apache.logging.log4j.LogManager.getRootLogger();
+		for(Entry<String, Appender> entry : log.getAppenders().entrySet()) {
+			System.out.println(entry.getKey());
+
+			if(entry.getKey().equalsIgnoreCase("LiveKitConsole")) {
+				try{
+					oldAppender = entry.getValue();
+					logEntries = LogServerAppender.extractEvents(entry.getValue());
+				}catch(Exception ex){
+					ex.printStackTrace();
+				}
+			}
+		}
+
+		if(oldAppender != null) log.removeAppender(oldAppender);
+		appender = new LogServerAppender();
+		appender.setCache(logEntries);
+		appender.updateConsole();
+		log.addAppender(appender);		*/
     }
     
     @Override
     public void onDisable() {
+		ConsoleListener.unregisterListener();
+		/*if(appender != null) appender.invalidateConsole();
+		ConsoleModule module = (ConsoleModule) LiveKit.getInstance().getModuleManager().getModule("ConsoleModule");
+		if(module != null && appender != null) {
+			List<String> cache = new ArrayList<String>();
+			cache.addAll(module.getUnsent());
+			cache.addAll(appender.cache);
+			appender.setCache(cache);
+		}*/
+
+
 		LiveKit.getInstance().onDisable();
 
 		storage.dispose();
@@ -177,6 +255,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 
 
 			if(args.length == 1) {
+				System.out.println("Command triggered with args");
 				/*if(args[0].equalsIgnoreCase("reload")) {
 					if(!checkPerm(sender, "livekit.commands.admin")) return true;
 

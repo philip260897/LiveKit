@@ -60,6 +60,7 @@ public class ModuleManager
         this.registerModule(new AdminModule(listener));
         this.registerModule(new ChatModule(listener));
         this.registerModule(new POIModule(listener));
+        this.registerModule(new ConsoleModule(listener));
 
         /*System.out.println("Subscriptions collected: ");
         for(Entry<String, List<String>> entry : _subscriptions.entrySet()) {
