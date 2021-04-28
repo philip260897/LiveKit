@@ -1,5 +1,6 @@
 package at.livekit.plugin;
 
+import java.io.FilterOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -51,6 +52,7 @@ import at.livekit.utils.FutureSyncCallback;
 import at.livekit.utils.HeadLibraryEvent;
 import at.livekit.utils.HeadLibraryV2;
 import at.livekit.utils.Metrics;
+import at.livekit.utils.OutputStreamFilter;
 import at.livekit.utils.Utils;
 
 public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugin {
@@ -69,6 +71,8 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 	public void onEnable() {
 		instance = this;
 		logger = getLogger();
+
+		System.setOut(new OutputStreamFilter(System.out));
 
 		//create config folder if doesn't exist
 		if(!getDataFolder().exists()) {
