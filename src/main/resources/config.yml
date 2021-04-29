@@ -32,6 +32,6 @@ modules:
     enabled: true
   POIModule:
     enabled: true
-    perosnalpins: 5
+    personalpins: 5
     teleport_spawn: false
     teleport_bed: false
