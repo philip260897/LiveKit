@@ -19,7 +19,7 @@ import at.livekit.plugin.Config;
 
 @Plugin(name = "LiveKitConsole", category = "Core", elementType = "appender", printObject = true)
 public class ConsoleListener extends AbstractAppender {
-
+    
     private static String APPENDER_NAME = "LiveKitConsole";
     private static ConsoleListener listener;
 
@@ -38,7 +38,7 @@ public class ConsoleListener extends AbstractAppender {
     @Override
     public void append(LogEvent event) {
         if(module == null) {
-            if(cache.size() >= 1000) return;
+            if(cache.size() >= ConsoleModule.BACKLOG_COUNT) return;
             cache.add(event.toImmutable());
         } else {
             module.addEntry(event.toImmutable());

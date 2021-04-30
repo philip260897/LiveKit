@@ -190,7 +190,12 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 
 
 			if(args.length == 1) {
-				System.out.println("Command triggered with args");
+				if(args[0].equalsIgnoreCase("test")) {
+					logger.warning("ACHTUNG WARNUNG "+ChatColor.AQUA+"lele");
+					Object o = null;
+					System.out.println("Command triggered with args");
+					o.toString();
+				}
 				/*if(args[0].equalsIgnoreCase("reload")) {
 					if(!checkPerm(sender, "livekit.commands.admin")) return true;
 

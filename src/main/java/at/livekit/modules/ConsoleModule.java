@@ -14,6 +14,8 @@ import at.livekit.packets.IPacket;
 
 public class ConsoleModule extends BaseModule 
 {
+    public static int BACKLOG_COUNT = 1000;
+
     private List<LogEvent> _history = new ArrayList<LogEvent>();
     private List<LogEvent> _logs = new ArrayList<LogEvent>();
 
@@ -45,7 +47,14 @@ public class ConsoleModule extends BaseModule
         data.put("log", w);
 
         synchronized(_history) {
-            for(LogEvent s : _history) w.put(s.getMessage().getFormattedMessage());
+            for(LogEvent s : _history){
+                JSONObject entry = new JSONObject();
+                entry.put("level", s.getLevel().name());
+                entry.put("timestamp", s.getTimeMillis());
+                entry.put("sender", s.getLoggerName());
+                entry.put("message", s.getMessage().getFormattedMessage());
+                w.put(entry);
+            }
         }
 
         return new ModuleUpdatePacket(this, data, true);
@@ -60,11 +69,18 @@ public class ConsoleModule extends BaseModule
         data.put("log", w);
 
         synchronized(_logs) {
-            for(LogEvent s : _logs) w.put(s.getMessage().getFormattedMessage());
+            for(LogEvent s : _logs) {
+                JSONObject entry = new JSONObject();
+                entry.put("level", s.getLevel().name());
+                entry.put("timestamp", s.getTimeMillis());
+                entry.put("sender", s.getLoggerName());
+                entry.put("message", s.getMessage().getFormattedMessage());
+                w.put(entry);
+            }
             
             synchronized(_history) {
                 _history.addAll(_logs);
-                while(_history.size() > 200) {
+                while(_history.size() > BACKLOG_COUNT) {
                     _history.remove(0);
                 }
             }
