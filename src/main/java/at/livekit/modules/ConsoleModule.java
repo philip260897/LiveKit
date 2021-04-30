@@ -1,5 +1,7 @@
 package at.livekit.modules;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -48,12 +50,7 @@ public class ConsoleModule extends BaseModule
 
         synchronized(_history) {
             for(LogEvent s : _history){
-                JSONObject entry = new JSONObject();
-                entry.put("level", s.getLevel().name());
-                entry.put("timestamp", s.getTimeMillis());
-                entry.put("sender", s.getLoggerName());
-                entry.put("message", s.getMessage().getFormattedMessage());
-                w.put(entry);
+                w.put(toJson(s));
             }
         }
 
@@ -70,12 +67,7 @@ public class ConsoleModule extends BaseModule
 
         synchronized(_logs) {
             for(LogEvent s : _logs) {
-                JSONObject entry = new JSONObject();
-                entry.put("level", s.getLevel().name());
-                entry.put("timestamp", s.getTimeMillis());
-                entry.put("sender", s.getLoggerName());
-                entry.put("message", s.getMessage().getFormattedMessage());
-                w.put(entry);
+                w.put(toJson(s));
             }
             
             synchronized(_history) {
@@ -93,6 +85,23 @@ public class ConsoleModule extends BaseModule
         }
         
         return response;
+    }
+
+    private JSONObject toJson(LogEvent s) {
+        JSONObject entry = new JSONObject();
+        entry.put("level", s.getLevel().name());
+        entry.put("timestamp", s.getTimeMillis());
+        entry.put("sender", s.getLoggerName());
+        entry.put("message", s.getMessage().getFormattedMessage());
+
+        if(s.getThrown() != null) {
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            s.getThrown().printStackTrace(pw);
+            entry.put("thrown", sw.toString());
+        }
+
+        return entry;
     }
     
 }
