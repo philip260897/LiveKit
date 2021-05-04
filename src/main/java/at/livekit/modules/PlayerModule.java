@@ -17,11 +17,13 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.EntityPotionEffectEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -119,11 +121,13 @@ public class PlayerModule extends BaseModule implements Listener
                 if(p.getExhaustion() != player.exhaustion) needsUpdate = true;
                 if(_loc.getX() != player.x || _loc.getY() != player.y || _loc.getZ() != player.z || _loc.getYaw() != player.dir) needsUpdate = true;
                 if(_visible != player.visible) needsUpdate = true;
+                if(p.getFoodLevel() != player.foodLevel) needsUpdate = true;
 
                 player.updateExhaustion(p.getExhaustion());
                 player.updateHealth(p.getHealth(), p.getHealthScale());
                 player.updateLocation(_loc.getX(), _loc.getY(), _loc.getZ(), _loc.getYaw() );
                 player.updateVisible(_visible);
+                player.updateFoodLevel(p.getFoodLevel());
             }
         }
 
@@ -256,6 +260,16 @@ public class PlayerModule extends BaseModule implements Listener
         }
     }
 
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onEntityPotionEffectEvent(EntityPotionEffectEvent event) {
+        if(_players.containsKey(event.getEntity().getUniqueId().toString())) {
+            
+            if(event.getEntity() instanceof OfflinePlayer) {
+                notifyDownstream((OfflinePlayer)event.getEntity());
+            }
+        }
+    }
+
     @EventHandler
     public void onBlockBreak(BlockBreakEvent event) {
         if(_players.containsKey(event.getPlayer().getUniqueId().toString())) {
@@ -319,8 +333,9 @@ public class PlayerModule extends BaseModule implements Listener
 
         synchronized(_players) {
             for(Entry<String,LPlayer> entry : _players.entrySet()) {
-                if((!entry.getValue().online || !entry.getValue().visible) && !identity.hasPermission("livekit.module.admin")) continue;
-
+                if(!entry.getValue().online && !identity.hasPermission("livekit.module.admin")) continue;
+                if(!entry.getValue().visible && !entry.getValue().uuid.equals(identity.getUuid()) && !identity.hasPermission("livekit.module.admin")) continue;
+            
                 JSONObject j = entry.getValue().toJson();
                 j.remove("actions");
                 players.put(j);
@@ -348,7 +363,8 @@ public class PlayerModule extends BaseModule implements Listener
                 JSONObject json = new JSONObject();
                 JSONArray players = new JSONArray();
                 for(LPlayer player : _players.values()) {
-                    if((!player.online || !player.visible) && !identity.hasPermission("livekit.module.admin")) continue; 
+                    if(!player.online && !identity.hasPermission("livekit.module.admin")) continue; 
+                    if(!player.visible && !player.uuid.equals(identity.getUuid()) && !identity.hasPermission("livekit.module.admin")) continue;
                     
                     
                     JSONObject jp;
@@ -526,8 +542,8 @@ public class PlayerModule extends BaseModule implements Listener
                 for(PotionEffect potion : ((Player)player).getActivePotionEffects()) {
                     JSONObject jpotion = new JSONObject();
                     jpotion.put("type", potion.getType().getName());
-                    jpotion.put("duration", potion.getDuration());
-                    jpotion.put("color", Color.fromARGB(255, potion.getColor().getRed(), potion.getColor().getGreen(), potion.getColor().getBlue()).getHEX());
+                    jpotion.put("duration", (potion.getDuration()/20));
+                    if(potion.getColor() != null) jpotion.put("color", Color.fromARGB(255, potion.getColor().getRed(), potion.getColor().getGreen(), potion.getColor().getBlue()).getHEX());
                     potions.put(jpotion);
                 }
             }
@@ -588,6 +604,7 @@ public class PlayerModule extends BaseModule implements Listener
 
         public double healthMax = 0;
         public double health;
+        public int foodLevel;
         public double armor = 0;
         public double exhaustion = 0;
         public LItem itemHeld;
@@ -630,6 +647,7 @@ public class PlayerModule extends BaseModule implements Listener
         }
 
         public void updateVisible(boolean visible) {
+            if(visible != this.visible && visible == true) this.headDirty = true;
             this.visible = visible;
             this.dirty = true;
         }
@@ -678,7 +696,10 @@ public class PlayerModule extends BaseModule implements Listener
             dirty = true;
         }
 
-
+        public void updateFoodLevel(int foodLevel) {
+            this.foodLevel = foodLevel;
+            this.dirty = true;
+        }
 
        /* private void updateLastOnline(long lastOnline, boolean online) {
             this.lastOnline = lastOnline;
@@ -737,6 +758,7 @@ public class PlayerModule extends BaseModule implements Listener
                 p.updateHealth(online.getHealth(), online.getHealthScale());
                 p.updateExhaustion(online.getExhaustion());
                 p.updateVisible(!online.hasPotionEffect(PotionEffectType.INVISIBILITY));
+                p.updateFoodLevel(online.getFoodLevel());
                 ItemStack itemInHand = online.getInventory().getItemInMainHand();
                 if(itemInHand != null && itemInHand.getAmount() != 0) {
                     p.updateItemHeld(itemInHand.getType().name(), itemInHand.getAmount());
@@ -769,6 +791,7 @@ public class PlayerModule extends BaseModule implements Listener
             json.put("dir", (float)dir+180f);
             json.put("world", world);
             json.put("health", (float)health);
+            json.put("foodLevel", foodLevel);
             json.put("healthMax", (float)healthMax);
             json.put("armor", armor);
             json.put("exhaustion", exhaustion);

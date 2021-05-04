@@ -9,9 +9,12 @@ import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
-import org.bukkit.potion.PotionEffect;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerGameModeChangeEvent;
+import org.bukkit.event.player.PlayerExpChangeEvent;
 
-import at.livekit.api.core.Color;
 import at.livekit.api.core.Privacy;
 import at.livekit.api.map.InfoEntry;
 import at.livekit.api.map.PlayerInfoProvider;
@@ -19,7 +22,9 @@ import at.livekit.api.map.Waypoint;
 import at.livekit.plugin.Config;
 import at.livekit.plugin.Plugin;
 
-public class BasicPlayerInfoProvider extends PlayerInfoProvider {
+
+
+public class BasicPlayerInfoProvider extends PlayerInfoProvider implements Listener {
 
     private static SimpleDateFormat _formatter = new SimpleDateFormat("dd MMMM yyyy");
 
@@ -35,6 +40,7 @@ public class BasicPlayerInfoProvider extends PlayerInfoProvider {
         if(player.isOnline()) {
             Player online = player.getPlayer();
             entries.add(new InfoEntry("Gamemode", (online.getGameMode() != GameMode.SURVIVAL ? ChatColor.YELLOW : ChatColor.RESET) + online.getGameMode().toString(), Privacy.PUBLIC));
+            entries.add(new InfoEntry("Level (XP)", online.getLevel()+" (" +(online.getTotalExperience())+ ")", Privacy.PRIVATE));
         }
     }
 
@@ -46,5 +52,14 @@ public class BasicPlayerInfoProvider extends PlayerInfoProvider {
             waypoints.add(waypoint);
         }
     }
-    
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerGameModeChangeEvent(PlayerGameModeChangeEvent event) {
+        Plugin.getInstance().getLiveKit().notifyPlayerInfoChange(event.getPlayer());
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerExpChangeEvent(PlayerExpChangeEvent event) {
+        Plugin.getInstance().getLiveKit().notifyPlayerInfoChange(event.getPlayer());
+    }
 }

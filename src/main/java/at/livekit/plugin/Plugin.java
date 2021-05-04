@@ -107,7 +107,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 			return;
 		}
 
-		System.out.println("System out printlning");
+		//System.out.println("System out printlning");
 
 		/*List<String> worlds = Config.getLiveMapWorlds();
 		for(String world : worlds) {
@@ -142,7 +142,9 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 		}catch(Exception ex){Plugin.debug("bStats could not be initialized! "+ex.getMessage());}
 
 		//this.getLiveKit().addLocationProvider(new LocationBedSpawnProvider());
-		this.getLiveKit().addPlayerInfoProvider(new BasicPlayerInfoProvider());
+		BasicPlayerInfoProvider playerInfoProvider = new BasicPlayerInfoProvider();
+		this.getLiveKit().addPlayerInfoProvider(playerInfoProvider);
+		Bukkit.getServer().getPluginManager().registerEvents(playerInfoProvider, Plugin.getInstance());
 
 		//POI
 		POISpawnProvider provider = new POISpawnProvider();
