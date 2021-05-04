@@ -75,7 +75,7 @@ public class NIOClient<T> {
         int read = 0;
         try{
             while((read = channel.read(buffer)) > 0) {
-                Plugin.log("["+channel.getRemoteAddress().toString()+"] "+(new String(buffer.array(), 0, read, "UTF-8")));
+                //Plugin.log("["+channel.getRemoteAddress().toString()+"] "+(new String(buffer.array(), 0, read, "UTF-8")));
                 builder.append(new String(buffer.array(), 0, read, "UTF-8"));
                 buffer.clear();
 
@@ -87,9 +87,9 @@ public class NIOClient<T> {
             read = -1;
         }catch(Exception ex) {
             ex.printStackTrace();
-            try{
+            /*try{
                 Plugin.log("["+channel.getRemoteAddress().toString()+"] Disconnecting client!");
-            }catch(Exception exx){exx.printStackTrace();}
+            }catch(Exception exx){exx.printStackTrace();}*/
         }
 
         if(read == -1 || builder.length() > 1024*1024) {

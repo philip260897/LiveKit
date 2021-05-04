@@ -218,7 +218,7 @@ public class NIOServer<T> implements Runnable, NIOClientEvent<T> {
             NIOClient<T> nio = new NIOClient<T>(key, client);
             nio.setClientListener(this);
 
-            Plugin.log("===Accepting Incoming Client: "+client.getRemoteAddress().toString()+"===");
+            //Plugin.log("===Accepting Incoming Client: "+client.getRemoteAddress().toString()+"===");
 
             synchronized(clients) {
                 clients.put(key, nio);
