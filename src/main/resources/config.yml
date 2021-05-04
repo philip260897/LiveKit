@@ -18,7 +18,7 @@ permissions:
   - livekit.module.chat
   - livekit.module.poi
   - livekit.chat.write
-  - livekit.poi.personalpins;
+  - livekit.poi.personalpins
 modules:
   LiveMapModule:
     enabled: true
@@ -32,7 +32,7 @@ modules:
     enabled: true
   POIModule:
     enabled: true
-    perosnalpins: 5
+    personalpins: 5
     teleport_spawn: false
     teleport_bed: false
   ConsoleModule:

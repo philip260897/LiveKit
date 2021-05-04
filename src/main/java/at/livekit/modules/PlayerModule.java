@@ -29,10 +29,13 @@ import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import at.livekit.api.core.Color;
 import at.livekit.api.core.Privacy;
 import at.livekit.api.map.AsyncPlayerInfoProvider;
 import at.livekit.api.map.InfoEntry;
@@ -103,20 +106,24 @@ public class PlayerModule extends BaseModule implements Listener
     public void update() {
         boolean needsUpdate = false;
         Location _loc = null;
+        boolean _visible = true;
 
         for(LPlayer player : _players.values()) {
             Player p = Bukkit.getPlayer(UUID.fromString(player.uuid));
             if(p != null) {
                 _loc = p.getLocation();
+                _visible = !p.hasPotionEffect(PotionEffectType.INVISIBILITY);
 
                 if(p.getHealth() != player.health) needsUpdate = true;
                 if(p.getHealthScale() != player.healthMax) needsUpdate = true;
                 if(p.getExhaustion() != player.exhaustion) needsUpdate = true;
                 if(_loc.getX() != player.x || _loc.getY() != player.y || _loc.getZ() != player.z || _loc.getYaw() != player.dir) needsUpdate = true;
+                if(_visible != player.visible) needsUpdate = true;
 
                 player.updateExhaustion(p.getExhaustion());
                 player.updateHealth(p.getHealth(), p.getHealthScale());
                 player.updateLocation(_loc.getX(), _loc.getY(), _loc.getZ(), _loc.getYaw() );
+                player.updateVisible(_visible);
             }
         }
 
@@ -204,6 +211,7 @@ public class PlayerModule extends BaseModule implements Listener
 		player.updateHealth(p.getHealth(), p.getHealthScale());
         //player.updateArmor(p.getArmor);
 		player.updateExhaustion(p.getExhaustion());
+        player.updateVisible(!p.hasPotionEffect(PotionEffectType.INVISIBILITY));
         
 
         /*if(!HeadLibrary.has(p.getName())) { 
@@ -311,7 +319,7 @@ public class PlayerModule extends BaseModule implements Listener
 
         synchronized(_players) {
             for(Entry<String,LPlayer> entry : _players.entrySet()) {
-                if(!entry.getValue().online && !identity.hasPermission("livekit.module.admin")) continue;
+                if((!entry.getValue().online || !entry.getValue().visible) && !identity.hasPermission("livekit.module.admin")) continue;
 
                 JSONObject j = entry.getValue().toJson();
                 j.remove("actions");
@@ -340,7 +348,8 @@ public class PlayerModule extends BaseModule implements Listener
                 JSONObject json = new JSONObject();
                 JSONArray players = new JSONArray();
                 for(LPlayer player : _players.values()) {
-                    if(!player.online && !identity.hasPermission("livekit.module.admin")) continue; 
+                    if((!player.online || !player.visible) && !identity.hasPermission("livekit.module.admin")) continue; 
+                    
                     
                     JSONObject jp;
                     if(player.isDirty()) jp = player.toJson();
@@ -417,6 +426,9 @@ public class PlayerModule extends BaseModule implements Listener
 
         JSONArray locationData = new JSONArray();
         response.put("locations", locationData);
+
+        JSONArray potions = new JSONArray();
+        response.put("potions", potions);
 
         List<InfoEntry> _infos = new ArrayList<>();
         List<Waypoint> _waypoints = new ArrayList<>();
@@ -508,6 +520,18 @@ public class PlayerModule extends BaseModule implements Listener
             locationData.put(waypoint.toJson());
         }
         
+        if(player.isOnline()) {
+            //adding potion info
+            if(uuid.equals(identity.getUuid()) || identity.hasPermission("livekit.module.admin")) {
+                for(PotionEffect potion : ((Player)player).getActivePotionEffects()) {
+                    JSONObject jpotion = new JSONObject();
+                    jpotion.put("type", potion.getType().getName());
+                    jpotion.put("duration", potion.getDuration());
+                    jpotion.put("color", Color.fromARGB(255, potion.getColor().getRed(), potion.getColor().getGreen(), potion.getColor().getBlue()).getHEX());
+                    potions.put(jpotion);
+                }
+            }
+        }
 
         return packet.response(response);
     }
@@ -555,6 +579,7 @@ public class PlayerModule extends BaseModule implements Listener
         public String name = "Unknown";
         public String head;
         public boolean online = false;
+        public boolean visible = true;
         public String world = "Unknown";
         public double x = 0;
         public double y = 0;
@@ -601,6 +626,11 @@ public class PlayerModule extends BaseModule implements Listener
 
         public void updateOnline(boolean online) {
             this.online = online;
+            this.dirty = true;
+        }
+
+        public void updateVisible(boolean visible) {
+            this.visible = visible;
             this.dirty = true;
         }
 
@@ -706,6 +736,7 @@ public class PlayerModule extends BaseModule implements Listener
                 p.updateWorld(online.getLocation().getWorld().getName());
                 p.updateHealth(online.getHealth(), online.getHealthScale());
                 p.updateExhaustion(online.getExhaustion());
+                p.updateVisible(!online.hasPotionEffect(PotionEffectType.INVISIBILITY));
                 ItemStack itemInHand = online.getInventory().getItemInMainHand();
                 if(itemInHand != null && itemInHand.getAmount() != 0) {
                     p.updateItemHeld(itemInHand.getType().name(), itemInHand.getAmount());
@@ -731,6 +762,7 @@ public class PlayerModule extends BaseModule implements Listener
             json.put("name", name);
             json.put("head", head);
             json.put("online", online);
+            json.put("visible", visible);
             json.put("x", (float)x);
             json.put("y", (float)y);
             json.put("z", (float)z);
