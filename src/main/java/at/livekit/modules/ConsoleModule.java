@@ -8,11 +8,15 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.logging.log4j.core.LogEvent;
+import org.bukkit.Bukkit;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import at.livekit.livekit.Identity;
+import at.livekit.modules.BaseModule.Action;
+import at.livekit.packets.ActionPacket;
 import at.livekit.packets.IPacket;
+import at.livekit.packets.StatusPacket;
 
 public class ConsoleModule extends BaseModule 
 {
@@ -90,6 +94,14 @@ public class ConsoleModule extends BaseModule
         }
         
         return response;
+    }
+
+    @Action(name = "ExecuteCommand")
+    public IPacket actionExecute(Identity identity, ActionPacket packet) {
+        String command = packet.getData().getString("command");
+        if(!identity.hasPermission("livekit.console.execute")) return new StatusPacket(0, "Permission denied");
+        Bukkit.getServer().dispatchCommand(Bukkit.getServer().getConsoleSender(), command);
+        return new StatusPacket(1);
     }
 
     private JSONObject toJson(LogEvent s) {
