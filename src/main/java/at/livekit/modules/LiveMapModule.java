@@ -175,6 +175,7 @@ public class LiveMapModule extends BaseModule implements Listener
 
         JSONObject json = new JSONObject();
         json.put("world", world);
+        json.put("blockInfo", identity.hasPermission("livekit.map.info"));
         JSONArray regions = new JSONArray();
         json.put("regions", regions);
 

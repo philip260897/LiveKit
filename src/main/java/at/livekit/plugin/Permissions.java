@@ -26,10 +26,14 @@ public class Permissions
         permissions.add("livekit.module.admin");
         permissions.add("livekit.module.chat");
         permissions.add("livekit.module.poi");
+        permissions.add("livekit.module.console");
         
         permissions.add("livekit.chat.write");
         permissions.add("livekit.poi.personalpins");
         permissions.add("livekit.poi.edit");
+        permissions.add("livekit.players.other");
+        permissions.add("livekit.map.info");
+        permissions.add("livekit.console.execute");
 
         if(use) {
             if(Bukkit.getPluginManager().getPlugin("Vault") == null) {

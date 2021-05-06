@@ -35,6 +35,10 @@ public class ConsoleModule extends BaseModule
 
     public List<LogEvent> getUnsent() {
         List<LogEvent> unsent = new ArrayList<LogEvent>();
+        synchronized(_history) {
+            unsent.addAll(_history);
+            _history.clear();
+        }
         synchronized(_logs) {
             unsent.addAll(_logs);
             _logs.clear();
@@ -47,6 +51,7 @@ public class ConsoleModule extends BaseModule
         JSONObject data = new JSONObject();
         JSONArray w = new JSONArray();
         data.put("log", w);
+        data.put("canExecute", identity.hasPermission("livekit.console.execute"));
 
         synchronized(_history) {
             for(LogEvent s : _history){
