@@ -22,12 +22,12 @@ public abstract class BaseModule
     private String name;
     private String permission;
 
-    private boolean active = false;
+    //private boolean active = false;
     private boolean enabled = false;
 
     private ModuleListener listener;
     private String subscription;
-    private String subAuth;
+    private String auth;
 
     public BaseModule(int version, String name, String permission, UpdateRate tick, ModuleListener listener) {
         this(version, name, permission, tick, listener, null, null);
@@ -37,30 +37,35 @@ public abstract class BaseModule
         this(version, name, permission, tick, listener, subscription, null);
     }
 
-    public BaseModule(int version, String name, String permission, UpdateRate tick, ModuleListener listener, String subscription, String subAuth) {
+    public BaseModule(int version, String name, String permission, UpdateRate tick, ModuleListener listener, String subscription, String auth) {
         this.version = version;
         this.name = name;
         this.permission = permission;
         this.tick = tick;
         this.listener = listener;
         this.subscription = subscription;
-        this.subAuth = subAuth;
+        this.auth = auth;
     }
 
-    public boolean needsSubscriptionAuth() {
-        return subAuth != null;
+    public boolean needsAuth() {
+        return auth != null;
     }
 
     public boolean isSubscribeable() {
         return subscription != null;
     }
 
+    /*public String getSubscriptionWithAuth() {
+        if(needsSubscriptionAuth()) return subscription+":"+subAuth;
+        return subscription;
+    }*/
+
     public String getSubscription() {
         return subscription;
     }
 
-    public String getSubAuth() {
-        return subAuth;
+    public String getAuth() {
+        return auth;
     }
 
     public void onEnable(Map<String,ActionMethod> signature) {
@@ -165,7 +170,12 @@ public abstract class BaseModule
     }*/
 
     public boolean hasAccess(Identity identity) {
-        return identity.hasPermission(permission) && (isSubscribeable() ? identity.isSubscribed(this.getClass().getSimpleName(), subscription) : true);
+        return identity.hasPermission(permission) && (isSubscribeable() ? identity.isSubscribed(this.getClass().getSimpleName(), getSubscription()) : true);
+    }
+
+    public boolean isAuthenticated(Identity identity) {
+        if(!needsAuth()) return true;
+        return identity.isModuleAuthenticated(getType(), auth);
     }
 
     /*public JSONObject toJson(String uuid) {
@@ -196,7 +206,7 @@ public abstract class BaseModule
         JSONObject json = new JSONObject();
         json.put("version", version);
         json.put("name", name);
-        json.put("active", active);
+        json.put("auth", needsAuth());
         json.put("subscribeable", isSubscribeable());
         json.put("moduleType", this.getClass().getSimpleName());
         return json;

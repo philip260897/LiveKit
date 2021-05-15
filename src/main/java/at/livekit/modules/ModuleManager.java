@@ -231,7 +231,7 @@ public class ModuleManager
             public List<IPacket> call() throws Exception {*/
                 List<IPacket> packets = new ArrayList<IPacket>(_modules.size());
                 for(BaseModule module : _modules.values()) {
-                    if(module.isEnabled() && module.hasAccess(identity)) {
+                    if(module.isEnabled() && module.hasAccess(identity) && module.isAuthenticated(identity)) {
                         IPacket update = module.onJoinAsync(identity);
                         if(update != null) packets.add( update);
                     }
@@ -256,7 +256,7 @@ public class ModuleManager
 
                 BaseModule module = _modules.get(type);
                 if(module != null && module.isEnabled()) {
-                    return module.onUpdateAsync(identities.stream().filter(identity->module.hasAccess(identity)).collect(Collectors.toList()));
+                    return module.onUpdateAsync(identities.stream().filter(identity->module.hasAccess(identity)&&module.isAuthenticated(identity)).collect(Collectors.toList()));
                    /* for(String uuid : uuids) {
                         if(module.hasAccess(uuid)) {*/
                             
@@ -284,7 +284,7 @@ public class ModuleManager
             public IPacket call() throws Exception {*/
                 BaseModule module = _modules.get(type);
                 if(module != null && module.isEnabled()) {
-                    if(module.hasAccess(identity)) {
+                    if(module.hasAccess(identity)&&module.isAuthenticated(identity)) {
                         return module.onChangeAsync(identity, packet);
                     }
                     return new StatusPacket(0, "Access Denied");
@@ -317,7 +317,7 @@ public class ModuleManager
     public boolean hasSubscription(String baseType, String subscription) {
         synchronized(_subscriptions) {
             if(_subscriptions.containsKey(baseType)) {
-                return _subscriptions.get(baseType).contains(subscription);
+                return _subscriptions.get(baseType).contains(subscription.split(":")[0]);
             }
         }
         return false;

@@ -26,6 +26,7 @@ public class Identity
 
     //TODO: how to handle disabled modules ? changed subscriptions ?
     private HashMap<String, String> subscriptions = new HashMap<>();
+    private HashMap<String, String> moduleAuthentication = new HashMap<>();
 
     private Identity() {
 
@@ -45,6 +46,26 @@ public class Identity
 
     public static Identity unidentified() {
         return new Identity();
+    }
+
+    public void setModuleAuthentication(String module, String auth) {
+        synchronized(moduleAuthentication) {
+            if(module != null) moduleAuthentication.put(module, auth);
+            else moduleAuthentication.remove(module);
+        }
+    }
+
+    public void setModuleAuthentications(HashMap<String, String> map) {
+        this.moduleAuthentication = map;
+    }
+
+    public boolean isModuleAuthenticated(String module, String subAuth) {
+        synchronized(moduleAuthentication) {
+            if(moduleAuthentication.containsKey(module)) {
+                return subAuth.equals(moduleAuthentication.get(module));
+            }
+        }
+        return false;
     }
 
     public void setSubscription(String baseType, String subscription) {
