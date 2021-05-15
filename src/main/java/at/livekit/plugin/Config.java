@@ -67,6 +67,10 @@ public class Config
         return config.getString("server.password");
     }
 
+    public static String getConsolePassword() {
+        return config.getString("modules.ConsoleModule.password");
+    }
+
     public static int getPersonalPinLimit() {
         return config.getInt("modules.POIModule.personalpins");
     }

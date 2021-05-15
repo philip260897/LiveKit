@@ -60,7 +60,13 @@ public class ModuleManager
         this.registerModule(new AdminModule(listener));
         this.registerModule(new ChatModule(listener));
         this.registerModule(new POIModule(listener));
+        
+        //if(Config.getConsolePassword() != null) {
+        if(Config.getConsolePassword() == null) Plugin.warning("Enabling Console access without password. UNSAFE!");
         this.registerModule(new ConsoleModule(listener));
+        //} else {
+        //    Plugin.log("Console password not set. Disabling ConsoleModule");
+        //}
 
         /*System.out.println("Subscriptions collected: ");
         for(Entry<String, List<String>> entry : _subscriptions.entrySet()) {
@@ -340,6 +346,8 @@ public class ModuleManager
 
         synchronized(_subscriptions) {
             for(Entry<String, List<String>> entry : _subscriptions.entrySet()) {
+                //if(entry.getKey().equalsIgnoreCase("ConsoleModule")) continue;
+
                 JSONObject asdf = new JSONObject();
                 JSONArray module = new JSONArray();
                 for(String s : entry.getValue()) module.put(s);

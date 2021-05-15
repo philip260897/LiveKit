@@ -720,6 +720,8 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
                 client.getIdentifier().updateSubscriptions(_modules.getDefaultSubscriptions());
                 client.getIdentifier().updateSubscriptions(subscriptions);
             
+                
+
                 try{
                     _server.send(client.getIdentifier(), _modules.modulesAvailableAsync(client.getIdentifier()));
                     _server.send(client.getIdentifier(), _modules.onJoinAsync(client.getIdentifier()));
@@ -755,11 +757,18 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
     public IPacket subscribe(Identity identity, ActionPacket action) {
         String baseType = action.getData().getString("baseType");
         String subscription = action.getData().getString("subscription");
+        String password = action.getData().has("password")&&!action.getData().isNull("password") ? action.getData().getString("password") : null;
 
         if(!_modules.hasSubscription(baseType, subscription)) return new StatusPacket(0, "Subscription not available!");
 
         BaseModule module = _modules.getModule(baseType+":"+subscription);
         if(module == null) return new StatusPacket(0, "Module with subscription not found!");
+
+        if(module.needsSubscriptionAuth()) {
+            if(!module.getSubAuth().equals(password)) {
+                return new StatusPacket(0, "Permission denied!");
+            }
+        }
 
         //TODO: permission check ?
         identity.setSubscription(baseType, subscription);

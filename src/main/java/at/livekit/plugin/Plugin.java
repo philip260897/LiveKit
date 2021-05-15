@@ -100,7 +100,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 		try{
 			storage = new JSONStorage();
 			storage.initialize();
-		}catch(Exception exception){
+		} catch(Exception exception) {
 			exception.printStackTrace();
 			logger.severe("Error initializing Storage, shutting down");
 			getServer().getPluginManager().disablePlugin(this);
@@ -1025,6 +1025,10 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 
 	public static void log(String message) {
 		logger.info(message);
+	}
+
+	public static void warning(String message) {
+		logger.warning(message);
 	}
 
 	public static void severe(String message) {

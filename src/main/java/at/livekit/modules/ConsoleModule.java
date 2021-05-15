@@ -13,10 +13,10 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import at.livekit.livekit.Identity;
-import at.livekit.modules.BaseModule.Action;
 import at.livekit.packets.ActionPacket;
 import at.livekit.packets.IPacket;
 import at.livekit.packets.StatusPacket;
+import at.livekit.plugin.Config;
 
 public class ConsoleModule extends BaseModule 
 {
@@ -25,8 +25,10 @@ public class ConsoleModule extends BaseModule
     private List<LogEvent> _history = new ArrayList<LogEvent>();
     private List<LogEvent> _logs = new ArrayList<LogEvent>();
 
+    //private List<Identity> _whitelist = new ArrayList<Identity>();
+
     public ConsoleModule(ModuleListener listener) {
-        super(1, "Console", "livekit.module.console", UpdateRate.NEVER, listener);
+        super(1, "Console", "livekit.module.console", UpdateRate.NEVER, listener, "default", Config.getConsolePassword());
     }
 
     public void addEntry(LogEvent entry) {

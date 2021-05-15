@@ -63,7 +63,7 @@ public class ConsoleListener extends AbstractAppender {
         }
 
         if(Config.moduleEnabled("ConsoleModule")) {
-            ConsoleModule module = (ConsoleModule) LiveKit.getInstance().getModuleManager().getModule("ConsoleModule");
+            ConsoleModule module = (ConsoleModule) LiveKit.getInstance().getModuleManager().getModule("ConsoleModule:default");
             if(module != null) {
                 for(LogEvent entry : startupEntries) {
                     module.addEntry(entry);

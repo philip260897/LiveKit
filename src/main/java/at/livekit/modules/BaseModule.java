@@ -27,18 +27,28 @@ public abstract class BaseModule
 
     private ModuleListener listener;
     private String subscription;
+    private String subAuth;
 
     public BaseModule(int version, String name, String permission, UpdateRate tick, ModuleListener listener) {
-        this(version, name, permission, tick, listener, null);
+        this(version, name, permission, tick, listener, null, null);
     }
 
     public BaseModule(int version, String name, String permission, UpdateRate tick, ModuleListener listener, String subscription) {
+        this(version, name, permission, tick, listener, subscription, null);
+    }
+
+    public BaseModule(int version, String name, String permission, UpdateRate tick, ModuleListener listener, String subscription, String subAuth) {
         this.version = version;
         this.name = name;
         this.permission = permission;
         this.tick = tick;
         this.listener = listener;
         this.subscription = subscription;
+        this.subAuth = subAuth;
+    }
+
+    public boolean needsSubscriptionAuth() {
+        return subAuth != null;
     }
 
     public boolean isSubscribeable() {
@@ -47,6 +57,10 @@ public abstract class BaseModule
 
     public String getSubscription() {
         return subscription;
+    }
+
+    public String getSubAuth() {
+        return subAuth;
     }
 
     public void onEnable(Map<String,ActionMethod> signature) {
