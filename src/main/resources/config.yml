@@ -8,6 +8,7 @@ anonymous:
   permissions:
   - livekit.module.map
   - livekit.module.players
+  - livekit.players.other
 permissions:
   useVault: false
   default:
@@ -19,6 +20,7 @@ permissions:
   - livekit.module.poi
   - livekit.chat.write
   - livekit.poi.personalpins
+  - livekit.players.other
 modules:
   LiveMapModule:
     enabled: true
@@ -35,3 +37,6 @@ modules:
     personalpins: 5
     teleport_spawn: false
     teleport_bed: false
+  ConsoleModule:
+    enabled: true
+    password: change_me

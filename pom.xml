@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>LiveKit</groupId>
   <artifactId>LiveKit</artifactId>
-  <version>1.1.1-SNAPSHOT</version>
+  <version>1.2.0-SNAPSHOT</version>
   <name>LiveKit</name>
   
   <properties>
@@ -108,6 +108,13 @@
         <artifactId>LiveKitAPI</artifactId>
         <version>1.0-SNAPSHOT</version>
     </dependency>
+<!-- https://mvnrepository.com/artifact/log4j/log4j -->
+<!-- https://mvnrepository.com/artifact/org.apache.logging.log4j/log4j-core -->
+<dependency>
+    <groupId>org.apache.logging.log4j</groupId>
+    <artifactId>log4j-core</artifactId>
+    <version>2.14.1</version>
+</dependency>
 
 	<dependency>
         <groupId>com.github.MilkBowl</groupId>

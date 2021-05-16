@@ -1,13 +1,18 @@
 package at.livekit.plugin;
 
+import java.io.FilterOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.logging.Handler;
+import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
 import com.google.common.util.concurrent.Futures;
 
+import org.apache.logging.log4j.core.Appender;
+import org.apache.logging.log4j.core.LogEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -38,6 +43,7 @@ import at.livekit.map.RenderWorld;
 import at.livekit.map.RenderBounds.RenderShape;
 import at.livekit.map.RenderJob.RenderJobMode;
 import at.livekit.modules.BaseModule;
+import at.livekit.modules.ConsoleModule;
 import at.livekit.modules.PlayerModule;
 import at.livekit.modules.LiveMapModule;
 import at.livekit.modules.PlayerModule.LPlayer;
@@ -47,6 +53,7 @@ import at.livekit.provider.BasicPlayerPinProvider;
 import at.livekit.provider.POISpawnProvider;
 import at.livekit.storage.IStorageAdapter;
 import at.livekit.storage.JSONStorage;
+import at.livekit.utils.ConsoleListener;
 import at.livekit.utils.FutureSyncCallback;
 import at.livekit.utils.HeadLibraryEvent;
 import at.livekit.utils.HeadLibraryV2;
@@ -70,6 +77,8 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 		instance = this;
 		logger = getLogger();
 
+		
+
 		//create config folder if doesn't exist
 		if(!getDataFolder().exists()) {
 			getDataFolder().mkdirs();
@@ -91,12 +100,14 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 		try{
 			storage = new JSONStorage();
 			storage.initialize();
-		}catch(Exception exception){
+		} catch(Exception exception) {
 			exception.printStackTrace();
 			logger.severe("Error initializing Storage, shutting down");
 			getServer().getPluginManager().disablePlugin(this);
 			return;
 		}
+
+		//System.out.println("System out printlning");
 
 		/*List<String> worlds = Config.getLiveMapWorlds();
 		for(String world : worlds) {
@@ -131,7 +142,9 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 		}catch(Exception ex){Plugin.debug("bStats could not be initialized! "+ex.getMessage());}
 
 		//this.getLiveKit().addLocationProvider(new LocationBedSpawnProvider());
-		this.getLiveKit().addPlayerInfoProvider(new BasicPlayerInfoProvider());
+		BasicPlayerInfoProvider playerInfoProvider = new BasicPlayerInfoProvider();
+		this.getLiveKit().addPlayerInfoProvider(playerInfoProvider);
+		Bukkit.getServer().getPluginManager().registerEvents(playerInfoProvider, Plugin.getInstance());
 
 		//POI
 		POISpawnProvider provider = new POISpawnProvider();
@@ -145,10 +158,16 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 		//Player Pin Provider
 		//PlayerPinProvider playerPins = new PlayerPinProvider();
 		this.getLiveKit().addPlayerInfoProvider(new BasicPlayerPinProvider());
+
+		//registers console listener (console enable check is done inside)
+		ConsoleListener.registerListener();
     }
     
     @Override
     public void onDisable() {
+		//unregister before livekit gets disabled
+		ConsoleListener.unregisterListener();
+
 		LiveKit.getInstance().onDisable();
 
 		storage.dispose();
@@ -173,6 +192,12 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 
 
 			if(args.length == 1) {
+				/*if(args[0].equalsIgnoreCase("test")) {
+					logger.warning("ACHTUNG WARNUNG "+ChatColor.AQUA+"lele");
+					Object o = null;
+					System.out.println("Command triggered with args");
+					o.toString();
+				}*/
 				/*if(args[0].equalsIgnoreCase("reload")) {
 					if(!checkPerm(sender, "livekit.commands.admin")) return true;
 
@@ -713,7 +738,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 				return true;
 			}
 
-			if(args[0].equalsIgnoreCase("modules")) {
+			/*if(args[0].equalsIgnoreCase("modules")) {
 				if(!checkPerm(sender, "livekit.commands.admin")) return true;
 
 				sender.sendMessage(prefix+"Modules:");
@@ -722,7 +747,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 				}
 
 				return true;
-			}
+			}*/
 			
 			/*if(args[0].equalsIgnoreCase("subs")) {
 				if(!checkPerm(sender, "livekit.commands.admin")) return true;
@@ -750,7 +775,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 			}*/
 		}
 		if(args.length == 3) {
-			if(args[0].equalsIgnoreCase("modules")) {
+			/*if(args[0].equalsIgnoreCase("modules")) {
 				if(!checkPerm(sender, "livekit.commands.admin")) return true;
 
 				String module = args[1];
@@ -767,7 +792,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 				}
 
 				return true;
-			}
+			}*/
 			/*if(args[0].equalsIgnoreCase("load")) {
 				if(!checkPerm(sender, "livekit.commands.admin")) return true;
 				
@@ -1000,6 +1025,10 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 
 	public static void log(String message) {
 		logger.info(message);
+	}
+
+	public static void warning(String message) {
+		logger.warning(message);
 	}
 
 	public static void severe(String message) {

@@ -226,7 +226,7 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
                 }
                 if(module != null) {
                     BaseModule m = _modules.getModule(module);
-                    _server.send(m.onUpdateAsync(clientUUIDs.stream().filter(identity->m.hasAccess(identity)).collect(Collectors.toList())));
+                    _server.send(m.onUpdateAsync(clientUUIDs.stream().filter(identity->m.hasAccess(identity)&&m.isAuthenticated(identity)).collect(Collectors.toList())));
 
                     if(module.equals("SettingsModule")) {
                         _server.send(_modules.modulesAvailableAsync(clientUUIDs));
@@ -252,7 +252,7 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
                 if(module != null) {
                     BaseModule m = _modules.getModule(module);
                     for(Identity identity : clientUUIDs) {
-                        if(m.hasAccess(identity)) {
+                        if(m.hasAccess(identity) && m.isAuthenticated(identity)) {
                             _server.send(identity, m.onJoinAsync(identity));
                         }
                     }
@@ -639,13 +639,20 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
         String password = o.has("password")&&!o.isNull("password")?o.getString("password"):null;
 
         HashMap<String, String> subscriptions = new HashMap<String,String>();
+        //HashMap<String, String> moduleAuths = new HashMap<String, String>();
         if(o.has("subscriptions") && !o.isNull("subscriptions")) {
             JSONObject subs = o.getJSONObject("subscriptions");
             for(String key : subs.keySet()) {
+                //String[] split = subs.getString(key).split(":");
+                //String subscription = split[0];
                 String subscription = subs.getString(key);
+                //String subAuth = split.length > 1 ? split[1] : null;
 
                 if(_modules.hasSubscription(key, subscription)) {
-                    subscriptions.put(key, subs.getString(key));
+                    subscriptions.put(key, subscription);
+                    /*if(subAuth != null) {
+                        moduleAuths.put(key, subAuth);
+                    }*/
                 }
             }
         }
@@ -719,7 +726,10 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
                 client.getIdentifier().loadPermissionsAsync();
                 client.getIdentifier().updateSubscriptions(_modules.getDefaultSubscriptions());
                 client.getIdentifier().updateSubscriptions(subscriptions);
+                //client.getIdentifier().setModuleAuthentications(moduleAuths);
             
+
+
                 try{
                     _server.send(client.getIdentifier(), _modules.modulesAvailableAsync(client.getIdentifier()));
                     _server.send(client.getIdentifier(), _modules.onJoinAsync(client.getIdentifier()));
@@ -739,6 +749,7 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
             client.getIdentifier().loadPermissionsAsync();
             client.getIdentifier().updateSubscriptions(_modules.getDefaultSubscriptions());
             client.getIdentifier().updateSubscriptions(subscriptions);
+            //client.getIdentifier().setModuleAuthentications(moduleAuths);
 
             try{
                 _server.send(client.getIdentifier(), _modules.modulesAvailableAsync(client.getIdentifier()));
@@ -755,14 +766,23 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
     public IPacket subscribe(Identity identity, ActionPacket action) {
         String baseType = action.getData().getString("baseType");
         String subscription = action.getData().getString("subscription");
+        String password = action.getData().has("password")&&!action.getData().isNull("password") ? action.getData().getString("password") : null;
 
         if(!_modules.hasSubscription(baseType, subscription)) return new StatusPacket(0, "Subscription not available!");
 
         BaseModule module = _modules.getModule(baseType+":"+subscription);
         if(module == null) return new StatusPacket(0, "Module with subscription not found!");
 
+        if(module.needsAuth()) {
+            if(!module.getAuth().equals(password)) {
+                return new StatusPacket(0, "Permission denied!");
+            }
+            //subscription += ":"+password;
+        }
+
         //TODO: permission check ?
         identity.setSubscription(baseType, subscription);
+        identity.setModuleAuthentication(module.getType(), password);
         _server.send(identity, module.onJoinAsync(identity));
 
         return new StatusPacket(1);
@@ -809,7 +829,7 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
                     results.put(identity, new StatusPacket(0, "Requested module is not enabled!").setRequestId(action.requestId));
                     continue;
                 }
-                if(!module.hasAccess(identity)) {
+                if(!module.hasAccess(identity) || !module.isAuthenticated(identity)) {
                     results.put(identity, new StatusPacket(0, "Permission denied!").setRequestId(action.requestId));
                     continue;  
                 }

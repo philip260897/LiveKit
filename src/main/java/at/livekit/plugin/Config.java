@@ -9,6 +9,8 @@ import org.bukkit.World;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
+import at.livekit.utils.Utils;
+
 public class Config 
 {
     private static File configFile;
@@ -65,6 +67,10 @@ public class Config
 
     public static String getPassword() {
         return config.getString("server.password");
+    }
+
+    public static String getConsolePassword() {
+        return config.getString("modules.ConsoleModule.password");
     }
 
     public static int getPersonalPinLimit() {
@@ -138,6 +144,28 @@ public class Config
             if(!perms.contains("livekit.module.poi")) perms.add("livekit.module.poi");
             if(!perms.contains("livekit.poi.personalpins")) perms.add("livekit.poi.personalpins");
             config.set("permissions.default", perms);
+            save = true;
+        }
+
+        if(config.get("modules.ConsoleModule") == null) {
+            Plugin.log("Patching config with new Console module...");
+            config.set("modules.ConsoleModule.enabled", true);
+            config.set("modules.ConsoleModule.password", "change_me");
+
+            List<String> perms = getDefaultPermissions();
+            if(!perms.contains("livekit.players.other")) perms.add("livekit.players.other");
+            config.set("permissions.default", perms);
+
+            List<String> permsAnonymous = getAnonymousPermissions();
+            if(!permsAnonymous.contains("livekit.players.other")) permsAnonymous.add("livekit.players.other");
+            config.set("anonymous.permissions", permsAnonymous);
+
+            save = true;
+        }
+        if("change_me".equals(config.get("modules.ConsoleModule.password"))) {
+            Plugin.log("Generating secure console password");
+            config.set("modules.ConsoleModule.password", Utils.generateRandom(10));
+
             save = true;
         }
 
