@@ -186,13 +186,17 @@ public class RenderWorld
     }
 
     public void updateChunk(Chunk chunk, boolean chunkLoadEvent) {
-        if(!_bounds.chunkInBounds(chunk.getX(), chunk.getZ())) return;
+        updateChunk(chunk.getX(), chunk.getZ(), chunkLoadEvent);
+    }
+
+    private void updateChunk(int x, int z, boolean chunkLoadEvent) {
+        if(!_bounds.chunkInBounds(x, z)) return;
         if(_task != null && chunkLoadEvent) {
-            if(_task.offset.x == chunk.getX() && _task.offset.z == chunk.getZ()) return;
+            if(_task.offset.x == x && _task.offset.z == z) return;
         }
 
         synchronized(_chunkQueue) {
-            _chunkQueue.add(new Offset(chunk.getX(), chunk.getZ(), chunkLoadEvent));
+            _chunkQueue.add(new Offset(x, z, chunkLoadEvent));
         }
     }
 
@@ -381,9 +385,13 @@ public class RenderWorld
                     File file = new File(workingDirectory,x +"_"+z+".region");
                     if(file.exists()) {
                         byte[] data = Files.readAllBytes(file.toPath());
-                        region = new RegionData(x, z, data);
-                        region.timestamp = Utils.decodeTimestamp(data);
-                        region.invalidate();
+                        if(data.length == 1048584) {
+                            region = new RegionData(x, z, data);
+                            region.timestamp = Utils.decodeTimestamp(data);
+                            region.invalidate();
+                        } else {
+                            Plugin.debug("Invalid region detected! Creating new "+data.length);
+                        }
                     }
 
 
@@ -396,7 +404,14 @@ public class RenderWorld
                     }
                 }catch(Exception ex){ex.printStackTrace();};
 
-                if(createNew) region = createRegion(x, z);
+                if(createNew) {
+                     region = createRegion(x, z);
+                     for(int cz = 0; cz < 32; cz++) {
+                         for(int cx = 0; cx < 32; cx++) {
+                             updateChunk(x*32 + cx, z*32 + cz, true);
+                         }
+                     }
+                }
 			}
         });
     }
