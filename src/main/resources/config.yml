@@ -39,4 +39,4 @@ modules:
     teleport_bed: false
   ConsoleModule:
     enabled: false
-    password: admin123
+    password: change_me

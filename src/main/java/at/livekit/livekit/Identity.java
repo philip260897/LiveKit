@@ -123,12 +123,6 @@ public class Identity
                 this.subscriptions.put(e.getKey(), e.getValue());
             }
         }
-        synchronized(subscriptions) {
-            System.out.println("updated:");
-            for(Entry<String,String> e : this.subscriptions.entrySet()) {
-                System.out.println(e.getKey()+": "+e.getValue());
-            }
-        }
     }
 
     public void loadPermissionsAsync() {

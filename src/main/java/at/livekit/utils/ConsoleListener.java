@@ -38,7 +38,7 @@ public class ConsoleListener extends AbstractAppender {
     @Override
     public void append(LogEvent event) {
         if(module == null) {
-            if(cache.size() >= ConsoleModule.BACKLOG_COUNT) return;
+            while(cache.size() >= ConsoleModule.BACKLOG_COUNT) cache.remove(0);
             cache.add(event.toImmutable());
         } else {
             module.addEntry(event.toImmutable());

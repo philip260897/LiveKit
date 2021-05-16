@@ -230,7 +230,6 @@ public class NIOServer<T> implements Runnable, NIOClientEvent<T> {
 
     @Override
     public void messageReceived(NIOClient<T> client, String message) {
-        System.out.println(message);
        if(listener != null) listener.clientMessageReceived(client, message);
     }
 

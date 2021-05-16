@@ -63,7 +63,15 @@ public class ModuleManager
         
         //if(Config.getConsolePassword() != null) {
         if(Config.getConsolePassword() == null) Plugin.warning("Enabling Console access without password. UNSAFE!");
-        this.registerModule(new ConsoleModule(listener));
+        
+        boolean enableConsole = true;
+        if(Config.moduleEnabled("ConsoleModule")) {
+            if("change_me".equalsIgnoreCase(Config.getConsolePassword())) {
+                Plugin.severe("Default Console password still 'change_me'. Disabling Console Access!");
+                enableConsole = false;
+            }
+        }
+        if(enableConsole) this.registerModule(new ConsoleModule(listener));
         //} else {
         //    Plugin.log("Console password not set. Disabling ConsoleModule");
         //}

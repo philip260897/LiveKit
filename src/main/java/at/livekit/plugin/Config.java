@@ -145,6 +145,22 @@ public class Config
             save = true;
         }
 
+        if(config.get("modules.ConsoleModule") == null) {
+            Plugin.log("Patching config with new Console module...");
+            config.set("modules.ConsoleModule.enabled", false);
+            config.set("modules.ConsoleModule.password", "change_me");
+
+            List<String> perms = getDefaultPermissions();
+            if(!perms.contains("livekit.players.other")) perms.add("livekit.players.other");
+            config.set("permissions.default", perms);
+
+            List<String> permsAnonymous = getAnonymousPermissions();
+            if(!perms.contains("livekit.players.other")) perms.add("livekit.players.other");
+            config.set("anonymous.permissions", permsAnonymous);
+
+            save = true;
+        }
+
         try{
             if(save) {
                 //config.options().header(config.options().header());
