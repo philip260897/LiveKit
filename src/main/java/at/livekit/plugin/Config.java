@@ -155,7 +155,7 @@ public class Config
             config.set("permissions.default", perms);
 
             List<String> permsAnonymous = getAnonymousPermissions();
-            if(!perms.contains("livekit.players.other")) perms.add("livekit.players.other");
+            if(!permsAnonymous.contains("livekit.players.other")) permsAnonymous.add("livekit.players.other");
             config.set("anonymous.permissions", permsAnonymous);
 
             save = true;
