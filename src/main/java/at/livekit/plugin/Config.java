@@ -9,6 +9,8 @@ import org.bukkit.World;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
+import at.livekit.utils.Utils;
+
 public class Config 
 {
     private static File configFile;
@@ -147,7 +149,7 @@ public class Config
 
         if(config.get("modules.ConsoleModule") == null) {
             Plugin.log("Patching config with new Console module...");
-            config.set("modules.ConsoleModule.enabled", false);
+            config.set("modules.ConsoleModule.enabled", true);
             config.set("modules.ConsoleModule.password", "change_me");
 
             List<String> perms = getDefaultPermissions();
@@ -157,6 +159,12 @@ public class Config
             List<String> permsAnonymous = getAnonymousPermissions();
             if(!permsAnonymous.contains("livekit.players.other")) permsAnonymous.add("livekit.players.other");
             config.set("anonymous.permissions", permsAnonymous);
+
+            save = true;
+        }
+        if(config.get("modules.ConsoleModule.password").equals("change_me")) {
+            Plugin.log("Generating secure console password");
+            config.set("modules.ConsoleModule.password", Utils.generateRandom(10));
 
             save = true;
         }

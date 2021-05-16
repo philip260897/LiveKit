@@ -192,12 +192,12 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 
 
 			if(args.length == 1) {
-				if(args[0].equalsIgnoreCase("test")) {
+				/*if(args[0].equalsIgnoreCase("test")) {
 					logger.warning("ACHTUNG WARNUNG "+ChatColor.AQUA+"lele");
 					Object o = null;
 					System.out.println("Command triggered with args");
 					o.toString();
-				}
+				}*/
 				/*if(args[0].equalsIgnoreCase("reload")) {
 					if(!checkPerm(sender, "livekit.commands.admin")) return true;
 
@@ -738,7 +738,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 				return true;
 			}
 
-			if(args[0].equalsIgnoreCase("modules")) {
+			/*if(args[0].equalsIgnoreCase("modules")) {
 				if(!checkPerm(sender, "livekit.commands.admin")) return true;
 
 				sender.sendMessage(prefix+"Modules:");
@@ -747,7 +747,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 				}
 
 				return true;
-			}
+			}*/
 			
 			/*if(args[0].equalsIgnoreCase("subs")) {
 				if(!checkPerm(sender, "livekit.commands.admin")) return true;
@@ -775,7 +775,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 			}*/
 		}
 		if(args.length == 3) {
-			if(args[0].equalsIgnoreCase("modules")) {
+			/*if(args[0].equalsIgnoreCase("modules")) {
 				if(!checkPerm(sender, "livekit.commands.admin")) return true;
 
 				String module = args[1];
@@ -792,7 +792,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 				}
 
 				return true;
-			}
+			}*/
 			/*if(args[0].equalsIgnoreCase("load")) {
 				if(!checkPerm(sender, "livekit.commands.admin")) return true;
 				

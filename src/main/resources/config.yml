@@ -38,5 +38,5 @@ modules:
     teleport_spawn: false
     teleport_bed: false
   ConsoleModule:
-    enabled: false
+    enabled: true
     password: change_me

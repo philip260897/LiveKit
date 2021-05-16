@@ -17,6 +17,7 @@ import at.livekit.packets.ActionPacket;
 import at.livekit.packets.IPacket;
 import at.livekit.packets.StatusPacket;
 import at.livekit.plugin.Config;
+import at.livekit.plugin.Plugin;
 
 public class ConsoleModule extends BaseModule 
 {
@@ -29,6 +30,12 @@ public class ConsoleModule extends BaseModule
 
     public ConsoleModule(ModuleListener listener) {
         super(1, "Console", "livekit.module.console", UpdateRate.NEVER, listener, "default", Config.getConsolePassword());
+    }
+
+    @Override
+    public void onEnable(Map<String, ActionMethod> signature) {
+        super.onEnable(signature);
+        Plugin.log("Console access password: "+Config.getConsolePassword());
     }
 
     public void addEntry(LogEvent entry) {

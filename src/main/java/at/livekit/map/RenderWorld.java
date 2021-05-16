@@ -360,6 +360,7 @@ public class RenderWorld
         Bukkit.getScheduler().runTaskAsynchronously(Plugin.getInstance(), new Runnable(){
 			@Override
 			public void run() {
+                boolean failedToLoad = false;
 				boolean createNew = true;
                 RegionData region = null;
 
@@ -391,6 +392,7 @@ public class RenderWorld
                             region.invalidate();
                         } else {
                             Plugin.debug("Invalid region detected! Creating new "+data.length);
+                            failedToLoad = true;
                         }
                     }
 
@@ -406,11 +408,14 @@ public class RenderWorld
 
                 if(createNew) {
                      region = createRegion(x, z);
-                     for(int cz = 0; cz < 32; cz++) {
-                         for(int cx = 0; cx < 32; cx++) {
-                             updateChunk(x*32 + cx, z*32 + cz, true);
-                         }
-                     }
+
+                     if(failedToLoad) {
+                        for(int cz = 0; cz < 32; cz++) {
+                            for(int cx = 0; cx < 32; cx++) {
+                                updateChunk(x*32 + cx, z*32 + cz, true);
+                            }
+                        }
+                    }
                 }
 			}
         });
