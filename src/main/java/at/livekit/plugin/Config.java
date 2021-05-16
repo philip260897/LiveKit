@@ -162,7 +162,7 @@ public class Config
 
             save = true;
         }
-        if(config.get("modules.ConsoleModule.password").equals("change_me")) {
+        if("change_me".equals(config.get("modules.ConsoleModule.password"))) {
             Plugin.log("Generating secure console password");
             config.set("modules.ConsoleModule.password", Utils.generateRandom(10));
 
