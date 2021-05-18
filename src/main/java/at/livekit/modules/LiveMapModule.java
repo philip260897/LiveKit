@@ -148,6 +148,8 @@ public class LiveMapModule extends BaseModule implements Listener
 
     @Override
     public void onEnable(Map<String,ActionMethod> signature) {
+        Bukkit.getServer().getPluginManager().registerEvents(this, Plugin.getInstance());
+        
         World w = Bukkit.getWorld(world);
         if(w == null) {
             Plugin.debug("World "+world+" not found!");
@@ -161,7 +163,7 @@ public class LiveMapModule extends BaseModule implements Listener
         Chunk[] chunks = w.getLoadedChunks();
         for(Chunk c : chunks) renderWorld.updateChunk(c, true);
 
-        Bukkit.getServer().getPluginManager().registerEvents(this, Plugin.getInstance());
+        
         super.onEnable(signature);
     }
        
@@ -571,8 +573,10 @@ public class LiveMapModule extends BaseModule implements Listener
     // WORLD EVENTS
     @EventHandler(priority = EventPriority.MONITOR)
     public void onWorldLoadEvent(WorldLoadEvent event) {
+       //Plugin.debug("World loading "+event.getWorld().getName());
        if(!isEnabled() && waitingForWorld) {
            if(event.getWorld().getName().equals(world)) {
+               Plugin.debug("World "+world+" just loaded, enabling Live map");
                LiveKit.getInstance().enableModule(getType());
            }
        } 
