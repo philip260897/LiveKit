@@ -27,10 +27,12 @@ import org.bukkit.event.block.LeavesDecayEvent;
 import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.ChunkPopulateEvent;
 import org.bukkit.event.world.StructureGrowEvent;
+import org.bukkit.event.world.WorldLoadEvent;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import at.livekit.livekit.Identity;
+import at.livekit.livekit.LiveKit;
 import at.livekit.map.RenderBounds;
 import at.livekit.map.RenderJob;
 import at.livekit.map.RenderScheduler;
@@ -52,6 +54,8 @@ public class LiveMapModule extends BaseModule implements Listener
     private String world;
     private RenderWorld renderWorld = null;
     private List<IPacket> _updates = new ArrayList<IPacket>();
+
+    private boolean waitingForWorld = false;
 
     public LiveMapModule(String world, ModuleListener listener) {
         super(1, "Live Map", "livekit.module.map", UpdateRate.MAX, listener, world);
@@ -144,25 +148,26 @@ public class LiveMapModule extends BaseModule implements Listener
 
     @Override
     public void onEnable(Map<String,ActionMethod> signature) {
+        World w = Bukkit.getWorld(world);
+        if(w == null) {
+            Plugin.debug("World "+world+" not found!");
+            waitingForWorld = true;
+            return;
+        }
+        
         RenderScheduler.setTotalWorkers(RenderScheduler.getTotalWorkers()+1);
 
-        World w = Bukkit.getWorld(world);
-        if(w != null) {
-            renderWorld = new RenderWorld(world, w.getUID().toString());
-            Chunk[] chunks = w.getLoadedChunks();
-            for(Chunk c : chunks) renderWorld.updateChunk(c, true);
-        }
+        renderWorld = new RenderWorld(world, w.getUID().toString());
+        Chunk[] chunks = w.getLoadedChunks();
+        for(Chunk c : chunks) renderWorld.updateChunk(c, true);
 
         Bukkit.getServer().getPluginManager().registerEvents(this, Plugin.getInstance());
         super.onEnable(signature);
-
-        if(renderWorld == null) onDisable(signature);
     }
        
     @Override
     public void onDisable(Map<String,ActionMethod> signature) {
         renderWorld.shutdown();
-
 
         RenderScheduler.unregisterWork(this);
         RenderScheduler.setTotalWorkers(RenderScheduler.getTotalWorkers()-1);
@@ -564,6 +569,14 @@ public class LiveMapModule extends BaseModule implements Listener
 
 
     // WORLD EVENTS
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onWorldLoadEvent(WorldLoadEvent event) {
+       if(!isEnabled() && waitingForWorld) {
+           if(event.getWorld().getName().equals(world)) {
+               LiveKit.getInstance().enableModule(getType());
+           }
+       } 
+    }
 
     @EventHandler(priority = EventPriority.MONITOR)
     private void onChunkPopulateEvent(ChunkPopulateEvent event) {

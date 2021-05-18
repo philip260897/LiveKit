@@ -35,7 +35,7 @@ public class ConsoleModule extends BaseModule
     @Override
     public void onEnable(Map<String, ActionMethod> signature) {
         super.onEnable(signature);
-        if(Config.getConsolePassword() == null) Plugin.log("Console access password: "+Config.getConsolePassword());
+        if(Config.getConsolePassword() != null) Plugin.log("Console access password: "+Config.getConsolePassword());
     }
 
     public void addEntry(LogEvent entry) {
