@@ -61,6 +61,7 @@ public class ModuleManager
         this.registerModule(new AdminModule(listener));
         this.registerModule(new ChatModule(listener));
         this.registerModule(new POIModule(listener));
+        this.registerModule(new InventoryModule(listener));
         
         //if(Config.getConsolePassword() != null) {
         if(Config.getConsolePassword() == null) Plugin.warning("Enabling Console access without password. UNSAFE!");
