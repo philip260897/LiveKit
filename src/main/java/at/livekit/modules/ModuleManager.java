@@ -11,6 +11,7 @@ import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 import org.bukkit.Bukkit;
+import org.bukkit.World;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -92,7 +93,11 @@ public class ModuleManager
                 if(Config.moduleEnabled(m.getType().split(":")[0])) {
                     Plugin.debug("Enabling "+m.getType());
                     m.onEnable(signatures);
-                    this.settings.registerModule(m.getType(), m.moduleInfo());
+
+                    if(m.isEnabled()) {
+                        this.settings.registerModule(m.getType(), m.moduleInfo());
+                        registerSubscription(m);
+                    }
                 }
             }
         }
@@ -117,9 +122,11 @@ public class ModuleManager
         listener = null;
     }
 
-    private void registerModule(BaseModule module) throws Exception {
+    private void registerModule(BaseModule module) {
         _modules.put(module.getType(), module);
-        
+    }
+
+    private void registerSubscription(BaseModule module) throws Exception {
         if(module.isSubscribeable()) {
             List<String> _values = _subscriptions.get(module.getClass().getSimpleName());
             if(_values == null) {
