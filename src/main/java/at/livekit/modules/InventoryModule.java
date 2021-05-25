@@ -1,5 +1,6 @@
 package at.livekit.modules;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,6 +14,10 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.player.PlayerDropItemEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.event.entity.EntitySpawnEvent;
+import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -27,10 +32,27 @@ public class InventoryModule extends BaseModule implements Listener
     private HashMap<Identity, UUID> _inventorySubs = new HashMap<Identity, UUID>();
     private HashMap<UUID, JSONObject> _inventoryUpdates = new HashMap<>();
 
+    private List<Player> _queue = new ArrayList<Player>();
 
     public InventoryModule(ModuleListener listener) {
-        super(1, "Inventories", "livekit.module.inventory", UpdateRate.NEVER, listener);
+        super(1, "Inventories", "livekit.module.inventory", UpdateRate.HIGH, listener);
     } 
+
+    @Override
+    public void update() {
+        synchronized(_queue) {
+            if(_queue.size() != 0) {
+                for(int i = 0; i < _queue.size(); i++) {
+                    updateInventory(_queue.get(i));
+                }
+                _queue.clear();
+
+                System.out.println("Subs: "+_inventorySubs.size() + "; updates: "+_inventoryUpdates.size()+" queue: "+_queue.size());
+            }
+        }
+        
+        super.update();
+    }
 
     @Override
     public void onEnable(Map<String,ActionMethod> signature) {
@@ -78,6 +100,8 @@ public class InventoryModule extends BaseModule implements Listener
     }
 
     private void updateInventory(Player player) {
+        if(!player.isOnline()) return;
+
         JSONObject inventory = new JSONObject();
         JSONArray storage = new JSONArray();
         //JSONArray armor = new JSONArray();
@@ -136,15 +160,42 @@ public class InventoryModule extends BaseModule implements Listener
     @EventHandler(priority = EventPriority.MONITOR)
     public void onInventoryClickEvent(InventoryClickEvent event) {
         if(event.getInventory().getHolder() instanceof Player) {
-            System.out.println("holder identifierd");
             Player player = (Player) event.getInventory().getHolder();
-            synchronized(_inventorySubs) {
-                if(_inventorySubs.containsValue(player.getUniqueId())) {
-                    System.out.println("updating player inventory");
-                    updateInventory(player);
+            queuePlayer(player);
+            System.out.println("Click Event Queued");
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onEntityPickupItemEvent(EntityPickupItemEvent event) {
+        if(event.getEntity() instanceof Player) {
+            Player player = (Player) event.getEntity();
+            queuePlayer(player);
+            System.out.println("Pickup Event Queued");
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerDropItemEvent(PlayerDropItemEvent event) {
+        System.out.println("Drop Event Queued");
+        queuePlayer(event.getPlayer());
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerRespawnEvent(PlayerRespawnEvent event) {
+        System.out.println("Player spawned");
+        queuePlayer((Player)event.getPlayer());
+    }
+
+    private void queuePlayer(Player player) {
+        synchronized(_inventorySubs) {
+            if(_inventorySubs.containsValue(player.getUniqueId())) {
+                synchronized(_queue) {
+                    _queue.add(player);
                 }
             }
         }
     }
+
 
 }
