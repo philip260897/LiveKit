@@ -95,6 +95,12 @@ public class RenderWorld
             ex.printStackTrace();
         }
 
+        //debugging worlds
+        try{
+            File nameFile = new File(workingDirectory, world+".txt");
+            if(!nameFile.exists()) nameFile.createNewFile();
+        }catch(Exception ex){ex.printStackTrace();}
+
         /*for(int x = -40; x < 40; x++) {
             for(int z = -40; z < 40; z++) {
                 RegionData region = createRegion(x, z);
