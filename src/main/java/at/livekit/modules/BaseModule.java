@@ -98,6 +98,10 @@ public abstract class BaseModule
         }
     }
 
+    public void onDisconnectAsync(Identity identity) {
+
+    }
+
     protected void notifyChange() {
         if(listener != null) listener.onDataChangeAvailable(this.getType());
     }

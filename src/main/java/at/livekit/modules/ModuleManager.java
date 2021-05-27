@@ -287,6 +287,18 @@ public class ModuleManager
     }
 
     /**
+     * Notifies each module a Client has disconnected
+     * @param identity Client which disconnected
+     */
+    public void onDisconnectAsync(Identity identity) {
+        for(BaseModule module : _modules.values()) {
+            if(module.isEnabled() && module.hasAccess(identity) && module.isAuthenticated(identity)) {
+                module.onDisconnectAsync(identity);
+            }
+        }
+    }
+
+    /**
      * if module is interactive (client can change data) call this with moduleType, client context (uuid), and packet for change data
      * @param type  moduleType
      * @param uuid  client context

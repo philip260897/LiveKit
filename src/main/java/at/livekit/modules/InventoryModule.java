@@ -78,6 +78,16 @@ public class InventoryModule extends BaseModule implements Listener
     }
 
     @Override
+    public void onDisconnectAsync(Identity identity) {
+        super.onDisconnectAsync(identity); 
+        synchronized(_inventorySubs) {
+            if(_inventorySubs.containsKey(identity)) {
+                _inventorySubs.remove(identity);
+            }
+        }
+    }
+
+    @Override
     public Map<Identity,IPacket> onUpdateAsync(List<Identity> identities) {
         Map<Identity, IPacket> responses = new HashMap<Identity, IPacket>();
 
