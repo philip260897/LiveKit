@@ -108,7 +108,7 @@ public class InventoryModule extends BaseModule implements Listener
         return responses;
     }
 
-    private void updateInventory(Player player) {
+    public void updateInventory(Player player) {
         if(!player.isOnline()) return;
 
         JSONObject inventory = new JSONObject();

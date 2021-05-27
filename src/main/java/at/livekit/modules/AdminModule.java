@@ -16,12 +16,14 @@ import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import at.livekit.livekit.Identity;
+import at.livekit.livekit.LiveKit;
 import at.livekit.map.Renderer;
 import at.livekit.modules.BaseModule.Action;
 import at.livekit.packets.ActionPacket;
@@ -341,6 +343,11 @@ public class AdminModule extends BaseModule
         Player player = offline.getPlayer();
         player.getInventory().addItem(itemStack);
 
+        InventoryModule inventoryModule = (InventoryModule)LiveKit.getInstance().getModuleManager().getModule("InventoryModule");
+        if(inventoryModule != null && inventoryModule.isEnabled()) {
+            inventoryModule.updateInventory(player);
+        }
+
         return new StatusPacket(1);
     }
 
@@ -352,6 +359,11 @@ public class AdminModule extends BaseModule
         if(offline == null) return new StatusPacket(0, "Player not found!"); 
 
         offline.getPlayer().getInventory().clear();
+
+        InventoryModule inventoryModule = (InventoryModule)LiveKit.getInstance().getModuleManager().getModule("InventoryModule");
+        if(inventoryModule != null && inventoryModule.isEnabled()) {
+            inventoryModule.updateInventory(offline.getPlayer());
+        }
 
         return new StatusPacket(1);
     }
@@ -375,6 +387,10 @@ public class AdminModule extends BaseModule
         if(!stack.getType().name().equals(material) || stack.getAmount() != amount) return new StatusPacket(0, "ItemStack missmatch!");
 
         inventory.clear(slot);
+        InventoryModule inventoryModule = (InventoryModule)LiveKit.getInstance().getModuleManager().getModule("InventoryModule");
+        if(inventoryModule != null && inventoryModule.isEnabled()) {
+            inventoryModule.updateInventory(player);
+        }
 
         return new StatusPacket(1);
     }
