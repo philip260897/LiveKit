@@ -14,6 +14,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.entity.EntitySpawnEvent;
@@ -46,8 +47,6 @@ public class InventoryModule extends BaseModule implements Listener
                     updateInventory(_queue.get(i));
                 }
                 _queue.clear();
-
-                System.out.println("Subs: "+_inventorySubs.size() + "; updates: "+_inventoryUpdates.size()+" queue: "+_queue.size());
             }
         }
         
@@ -172,7 +171,14 @@ public class InventoryModule extends BaseModule implements Listener
         if(event.getInventory().getHolder() instanceof Player) {
             Player player = (Player) event.getInventory().getHolder();
             queuePlayer(player);
-            System.out.println("Click Event Queued");
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onInventoryDragEvent(InventoryDragEvent event) {
+        if(event.getInventory().getHolder() instanceof Player) {
+            Player player = (Player) event.getInventory().getHolder();
+            queuePlayer(player);
         }
     }
 
@@ -181,19 +187,16 @@ public class InventoryModule extends BaseModule implements Listener
         if(event.getEntity() instanceof Player) {
             Player player = (Player) event.getEntity();
             queuePlayer(player);
-            System.out.println("Pickup Event Queued");
         }
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerDropItemEvent(PlayerDropItemEvent event) {
-        System.out.println("Drop Event Queued");
         queuePlayer(event.getPlayer());
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerRespawnEvent(PlayerRespawnEvent event) {
-        System.out.println("Player spawned");
         queuePlayer((Player)event.getPlayer());
     }
 
