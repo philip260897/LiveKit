@@ -423,8 +423,6 @@ public class RenderWorld
     }
 
     private void unloadRegionAsync(RegionData region) {
-        Plugin.debug("Scheduling Region Saving: "+region.getX()+","+region.getZ());
-
         Bukkit.getScheduler().runTaskAsynchronously(Plugin.getInstance(), new Runnable(){
             @Override
             public void run() {
@@ -435,13 +433,9 @@ public class RenderWorld
                 if(SHUTDOWN) return;
                 saveRegion(region);
                 
-
                 synchronized(_loadedRegions) {
                     _loadedRegions.remove(region);
                 }
-
-                Plugin.debug("Done unloading: "+region.getX()+","+region.getZ());
-
             }
         });
     }

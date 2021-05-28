@@ -144,7 +144,7 @@ public class PlayerModule extends BaseModule implements Listener
 
                 if(player.needsItemUpdate(player.itemHeld, _inventory.getItemInMainHand())) {
                     ItemStack held = _inventory.getItemInMainHand();
-                    player.updateItemHeld(held != null ? held.getType().name() : null, held.getAmount());
+                    player.updateItemHeld(held);
                     needsUpdate = true;
                 }
             }
@@ -252,7 +252,7 @@ public class PlayerModule extends BaseModule implements Listener
 
         ItemStack itemInHand = p.getInventory().getItemInMainHand();
         if(itemInHand != null && itemInHand.getAmount() != 0) {
-            player.updateItemHeld(itemInHand.getType().name(), itemInHand.getAmount());
+            player.updateItemHeld(itemInHand);
         }
        // player.assets.add(new LAsset("asset-bank-amount", "Bank Amount", "0$"));
         //player.markDirty();
@@ -598,7 +598,7 @@ public class PlayerModule extends BaseModule implements Listener
         public String item;
 
         public LItem(String item, int amount) {
-            this(item, amount, -1);
+            this(item, amount, 0);
         }
 
         public LItem(String item, int amount, int damage) {
@@ -614,6 +614,14 @@ public class PlayerModule extends BaseModule implements Listener
             json.put("amount", amount);
             json.put("damage", damage);
             return json;
+        }
+
+        static LItem fromItemStack(ItemStack stack) {
+            LItem item = new LItem(stack.getType().name(), stack.getAmount());
+            if(stack.hasItemMeta() && (stack.getItemMeta() instanceof Damageable)) {
+               item.damage = ((Damageable)stack.getItemMeta()).getDamage();
+            }
+            return item;
         }
     }
 
@@ -744,8 +752,8 @@ public class PlayerModule extends BaseModule implements Listener
             }
         }*/
 
-        public void updateItemHeld(String item, int amount) {
-            itemHeld = new LItem(item, amount);
+        public void updateItemHeld(ItemStack stack) {
+            itemHeld = stack != null ? LItem.fromItemStack(stack) : null;
             dirty = true;
         }
 
@@ -795,10 +803,10 @@ public class PlayerModule extends BaseModule implements Listener
         }
 
         public void updateArmor(ItemStack head, ItemStack chest, ItemStack legs, ItemStack boots) {
-            this.armorHead = head != null ? new LItem(head.getType().name(), head.getAmount(), ((Damageable)head.getItemMeta()).getDamage()) : null;
-            this.armorChest = chest != null ? new LItem(chest.getType().name(), chest.getAmount(), ((Damageable)chest.getItemMeta()).getDamage()) : null;
-            this.armorLegs = legs != null ? new LItem(legs.getType().name(), legs.getAmount(), ((Damageable)legs.getItemMeta()).getDamage()) : null;
-            this.armorBoots = boots != null ? new LItem(boots.getType().name(), boots.getAmount(), ((Damageable)boots.getItemMeta()).getDamage()) : null;
+            this.armorHead = head != null ? LItem.fromItemStack(head) : null;
+            this.armorChest = chest != null ? LItem.fromItemStack(chest) : null;
+            this.armorLegs = legs != null ? LItem.fromItemStack(legs) : null;
+            this.armorBoots = boots != null ? LItem.fromItemStack(boots) : null;
             this.armorDirty = true;
             this.dirty = true;
         }
@@ -844,7 +852,7 @@ public class PlayerModule extends BaseModule implements Listener
                 p.updateFoodLevel(online.getFoodLevel());
                 ItemStack itemInHand = online.getInventory().getItemInMainHand();
                 if(itemInHand != null && itemInHand.getAmount() != 0) {
-                    p.updateItemHeld(itemInHand.getType().name(), itemInHand.getAmount());
+                    p.updateItemHeld(itemInHand);
                 }
                 
                 PlayerInventory inventory = online.getInventory();
