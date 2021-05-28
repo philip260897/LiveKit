@@ -31,6 +31,8 @@ import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
+import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.event.player.PlayerItemHeldEvent;
@@ -109,6 +111,7 @@ public class PlayerModule extends BaseModule implements Listener
         boolean needsUpdate = false;
         Location _loc = null;
         boolean _visible = true;
+        PlayerInventory _inventory;
 
         for(LPlayer player : _players.values()) {
             Player p = Bukkit.getPlayer(UUID.fromString(player.uuid));
@@ -123,11 +126,18 @@ public class PlayerModule extends BaseModule implements Listener
                 if(_visible != player.visible) needsUpdate = true;
                 if(p.getFoodLevel() != player.foodLevel) needsUpdate = true;
 
+
+                _inventory = p.getInventory();
                 player.updateExhaustion(p.getExhaustion());
                 player.updateHealth(p.getHealth(), p.getHealthScale());
                 player.updateLocation(_loc.getX(), _loc.getY(), _loc.getZ(), _loc.getYaw() );
                 player.updateVisible(_visible);
                 player.updateFoodLevel(p.getFoodLevel());
+
+                if(player.needsArmorUpdate(_inventory)) {
+                    needsUpdate = true;
+                    player.updateArmor(_inventory.getHelmet(), _inventory.getChestplate(), _inventory.getLeggings(), _inventory.getBoots());
+                }
             }
         }
 
@@ -216,6 +226,9 @@ public class PlayerModule extends BaseModule implements Listener
         //player.updateArmor(p.getArmor);
 		player.updateExhaustion(p.getExhaustion());
         player.updateVisible(!p.hasPotionEffect(PotionEffectType.INVISIBILITY));
+        
+        PlayerInventory inventory = p.getInventory();
+        player.updateArmor(inventory.getHelmet(), inventory.getChestplate(), inventory.getLeggings(), inventory.getBoots());
         
 
         /*if(!HeadLibrary.has(p.getName())) { 
@@ -376,6 +389,7 @@ public class PlayerModule extends BaseModule implements Listener
                         jp.put("uuid", player.uuid);
                     }
                     if(!player.headDirty)jp.remove("head");
+                    if(!player.armorDirty)jp.remove("armorItems");
                     
                     players.put(jp);
                 }
@@ -556,11 +570,17 @@ public class PlayerModule extends BaseModule implements Listener
 
     public static class LItem implements Serializable {
         public int amount;
+        public int damage;
         public String item;
 
         public LItem(String item, int amount) {
+            this(item, amount, -1);
+        }
+
+        public LItem(String item, int amount, int damage) {
             this.item = item;
             this.amount = amount;
+            this.damage = damage;
         }
 
         @Override
@@ -568,6 +588,7 @@ public class PlayerModule extends BaseModule implements Listener
             JSONObject json = new JSONObject();
             json.put("item", item);
             json.put("amount", amount);
+            json.put("damage", damage);
             return json;
         }
     }
@@ -592,6 +613,12 @@ public class PlayerModule extends BaseModule implements Listener
     public static class LPlayer implements Serializable{
         private boolean dirty = true;
         private boolean headDirty = true;
+
+        private boolean armorDirty = true;
+        public LItem armorHead;
+        public LItem armorChest;
+        public LItem armorLegs;
+        public LItem armorBoots;
 
         public String uuid;
         public String name = "Unknown";
@@ -743,6 +770,36 @@ public class PlayerModule extends BaseModule implements Listener
             this.dirty = true;
         }
 
+        public void updateArmor(ItemStack head, ItemStack chest, ItemStack legs, ItemStack boots) {
+            this.armorHead = head != null ? new LItem(head.getType().name(), head.getAmount(), ((Damageable)head.getItemMeta()).getDamage()) : null;
+            this.armorChest = chest != null ? new LItem(chest.getType().name(), chest.getAmount(), ((Damageable)chest.getItemMeta()).getDamage()) : null;
+            this.armorLegs = legs != null ? new LItem(legs.getType().name(), legs.getAmount(), ((Damageable)legs.getItemMeta()).getDamage()) : null;
+            this.armorBoots = boots != null ? new LItem(boots.getType().name(), boots.getAmount(), ((Damageable)boots.getItemMeta()).getDamage()) : null;
+            this.armorDirty = true;
+            this.dirty = true;
+        }
+
+        public boolean needsArmorUpdate(PlayerInventory inventory) {
+            if(needsItemUpdate(armorHead, inventory.getHelmet())) return true;
+            if(needsItemUpdate(armorChest, inventory.getChestplate())) return true;
+            if(needsItemUpdate(armorLegs, inventory.getLeggings())) return true;
+            if(needsItemUpdate(armorBoots, inventory.getBoots())) return true;
+            return false;
+        }
+
+        private boolean needsItemUpdate(LItem item, ItemStack stack) {
+            if(item == null && stack != null) return true;
+            if(item != null && stack == null) return true;
+            if(item != null && stack != null) {
+                if(item.amount != stack.getAmount()) return true;
+                if(!item.item.equals(stack.getType().name())) return true;
+                if(stack.getItemMeta() instanceof Damageable) {
+                    if(item.damage != ((Damageable)stack.getItemMeta()).getDamage()) return true;
+                }
+            }
+            return false;
+        }
+
         private static LPlayer fromOfflinePlayer(OfflinePlayer player) {
             LPlayer p = new LPlayer(player.getUniqueId().toString());
             p.name = player.getName();
@@ -766,18 +823,21 @@ public class PlayerModule extends BaseModule implements Listener
                     p.updateItemHeld(itemInHand.getType().name(), itemInHand.getAmount());
                 }
                 
+                PlayerInventory inventory = online.getInventory();
+                p.updateArmor(inventory.getHelmet(), inventory.getChestplate(), inventory.getLeggings(), inventory.getBoots());
             }
 
             return p;
         }
 
         public boolean isDirty() {
-            return dirty || headDirty;
+            return dirty || headDirty || armorDirty;
         }
 
         public void clean() {
             dirty = false;
             headDirty = false;
+            armorDirty = false;
         }
 
         public JSONObject toJson() {
@@ -803,6 +863,14 @@ public class PlayerModule extends BaseModule implements Listener
                     json.put("actions", actions.stream().map(action->action.toJson()).collect(Collectors.toList()));
                 }
             }
+            //if(armorHead != null || armorChest != null || armorLegs != null || armorBoots != null) {
+                JSONObject armorItems = new JSONObject();
+                json.put("armorItems", armorItems);
+                if(armorHead != null) armorItems.put("head", armorHead.toJson());
+                if(armorChest != null) armorItems.put("chest", armorChest.toJson());
+                if(armorLegs != null) armorItems.put("legs", armorLegs.toJson());
+                if(armorBoots != null) armorItems.put("boots", armorBoots.toJson());
+            //}
             return json;
         }
     }

@@ -10,6 +10,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -17,7 +18,7 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
-import org.bukkit.event.entity.EntitySpawnEvent;
+import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -121,12 +122,16 @@ public class InventoryModule extends BaseModule implements Listener
                 JSONObject entry = new JSONObject();
                 entry.put("i", stack.getType().name());
                 entry.put("a", stack.getAmount());
+                if(stack.getItemMeta() instanceof Damageable) {
+                    entry.put("d", ((Damageable)stack.getItemMeta()).getDamage());
+                }
                 entry.put("s", i);
                 storage.put(entry);
             }
             
             //player.getInventory().setChest
         }
+        inventory.put("activeSlot", player.getInventory().getHeldItemSlot());
         inventory.put("storage", storage);
         inventory.put("uuid", player.getUniqueId().toString());
         //inventory.put("extra", extra);
@@ -198,6 +203,11 @@ public class InventoryModule extends BaseModule implements Listener
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerRespawnEvent(PlayerRespawnEvent event) {
         queuePlayer((Player)event.getPlayer());
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerItemHeldEvent(PlayerItemHeldEvent event) {
+        queuePlayer(event.getPlayer());
     }
 
     private void queuePlayer(Player player) {
