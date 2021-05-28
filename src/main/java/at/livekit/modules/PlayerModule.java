@@ -146,7 +146,7 @@ public class PlayerModule extends BaseModule implements Listener
 
                 if(player.needsItemUpdate(player.itemHeld, _inventory.getItemInMainHand())) {
                     ItemStack held = _inventory.getItemInMainHand();
-                    player.updateItemHeld(held.getType().name(), held.getAmount());
+                    player.updateItemHeld(held != null ? held.getType().name() : null, held.getAmount());
                     needsUpdate = true;
                 }
             }
