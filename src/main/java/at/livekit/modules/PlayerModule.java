@@ -154,7 +154,7 @@ public class PlayerModule extends BaseModule implements Listener
 
         
 
-       /* synchronized(_players) {
+       /*synchronized(_players) {
             //List<LivingEntity> living = ;
             //System.out.println(living.size());
             for(Entity e : Bukkit.getWorld("world").getEntities()) {
@@ -188,9 +188,9 @@ public class PlayerModule extends BaseModule implements Listener
                     }
                 }
             }
-        }*/ 
+        }*/
 
-        if(System.currentTimeMillis() - start != 0) System.out.println("Player polling took: "+(System.currentTimeMillis()-start)+"ms");
+        //if(System.currentTimeMillis() - start != 0) System.out.println("Player polling took: "+(System.currentTimeMillis()-start)+"ms");
         
         if(needsUpdate) notifyChange();
         super.update();
