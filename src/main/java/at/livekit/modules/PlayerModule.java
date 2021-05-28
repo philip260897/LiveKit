@@ -23,9 +23,11 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.EntityPotionEffectEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerPickupItemEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -51,6 +53,7 @@ import at.livekit.packets.ActionPacket;
 import at.livekit.packets.IPacket;
 import at.livekit.packets.StatusPacket;
 import at.livekit.utils.HeadLibraryV2;
+import javafx.scene.layout.Priority;
 
 public class PlayerModule extends BaseModule implements Listener
 {
@@ -113,6 +116,8 @@ public class PlayerModule extends BaseModule implements Listener
         boolean _visible = true;
         PlayerInventory _inventory;
 
+        long start = System.currentTimeMillis();
+
         for(LPlayer player : _players.values()) {
             Player p = Bukkit.getPlayer(UUID.fromString(player.uuid));
             if(p != null) {
@@ -138,8 +143,16 @@ public class PlayerModule extends BaseModule implements Listener
                     needsUpdate = true;
                     player.updateArmor(_inventory.getHelmet(), _inventory.getChestplate(), _inventory.getLeggings(), _inventory.getBoots());
                 }
+
+                if(player.needsItemUpdate(player.itemHeld, _inventory.getItemInMainHand())) {
+                    ItemStack held = _inventory.getItemInMainHand();
+                    player.updateItemHeld(held.getType().name(), held.getAmount());
+                    needsUpdate = true;
+                }
             }
         }
+
+        
 
        /* synchronized(_players) {
             //List<LivingEntity> living = ;
@@ -176,6 +189,8 @@ public class PlayerModule extends BaseModule implements Listener
                 }
             }
         }*/ 
+
+        if(System.currentTimeMillis() - start != 0) System.out.println("Player polling took: "+(System.currentTimeMillis()-start)+"ms");
         
         if(needsUpdate) notifyChange();
         super.update();
@@ -247,13 +262,24 @@ public class PlayerModule extends BaseModule implements Listener
         notifyChange();
     }
 
-    @EventHandler
+    /*@EventHandler
     public void onPlayerItemHeldEvent(PlayerItemHeldEvent event) {
-        if(_players.containsKey(event.getPlayer().getUniqueId().toString())) {
-            LPlayer player = _players.get(event.getPlayer().getUniqueId().toString());
+        updateItemInHand(event.getPlayer(), event.getPlayer().getInventory().getItem(event.getNewSlot()));
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerPickupItemEvent(EntityPickupItemEvent event) {
+        if(event.getEntity() instanceof Player) {
+            Player p = (Player)event.getEntity();
+
             
-            //ItemStack itemInHand = event.getPlayer().getInventory().getItemInMainHand();
-            ItemStack itemInHand = event.getPlayer().getInventory().getItem(event.getNewSlot());
+        }
+    } */
+
+    /*private void updateItemInHand(Player p, ItemStack itemInhand) {
+        if(_players.containsKey(p.getUniqueId().toString())) {
+            LPlayer player = _players.get(p.getUniqueId().toString());
+            
             if(itemInHand != null && itemInHand.getAmount() != 0) {
                 player.updateItemHeld(itemInHand.getType().name(), itemInHand.getAmount());
                 notifyChange();
@@ -262,7 +288,7 @@ public class PlayerModule extends BaseModule implements Listener
                 notifyChange();
             }
         }
-    }
+    }*/
 
     @EventHandler
     public void onPlayerChangedWorldEvent(PlayerChangedWorldEvent event) {
@@ -874,84 +900,4 @@ public class PlayerModule extends BaseModule implements Listener
             return json;
         }
     }
-
-    /*public static class AssetGroup extends Syncable {
-        public String name;
-        public List<PlayerAsset> assets = new ArrayList<PlayerAsset>();
-
-        public AssetGroup(String name) {
-            super(name);
-            this.name = name;
-        }
-
-        public PlayerAsset getAssetByUUID(String uuid) {
-            synchronized(assets) {
-                for(PlayerAsset asset : assets) {
-                    if(asset.getUUID().equals(uuid)) return asset;
-                }
-            }
-            return null;
-        }
-
-        public void addPlayerAsset(PlayerAsset asset) {
-            synchronized(assets) {
-                assets.add(asset);
-            }
-        }
-
-        public void removePlayerAsset(PlayerAsset asset) {
-            synchronized(assets) {
-                assets.remove(asset);
-            }
-        }
-    }
-
-    public static class PlayerAsset extends Syncable {
-        public PlayerAsset(String uuid) {
-            super(uuid);
-        }
-    }
-
-    public static class ValueAsset extends PlayerAsset {
-
-        public String name;
-        public String value;
-
-        public ValueAsset(String uuid, String name, String value) {
-            super(uuid);
-            this.name = name;
-            this.value = value;
-        }
-
-        public void updateValue(String value) {
-            this.value = value;
-            markDirty("value");
-        }
-    }
-
-    public static class MapAsset extends PlayerAsset {
-        public String name;
-        public String description;
-        public String icon;
-        public double x;
-        public double y;
-        public double z;
-
-        public MapAsset(String uuid, String name, String description, String icon){
-            super(uuid);
-            this.name = name;
-            this.icon = icon;
-        }
-
-        public void updatePosition(Location location) {
-            this.updatePosition(location.getX(), location.getY(), location.getZ());
-        }
-
-        public void updatePosition(double x, double y, double z) {
-            this.x = x;
-            this.y = y;
-            this.z = z;
-            markDirty("x", "y", "z");
-        }
-    }*/
 }
