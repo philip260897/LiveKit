@@ -17,6 +17,8 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerItemDamageEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
@@ -122,8 +124,8 @@ public class InventoryModule extends BaseModule implements Listener
                 JSONObject entry = new JSONObject();
                 entry.put("i", stack.getType().name());
                 entry.put("a", stack.getAmount());
-                if(stack.getItemMeta() instanceof Damageable) {
-                    entry.put("d", ((Damageable)stack.getItemMeta()).getDamage());
+                if((stack.getItemMeta() instanceof Damageable) && stack.getType().getMaxDurability() != 0) {
+                    entry.put("d",(int) ((double)((Damageable)stack.getItemMeta()).getDamage() / (double)stack.getType().getMaxDurability() * 100.0));
                 }
                 entry.put("s", i);
                 storage.put(entry);
@@ -207,6 +209,18 @@ public class InventoryModule extends BaseModule implements Listener
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerItemHeldEvent(PlayerItemHeldEvent event) {
+        queuePlayer(event.getPlayer());
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerInteractEvent(PlayerInteractEvent event) {
+        if(event.getItem() != null) {
+            queuePlayer(event.getPlayer());
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerDamageEvent(PlayerItemDamageEvent event) {
         queuePlayer(event.getPlayer());
     }
 
