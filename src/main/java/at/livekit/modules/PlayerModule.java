@@ -13,21 +13,16 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
-import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.EntityPotionEffectEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
-import org.bukkit.event.player.PlayerPickupItemEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -52,6 +47,7 @@ import at.livekit.packets.ActionPacket;
 import at.livekit.packets.IPacket;
 import at.livekit.packets.StatusPacket;
 import at.livekit.utils.HeadLibraryV2;
+import at.livekit.utils.Utils;
 
 public class PlayerModule extends BaseModule implements Listener
 {
@@ -120,7 +116,7 @@ public class PlayerModule extends BaseModule implements Listener
             Player p = Bukkit.getPlayer(UUID.fromString(player.uuid));
             if(p != null) {
                 _loc = p.getLocation();
-                _visible = !p.hasPotionEffect(PotionEffectType.INVISIBILITY);
+                _visible = !p.hasPotionEffect(PotionEffectType.INVISIBILITY) && !Utils.isVanished(p);
 
                 if(p.getHealth() != player.health) needsUpdate = true;
                 if(p.getHealthScale() != player.healthMax) needsUpdate = true;
