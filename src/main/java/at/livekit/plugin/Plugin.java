@@ -278,6 +278,24 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 			return true;
 		}
 		if(args.length == 1) {
+			if(args[0].equalsIgnoreCase("headrefresh")) {
+				if(sender instanceof Player) {
+					Player player = (Player)sender;
+					if(!checkPerm(sender, "livekit.commands.basic")) return true;
+
+					Long timestamp = HeadLibraryV2.refreshCooldown.get(player.getUniqueId());
+					if(timestamp == null || (System.currentTimeMillis() > timestamp+5*60*1000) || checkPerm(sender, "livekit.commands.admin", false)) {
+						HeadLibraryV2.get(player.getName(), true, true);
+						HeadLibraryV2.refreshCooldown.put(player.getUniqueId(), System.currentTimeMillis());
+						sender.sendMessage(prefix+"Your head is going to be refreshed!");
+					} else {
+						sender.sendMessage(prefixError+"You can refresh your head every 5 minutes!");
+					}
+				} else {
+					sender.sendMessage(prefixError+"Only players can refresh their head!");
+				}
+				return true;
+			}
 			if(args[0].equalsIgnoreCase("claim")) {
 				if(sender instanceof Player) 
 				{
@@ -365,6 +383,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 					sender.sendMessage(ChatColor.GREEN+"/livekit claim"+ChatColor.RESET+" - Generate a claim pin, used to identify yourself in the App");
 					sender.sendMessage(ChatColor.GREEN+"/livekit info"+ChatColor.RESET+" - Info about App sessions identified as you");
 					sender.sendMessage(ChatColor.GREEN+"/livekit clearsessions"+ChatColor.RESET+" - Clear all active sessions. App clients need to re-claim");
+					sender.sendMessage(ChatColor.GREEN+"/livekit headrefresh"+ChatColor.RESET+" - Refresh your Head (only neccessary if you changed your skin)");
 				} else {
 					sender.sendMessage("You don't have the needed permission "+ChatColor.GREEN+"livekit.commands.basic"+ChatColor.RESET+" to access LiveKit");
 					if(Config.allowAnonymous())sender.sendMessage("However, anonymous joining is enabled!");
@@ -386,6 +405,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 					sender.sendMessage(ChatColor.GREEN+"/livekit <world> bounds"+ChatColor.RESET+" - Displays bounds of <world>");
 					sender.sendMessage(ChatColor.GREEN+"/livekit <world> bounds <radius> [-r|-c]"+ChatColor.RESET+" - Creates rectangular (-r) or circular (-c) bounds with <radius> [in blocks]");
 					sender.sendMessage(ChatColor.GREEN+"/livekit <world> bounds <left> <top> <right> <bottom>"+ChatColor.RESET+" - Set bounds for <world> in blocks");
+					sender.sendMessage(ChatColor.GREEN+"/livekit headrefresh <player>"+ChatColor.RESET+" - Refresh a players Head (only neccessary if you changed your skin)");
 				}
 				return true;
 			}
@@ -727,6 +747,23 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 
 	private boolean handleAdminCommands(CommandSender sender, Command command, String label, String[] args) {
 		
+		if(args.length == 2) {
+			if(args[0].equalsIgnoreCase("headrefresh")) {
+				String playerName = args[1];
+
+				Player player = Bukkit.getPlayer(playerName);
+				if(player != null) {
+					if(!checkPerm(sender, "livekit.commands.admin")) return true;
+
+					HeadLibraryV2.get(player.getName(), true, true);
+					sender.sendMessage(prefix+player.getName()+"'s head is going to be refreshed!");
+				} else {
+					sender.sendMessage(prefixError+"Player "+args[1]+" could not be found!");
+				}
+
+				return true;
+			}
+		}
 
 		if(args.length == 1) {
 			if(args[0].equalsIgnoreCase("permreload")) {
@@ -738,7 +775,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 				return true;
 			}
 
-			/*if(args[0].equalsIgnoreCase("modules")) {
+			if(args[0].equalsIgnoreCase("modules")) {
 				if(!checkPerm(sender, "livekit.commands.admin")) return true;
 
 				sender.sendMessage(prefix+"Modules:");
@@ -747,7 +784,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 				}
 
 				return true;
-			}*/
+			}
 			
 			/*if(args[0].equalsIgnoreCase("subs")) {
 				if(!checkPerm(sender, "livekit.commands.admin")) return true;
@@ -775,7 +812,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 			}*/
 		}
 		if(args.length == 3) {
-			/*if(args[0].equalsIgnoreCase("modules")) {
+			if(args[0].equalsIgnoreCase("modules")) {
 				if(!checkPerm(sender, "livekit.commands.admin")) return true;
 
 				String module = args[1];
@@ -792,7 +829,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 				}
 
 				return true;
-			}*/
+			}
 			/*if(args[0].equalsIgnoreCase("load")) {
 				if(!checkPerm(sender, "livekit.commands.admin")) return true;
 				
