@@ -760,7 +760,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 				} else {
 					sender.sendMessage(prefixError+"Player "+args[1]+" could not be found!");
 				}
-
+				
 				return true;
 			}
 		}
@@ -775,7 +775,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 				return true;
 			}
 
-			if(args[0].equalsIgnoreCase("modules")) {
+			/*if(args[0].equalsIgnoreCase("modules")) {
 				if(!checkPerm(sender, "livekit.commands.admin")) return true;
 
 				sender.sendMessage(prefix+"Modules:");
@@ -784,7 +784,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 				}
 
 				return true;
-			}
+			}*/
 			
 			/*if(args[0].equalsIgnoreCase("subs")) {
 				if(!checkPerm(sender, "livekit.commands.admin")) return true;
@@ -812,7 +812,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 			}*/
 		}
 		if(args.length == 3) {
-			if(args[0].equalsIgnoreCase("modules")) {
+			/*if(args[0].equalsIgnoreCase("modules")) {
 				if(!checkPerm(sender, "livekit.commands.admin")) return true;
 
 				String module = args[1];
@@ -829,7 +829,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 				}
 
 				return true;
-			}
+			}*/
 			/*if(args[0].equalsIgnoreCase("load")) {
 				if(!checkPerm(sender, "livekit.commands.admin")) return true;
 				
@@ -1073,7 +1073,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 	}
 
 	public static void debug(String message) {
-		logger.warning(message);
+		//logger.warning(message);
 	}
 
 	@Override

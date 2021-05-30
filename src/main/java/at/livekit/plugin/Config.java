@@ -169,6 +169,13 @@ public class Config
             save = true;
         }
 
+        if(config.get("modules.InventoryModule") == null) {
+            Plugin.log("Patching config with new Inventory module...");
+            config.set("modules.InventoryModule.enabled", true);
+
+            save = true;
+        }
+
         try{
             if(save) {
                 //config.options().header(config.options().header());
