@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.block.Block;
+import org.bukkit.scheduler.BukkitTask;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -422,8 +423,6 @@ public class RenderWorld
     }
 
     private void unloadRegionAsync(RegionData region) {
-        
-
         Bukkit.getScheduler().runTaskAsynchronously(Plugin.getInstance(), new Runnable(){
             @Override
             public void run() {
@@ -431,9 +430,9 @@ public class RenderWorld
                 region.setDead(true);
 
                 Plugin.debug("Unloading region "+region.getX()+" "+region.getZ());
+                if(SHUTDOWN) return;
                 saveRegion(region);
                 
-
                 synchronized(_loadedRegions) {
                     _loadedRegions.remove(region);
                 }
@@ -441,11 +440,10 @@ public class RenderWorld
         });
     }
 
-    private void saveRegion(RegionData region) {
-        //region.save(workingDirectory);
-        try{
-           // Plugin.getStorage().saveRegion(worldUID, region);
+    private static boolean SHUTDOWN = false;
 
+    private void saveRegion(RegionData region) {
+        try{
             File file = new File(workingDirectory,region.getX()+"_"+region.getZ()+".region");
             if(!file.exists()) file.createNewFile();
     
@@ -456,7 +454,9 @@ public class RenderWorld
     }
 
     public void shutdown() {
-        
+        SHUTDOWN = true;
+        Bukkit.getScheduler().cancelTasks(Plugin.getInstance());
+
         JSONObject root = new JSONObject();
         synchronized(_blockQueue) {
             if(_task != null && !_task.isChunk()) _blockQueue.add(_task.offset);

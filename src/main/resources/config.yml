@@ -40,3 +40,5 @@ modules:
   ConsoleModule:
     enabled: true
     password: change_me
+  InventoryModule:
+    enabled: true

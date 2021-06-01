@@ -8,6 +8,8 @@ import java.util.concurrent.Callable;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
+import org.bukkit.metadata.MetadataValue;
 import org.bukkit.scheduler.BukkitTask;
 
 import at.livekit.plugin.Plugin;
@@ -95,6 +97,12 @@ public class Utils
         Files.write(file.toPath(), data);
     }
 
+    public static boolean isVanished(Player player) {
+        for (MetadataValue meta : player.getMetadata("vanished")) {
+            if (meta.asBoolean()) return true;
+        }
+        return false;
+}
     /*public static long timestampFromBytes(byte[] data) {
         long timestamp = 0;
         for(int i = 0; i < 8; i++) {

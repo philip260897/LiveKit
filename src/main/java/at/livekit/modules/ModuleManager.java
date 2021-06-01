@@ -61,6 +61,7 @@ public class ModuleManager
         this.registerModule(new AdminModule(listener));
         this.registerModule(new ChatModule(listener));
         this.registerModule(new POIModule(listener));
+        this.registerModule(new InventoryModule(listener));
         
         //if(Config.getConsolePassword() != null) {
         if(Config.getConsolePassword() == null) Plugin.warning("Enabling Console access without password. UNSAFE!");
@@ -283,6 +284,18 @@ public class ModuleManager
                 //return packets;
            /* }
         }).get();*/
+    }
+
+    /**
+     * Notifies each module a Client has disconnected
+     * @param identity Client which disconnected
+     */
+    public void onDisconnectAsync(Identity identity) {
+        for(BaseModule module : _modules.values()) {
+            if(module.isEnabled() && module.hasAccess(identity) && module.isAuthenticated(identity)) {
+                module.onDisconnectAsync(identity);
+            }
+        }
     }
 
     /**

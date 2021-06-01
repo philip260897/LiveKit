@@ -16,11 +16,16 @@ import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import at.livekit.livekit.Identity;
+import at.livekit.livekit.LiveKit;
 import at.livekit.map.Renderer;
+import at.livekit.modules.BaseModule.Action;
 import at.livekit.packets.ActionPacket;
 import at.livekit.packets.IPacket;
 import at.livekit.packets.StatusPacket;
@@ -319,5 +324,74 @@ public class AdminModule extends BaseModule
         Bukkit.getBanList(BanList.Type.NAME).pardon(player.getUniqueId().toString());
         
         return new StatusPacket(1, "Player has been kicked!");
+    }
+
+    @Action(name="GiveItem")
+    protected IPacket actionGiveItem(Identity identity, ActionPacket packet) {
+        String uuid = packet.getData().getString("uuid");
+        String material = packet.getData().getString("material");
+        int amount = packet.getData().getInt("amount");
+        
+        OfflinePlayer offline = Bukkit.getServer().getOfflinePlayer(UUID.fromString(uuid));
+        if(offline == null) return new StatusPacket(0, "Player not found!"); 
+
+        Material mat = Material.getMaterial(material);
+        if(mat == null) return new StatusPacket(0, "Material not found!");
+
+        ItemStack itemStack = new ItemStack(Material.getMaterial(material), amount);
+
+        Player player = offline.getPlayer();
+        player.getInventory().addItem(itemStack);
+
+        InventoryModule inventoryModule = (InventoryModule)LiveKit.getInstance().getModuleManager().getModule("InventoryModule");
+        if(inventoryModule != null && inventoryModule.isEnabled()) {
+            inventoryModule.updateInventory(player);
+        }
+
+        return new StatusPacket(1);
+    }
+
+    @Action(name="ClearInventory")
+    protected IPacket actionClearInventory(Identity identity, ActionPacket packet) {
+        String uuid = packet.getData().getString("uuid");
+        
+        OfflinePlayer offline = Bukkit.getServer().getOfflinePlayer(UUID.fromString(uuid));
+        if(offline == null) return new StatusPacket(0, "Player not found!"); 
+
+        offline.getPlayer().getInventory().clear();
+
+        InventoryModule inventoryModule = (InventoryModule)LiveKit.getInstance().getModuleManager().getModule("InventoryModule");
+        if(inventoryModule != null && inventoryModule.isEnabled()) {
+            inventoryModule.updateInventory(offline.getPlayer());
+        }
+
+        return new StatusPacket(1);
+    }
+
+    @Action(name="RemoveItem")
+    protected IPacket actionRemoveItem(Identity identity, ActionPacket packet) {
+        String uuid = packet.getData().getString("uuid");
+        String material = packet.getData().getString("material");
+        int amount = packet.getData().getInt("amount");
+        int slot = packet.getData().getInt("slot");
+        
+        OfflinePlayer offline = Bukkit.getServer().getOfflinePlayer(UUID.fromString(uuid));
+        if(offline == null) return new StatusPacket(0, "Player not found!"); 
+
+        Player player = offline.getPlayer();
+        PlayerInventory inventory = player.getInventory();
+        
+        ItemStack stack = inventory.getItem(slot);
+        if(stack == null) return new StatusPacket(0, "Slot was empty");
+
+        if(!stack.getType().name().equals(material) || stack.getAmount() != amount) return new StatusPacket(0, "ItemStack missmatch!");
+
+        inventory.clear(slot);
+        InventoryModule inventoryModule = (InventoryModule)LiveKit.getInstance().getModuleManager().getModule("InventoryModule");
+        if(inventoryModule != null && inventoryModule.isEnabled()) {
+            inventoryModule.updateInventory(player);
+        }
+
+        return new StatusPacket(1);
     }
 }

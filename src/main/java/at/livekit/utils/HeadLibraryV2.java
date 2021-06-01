@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
 
 import javax.imageio.ImageIO;
 import org.bukkit.OfflinePlayer;
@@ -22,6 +23,7 @@ public class HeadLibraryV2 implements Runnable
     public static String DEFAULT = "iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAA1ElEQVR4XmPQV+D9ry3H+19fnv+/hgz3fxUJjv9qUlxgMS1Z3v8MIAYMG6sI/nfSEvpvryX6X0eOD6wBrGBbZ87/vX1F/49Na/i/t7sIyC75v6Ys6r+JqtB/hlW1af+3tOT+B9FrG3L/zymK+b+7s+j/nEwfMGYASYJAkG3n/63V6WBJEBsEQJoY5iS7/d9cnfR/e1PR/ywHAzDe15Hzf1GW+/+GYJP/DBPinP9Pi3f4X+5kioL74+z+NwZb/mfId9X5n+usBeaAcJWf8f/mUGswBrEBqAeFqNKFJtgAAAAASUVORK5CYII=";
     private static final String SKIN_URL = "https://sessionserver.mojang.com/session/minecraft/profile";
     
+    public static HashMap<UUID, Long> refreshCooldown = new HashMap<UUID, Long>();
 
     //key is player name -> offline server compatibility
     private static HashMap<String, HeadInfo> _cache = new HashMap<String, HeadInfo>();
@@ -61,6 +63,10 @@ public class HeadLibraryV2 implements Runnable
     }
 
     public static String get(String playerName, boolean online) {
+        return get(playerName, online, false);
+    }
+
+    public static String get(String playerName, boolean online, boolean forceResolve) {
         String returnValue = DEFAULT;
         boolean resolve = true;
         
@@ -76,7 +82,7 @@ public class HeadLibraryV2 implements Runnable
                 if(info.failed == true) resolve = false;
             }
         }
-        if(resolve) {
+        if(resolve || forceResolve) {
             synchronized(_queue) {
                 if(!_queue.contains(playerName)) {
                     _queue.add(playerName);

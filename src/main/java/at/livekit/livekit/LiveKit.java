@@ -556,7 +556,7 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
 
     @Override
     public void clientDisconnected(NIOClient<Identity> client) {
-        //Plugin.log("Client disconnected");
+        _modules.onDisconnectAsync(client.getIdentifier());
     }
 
     @Override

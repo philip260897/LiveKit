@@ -94,6 +94,7 @@ public class NIOServer<T> implements Runnable, NIOClientEvent<T> {
     }
 
     public void send(NIOClient<T> client, INIOPacket data) {
+        if(data == null) return;
         client.queueData(data);
         selector.wakeup();
     }

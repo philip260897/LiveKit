@@ -13,14 +13,11 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
-import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityPotionEffectEvent;
@@ -31,9 +28,10 @@ import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
+import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
-import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -49,6 +47,7 @@ import at.livekit.packets.ActionPacket;
 import at.livekit.packets.IPacket;
 import at.livekit.packets.StatusPacket;
 import at.livekit.utils.HeadLibraryV2;
+import at.livekit.utils.Utils;
 
 public class PlayerModule extends BaseModule implements Listener
 {
@@ -109,12 +108,15 @@ public class PlayerModule extends BaseModule implements Listener
         boolean needsUpdate = false;
         Location _loc = null;
         boolean _visible = true;
+        PlayerInventory _inventory;
+
+        long start = System.currentTimeMillis();
 
         for(LPlayer player : _players.values()) {
             Player p = Bukkit.getPlayer(UUID.fromString(player.uuid));
             if(p != null) {
                 _loc = p.getLocation();
-                _visible = !p.hasPotionEffect(PotionEffectType.INVISIBILITY);
+                _visible = !p.hasPotionEffect(PotionEffectType.INVISIBILITY) && !Utils.isVanished(p);
 
                 if(p.getHealth() != player.health) needsUpdate = true;
                 if(p.getHealthScale() != player.healthMax) needsUpdate = true;
@@ -123,15 +125,30 @@ public class PlayerModule extends BaseModule implements Listener
                 if(_visible != player.visible) needsUpdate = true;
                 if(p.getFoodLevel() != player.foodLevel) needsUpdate = true;
 
+
+                _inventory = p.getInventory();
                 player.updateExhaustion(p.getExhaustion());
                 player.updateHealth(p.getHealth(), p.getHealthScale());
                 player.updateLocation(_loc.getX(), _loc.getY(), _loc.getZ(), _loc.getYaw() );
                 player.updateVisible(_visible);
                 player.updateFoodLevel(p.getFoodLevel());
+
+                if(player.needsArmorUpdate(_inventory)) {
+                    needsUpdate = true;
+                    player.updateArmor(_inventory.getHelmet(), _inventory.getChestplate(), _inventory.getLeggings(), _inventory.getBoots());
+                }
+
+                if(player.needsItemUpdate(player.itemHeld, _inventory.getItemInMainHand())) {
+                    ItemStack held = _inventory.getItemInMainHand();
+                    player.updateItemHeld(held);
+                    needsUpdate = true;
+                }
             }
         }
 
-       /* synchronized(_players) {
+        
+
+       /*synchronized(_players) {
             //List<LivingEntity> living = ;
             //System.out.println(living.size());
             for(Entity e : Bukkit.getWorld("world").getEntities()) {
@@ -165,7 +182,9 @@ public class PlayerModule extends BaseModule implements Listener
                     }
                 }
             }
-        }*/ 
+        }*/
+
+        //if(System.currentTimeMillis() - start != 0) System.out.println("Player polling took: "+(System.currentTimeMillis()-start)+"ms");
         
         if(needsUpdate) notifyChange();
         super.update();
@@ -217,6 +236,9 @@ public class PlayerModule extends BaseModule implements Listener
 		player.updateExhaustion(p.getExhaustion());
         player.updateVisible(!p.hasPotionEffect(PotionEffectType.INVISIBILITY));
         
+        PlayerInventory inventory = p.getInventory();
+        player.updateArmor(inventory.getHelmet(), inventory.getChestplate(), inventory.getLeggings(), inventory.getBoots());
+        
 
         /*if(!HeadLibrary.has(p.getName())) { 
 			HeadLibrary.resolveAsync(p.getName());
@@ -226,7 +248,7 @@ public class PlayerModule extends BaseModule implements Listener
 
         ItemStack itemInHand = p.getInventory().getItemInMainHand();
         if(itemInHand != null && itemInHand.getAmount() != 0) {
-            player.updateItemHeld(itemInHand.getType().name(), itemInHand.getAmount());
+            player.updateItemHeld(itemInHand);
         }
        // player.assets.add(new LAsset("asset-bank-amount", "Bank Amount", "0$"));
         //player.markDirty();
@@ -234,13 +256,24 @@ public class PlayerModule extends BaseModule implements Listener
         notifyChange();
     }
 
-    @EventHandler
+    /*@EventHandler
     public void onPlayerItemHeldEvent(PlayerItemHeldEvent event) {
-        if(_players.containsKey(event.getPlayer().getUniqueId().toString())) {
-            LPlayer player = _players.get(event.getPlayer().getUniqueId().toString());
+        updateItemInHand(event.getPlayer(), event.getPlayer().getInventory().getItem(event.getNewSlot()));
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerPickupItemEvent(EntityPickupItemEvent event) {
+        if(event.getEntity() instanceof Player) {
+            Player p = (Player)event.getEntity();
+
             
-            //ItemStack itemInHand = event.getPlayer().getInventory().getItemInMainHand();
-            ItemStack itemInHand = event.getPlayer().getInventory().getItem(event.getNewSlot());
+        }
+    } */
+
+    /*private void updateItemInHand(Player p, ItemStack itemInhand) {
+        if(_players.containsKey(p.getUniqueId().toString())) {
+            LPlayer player = _players.get(p.getUniqueId().toString());
+            
             if(itemInHand != null && itemInHand.getAmount() != 0) {
                 player.updateItemHeld(itemInHand.getType().name(), itemInHand.getAmount());
                 notifyChange();
@@ -249,7 +282,7 @@ public class PlayerModule extends BaseModule implements Listener
                 notifyChange();
             }
         }
-    }
+    }*/
 
     @EventHandler
     public void onPlayerChangedWorldEvent(PlayerChangedWorldEvent event) {
@@ -376,6 +409,7 @@ public class PlayerModule extends BaseModule implements Listener
                         jp.put("uuid", player.uuid);
                     }
                     if(!player.headDirty)jp.remove("head");
+                    if(!player.armorDirty)jp.remove("armorItems");
                     
                     players.put(jp);
                 }
@@ -556,11 +590,17 @@ public class PlayerModule extends BaseModule implements Listener
 
     public static class LItem implements Serializable {
         public int amount;
+        public int damage;
         public String item;
 
         public LItem(String item, int amount) {
+            this(item, amount, 0);
+        }
+
+        public LItem(String item, int amount, int damage) {
             this.item = item;
             this.amount = amount;
+            this.damage = damage;
         }
 
         @Override
@@ -568,7 +608,16 @@ public class PlayerModule extends BaseModule implements Listener
             JSONObject json = new JSONObject();
             json.put("item", item);
             json.put("amount", amount);
+            json.put("damage", damage);
             return json;
+        }
+
+        static LItem fromItemStack(ItemStack stack) {
+            LItem item = new LItem(stack.getType().name(), stack.getAmount());
+            if(stack.hasItemMeta() && (stack.getItemMeta() instanceof Damageable)) {
+               item.damage = ((Damageable)stack.getItemMeta()).getDamage();
+            }
+            return item;
         }
     }
 
@@ -592,6 +641,12 @@ public class PlayerModule extends BaseModule implements Listener
     public static class LPlayer implements Serializable{
         private boolean dirty = true;
         private boolean headDirty = true;
+
+        private boolean armorDirty = true;
+        public LItem armorHead;
+        public LItem armorChest;
+        public LItem armorLegs;
+        public LItem armorBoots;
 
         public String uuid;
         public String name = "Unknown";
@@ -693,8 +748,8 @@ public class PlayerModule extends BaseModule implements Listener
             }
         }*/
 
-        public void updateItemHeld(String item, int amount) {
-            itemHeld = new LItem(item, amount);
+        public void updateItemHeld(ItemStack stack) {
+            itemHeld = stack != null ? LItem.fromItemStack(stack) : null;
             dirty = true;
         }
 
@@ -743,6 +798,36 @@ public class PlayerModule extends BaseModule implements Listener
             this.dirty = true;
         }
 
+        public void updateArmor(ItemStack head, ItemStack chest, ItemStack legs, ItemStack boots) {
+            this.armorHead = head != null ? LItem.fromItemStack(head) : null;
+            this.armorChest = chest != null ? LItem.fromItemStack(chest) : null;
+            this.armorLegs = legs != null ? LItem.fromItemStack(legs) : null;
+            this.armorBoots = boots != null ? LItem.fromItemStack(boots) : null;
+            this.armorDirty = true;
+            this.dirty = true;
+        }
+
+        public boolean needsArmorUpdate(PlayerInventory inventory) {
+            if(needsItemUpdate(armorHead, inventory.getHelmet())) return true;
+            if(needsItemUpdate(armorChest, inventory.getChestplate())) return true;
+            if(needsItemUpdate(armorLegs, inventory.getLeggings())) return true;
+            if(needsItemUpdate(armorBoots, inventory.getBoots())) return true;
+            return false;
+        }
+
+        private boolean needsItemUpdate(LItem item, ItemStack stack) {
+            if(item == null && stack != null) return true;
+            if(item != null && stack == null) return true;
+            if(item != null && stack != null) {
+                if(item.amount != stack.getAmount()) return true;
+                if(!item.item.equals(stack.getType().name())) return true;
+                if(stack.getItemMeta() instanceof Damageable) {
+                    if(item.damage != ((Damageable)stack.getItemMeta()).getDamage()) return true;
+                }
+            }
+            return false;
+        }
+
         private static LPlayer fromOfflinePlayer(OfflinePlayer player) {
             LPlayer p = new LPlayer(player.getUniqueId().toString());
             p.name = player.getName();
@@ -763,21 +848,24 @@ public class PlayerModule extends BaseModule implements Listener
                 p.updateFoodLevel(online.getFoodLevel());
                 ItemStack itemInHand = online.getInventory().getItemInMainHand();
                 if(itemInHand != null && itemInHand.getAmount() != 0) {
-                    p.updateItemHeld(itemInHand.getType().name(), itemInHand.getAmount());
+                    p.updateItemHeld(itemInHand);
                 }
                 
+                PlayerInventory inventory = online.getInventory();
+                p.updateArmor(inventory.getHelmet(), inventory.getChestplate(), inventory.getLeggings(), inventory.getBoots());
             }
 
             return p;
         }
 
         public boolean isDirty() {
-            return dirty || headDirty;
+            return dirty || headDirty || armorDirty;
         }
 
         public void clean() {
             dirty = false;
             headDirty = false;
+            armorDirty = false;
         }
 
         public JSONObject toJson() {
@@ -803,87 +891,15 @@ public class PlayerModule extends BaseModule implements Listener
                     json.put("actions", actions.stream().map(action->action.toJson()).collect(Collectors.toList()));
                 }
             }
+            //if(armorHead != null || armorChest != null || armorLegs != null || armorBoots != null) {
+                JSONObject armorItems = new JSONObject();
+                json.put("armorItems", armorItems);
+                if(armorHead != null) armorItems.put("head", armorHead.toJson());
+                if(armorChest != null) armorItems.put("chest", armorChest.toJson());
+                if(armorLegs != null) armorItems.put("legs", armorLegs.toJson());
+                if(armorBoots != null) armorItems.put("boots", armorBoots.toJson());
+            //}
             return json;
         }
     }
-
-    /*public static class AssetGroup extends Syncable {
-        public String name;
-        public List<PlayerAsset> assets = new ArrayList<PlayerAsset>();
-
-        public AssetGroup(String name) {
-            super(name);
-            this.name = name;
-        }
-
-        public PlayerAsset getAssetByUUID(String uuid) {
-            synchronized(assets) {
-                for(PlayerAsset asset : assets) {
-                    if(asset.getUUID().equals(uuid)) return asset;
-                }
-            }
-            return null;
-        }
-
-        public void addPlayerAsset(PlayerAsset asset) {
-            synchronized(assets) {
-                assets.add(asset);
-            }
-        }
-
-        public void removePlayerAsset(PlayerAsset asset) {
-            synchronized(assets) {
-                assets.remove(asset);
-            }
-        }
-    }
-
-    public static class PlayerAsset extends Syncable {
-        public PlayerAsset(String uuid) {
-            super(uuid);
-        }
-    }
-
-    public static class ValueAsset extends PlayerAsset {
-
-        public String name;
-        public String value;
-
-        public ValueAsset(String uuid, String name, String value) {
-            super(uuid);
-            this.name = name;
-            this.value = value;
-        }
-
-        public void updateValue(String value) {
-            this.value = value;
-            markDirty("value");
-        }
-    }
-
-    public static class MapAsset extends PlayerAsset {
-        public String name;
-        public String description;
-        public String icon;
-        public double x;
-        public double y;
-        public double z;
-
-        public MapAsset(String uuid, String name, String description, String icon){
-            super(uuid);
-            this.name = name;
-            this.icon = icon;
-        }
-
-        public void updatePosition(Location location) {
-            this.updatePosition(location.getX(), location.getY(), location.getZ());
-        }
-
-        public void updatePosition(double x, double y, double z) {
-            this.x = x;
-            this.y = y;
-            this.z = z;
-            markDirty("x", "y", "z");
-        }
-    }*/
 }
