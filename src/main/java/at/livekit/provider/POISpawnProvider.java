@@ -12,6 +12,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.world.SpawnChangeEvent;
 
 import at.livekit.api.core.Color;
+import at.livekit.api.core.LKLocation;
 import at.livekit.api.map.InfoEntry;
 import at.livekit.api.map.POI;
 import at.livekit.api.map.POIInfoProvider;
@@ -54,7 +55,7 @@ public class POISpawnProvider extends POIInfoProvider implements Listener {
 
     private POI spawnPoint(World world) {
         for(POI wp : _spawnPoints) {
-            if(wp.getLocation().getWorld() == world) {
+            if(wp.getLocation().getName().equals(world.getName())) {
                 return wp;
             }
         }
@@ -62,7 +63,7 @@ public class POISpawnProvider extends POIInfoProvider implements Listener {
     }
 
     private void registerSpawnpoint(World world) {
-        POI spawn = new POI(world.getSpawnLocation(), "Spawn", "Spawn point of "+world.getName(), BasicPOIProvider.POI_COLOR, Config.canTeleportSpawn());
+        POI spawn = new POI(LKLocation.fromLocation(world.getSpawnLocation()), "Spawn", "Spawn point of "+world.getName(), BasicPOIProvider.POI_COLOR, Config.canTeleportSpawn());
         Plugin.getInstance().getLiveKit().addPointOfInterest(spawn);
         _spawnPoints.add(spawn);
     }
@@ -74,6 +75,6 @@ public class POISpawnProvider extends POIInfoProvider implements Listener {
             entries.add(new InfoEntry("Spawns", "96"));
             entries.add(new InfoEntry("Status", ChatColor.GREEN+"Available"));
         }*/
-        entries.add(new InfoEntry("World", poi.getLocation().getWorld().getName()));
+        entries.add(new InfoEntry("World", poi.getLocation().getName()));
     }
 }

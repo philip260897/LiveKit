@@ -15,6 +15,7 @@ import org.bukkit.entity.Player;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import at.livekit.api.core.LKLocation;
 import at.livekit.api.map.AsyncPOIInfoProvider;
 import at.livekit.api.map.InfoEntry;
 import at.livekit.api.map.POI;
@@ -206,7 +207,10 @@ public class POIModule extends BaseModule {
         if(player == null || !player.isOnline()) return new StatusPacket(0, "Player is offline");
 
         Player online = player.getPlayer();
-        online.teleport(waypoint.getLocation());
+        Location location = waypoint.getLocation().toLocation();
+        if(location == null) return new StatusPacket(0, "Location does not exist");
+
+        online.teleport(location);
 
         return new StatusPacket(1);
     }
@@ -283,7 +287,8 @@ public class POIModule extends BaseModule {
                 }
             }).get();
 
-            POI poi = new POI(location, name, description, BasicPOIProvider.POI_COLOR, teleport, true);
+
+            POI poi = new POI(LKLocation.fromLocation(location), name, description, BasicPOIProvider.POI_COLOR, teleport, true);
             Plugin.getStorage().savePOI(poi);
             addPOI(poi);
 

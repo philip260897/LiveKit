@@ -460,7 +460,10 @@ public class PlayerModule extends BaseModule implements Listener
         if(player == null || !player.isOnline()) return new StatusPacket(0, "Player is offline");
 
         Player online = player.getPlayer();
-        online.teleport(waypoint.getLocation());
+        Location location = waypoint.getLocation().toLocation();
+        if(location == null) return new StatusPacket(0, "Location does not exist");
+
+        online.teleport(location);
 
         return new StatusPacket(1);
     }

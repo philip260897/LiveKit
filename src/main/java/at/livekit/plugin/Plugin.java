@@ -27,6 +27,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import at.livekit.api.core.Color;
 import at.livekit.api.core.ILiveKit;
 import at.livekit.api.core.ILiveKitPlugin;
+import at.livekit.api.core.LKLocation;
 import at.livekit.api.core.Privacy;
 import at.livekit.api.map.InfoEntry;
 import at.livekit.api.map.POI;
@@ -872,7 +873,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
                         if(result.size() != 0) {
 							player.sendMessage(Plugin.getPrefix()+"Your pins:");
 							for(int i = 0; i < result.size(); i++) {
-								player.sendMessage(ChatColor.GREEN+"["+ChatColor.RESET+(i+1)+ChatColor.GREEN+"] "+ChatColor.RESET+result.get(i).getName() + " - " + ((int)result.get(i).getLocation().distance(player.getLocation()))+"m");
+								player.sendMessage(ChatColor.GREEN+"["+ChatColor.RESET+(i+1)+ChatColor.GREEN+"] "+ChatColor.RESET+result.get(i).getName() + " - " + ((int)result.get(i).getLocation().distance(LKLocation.fromLocation(player.getLocation())))+"m");
 							}
 						} else {
 							player.sendMessage(prefix+"You have not set any pins yet! Start with "+ChatColor.AQUA+"/livekit setpin <name>");
@@ -897,7 +898,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
                     public void onSyncResult(List<Waypoint> result) {
                         if(result.size() < Config.getPersonalPinLimit()) {
 							
-							final Waypoint waypoint = new Waypoint(player.getLocation(), finalName, "Custom set pin", BasicPlayerPinProvider.PLAYER_PIN_COLOR, false, Privacy.PRIVATE);
+							final Waypoint waypoint = new Waypoint(LKLocation.fromLocation(player.getLocation()), finalName, "Custom set pin", BasicPlayerPinProvider.PLAYER_PIN_COLOR, false, Privacy.PRIVATE);
 							BasicPlayerPinProvider.setPlayerPinAsync(player, waypoint, new FutureSyncCallback<Void>(){
 								@Override
 								public void onSyncResult(Void result) {

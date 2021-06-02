@@ -15,6 +15,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerGameModeChangeEvent;
 import org.bukkit.event.player.PlayerExpChangeEvent;
 
+import at.livekit.api.core.LKLocation;
 import at.livekit.api.core.Privacy;
 import at.livekit.api.map.InfoEntry;
 import at.livekit.api.map.PlayerInfoProvider;
@@ -48,7 +49,7 @@ public class BasicPlayerInfoProvider extends PlayerInfoProvider implements Liste
     public void onResolvePlayerLocation(OfflinePlayer player, List<Waypoint> waypoints) {
         Location location = player.getBedSpawnLocation();
         if(location != null) {
-            Waypoint waypoint = new Waypoint(location, "Bed Spawn", "Bed Spawn Location of "+player.getName(), BasicPlayerPinProvider.PLAYER_PIN_COLOR, Config.canTeleportBed(), Privacy.PRIVATE);
+            Waypoint waypoint = new Waypoint(LKLocation.fromLocation(location), "Bed Spawn", "Bed Spawn Location of "+player.getName(), BasicPlayerPinProvider.PLAYER_PIN_COLOR, Config.canTeleportBed(), Privacy.PRIVATE);
             waypoints.add(waypoint);
         }
     }
