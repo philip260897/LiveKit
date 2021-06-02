@@ -1,5 +1,6 @@
 package at.livekit.utils;
 
+import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.net.URL;
@@ -297,11 +298,17 @@ public class HeadLibraryV2 implements Runnable
                         //System.out.println("SKIN URL: "+url);
 
                         BufferedImage image = ImageIO.read(new URL(url));
-                        image = image.getSubimage(8, 8, 8, 8);
+
+                        BufferedImage face = image.getSubimage(8, 8, 8, 8);
+                        BufferedImage hatFace = image.getSubimage(40, 8, 8, 8);
+
+                        Graphics g = face.getGraphics();
+                        g.drawImage(hatFace, 0, 0, null);
+                        g.dispose();
 
                         final ByteArrayOutputStream os = new ByteArrayOutputStream();
 
-                        ImageIO.write(image, "png", os);
+                        ImageIO.write(face, "png", os);
                         return Base64.getEncoder().encodeToString(os.toByteArray());
                     }
                 }
