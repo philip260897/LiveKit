@@ -35,6 +35,7 @@ import at.livekit.api.map.Waypoint;
 import at.livekit.authentication.AuthenticationHandler;
 import at.livekit.authentication.Pin;
 import at.livekit.authentication.Session;
+import at.livekit.livekit.Economy;
 import at.livekit.livekit.Identity;
 import at.livekit.livekit.LiveKit;
 import at.livekit.map.RenderBounds;
@@ -97,6 +98,8 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 			getServer().getPluginManager().disablePlugin(this);
 			return;
 		}
+
+		Economy.getInstance().initializeDefault();
 
 		try{
 			storage = new JSONStorage();

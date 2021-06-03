@@ -20,6 +20,8 @@ import at.livekit.api.core.Privacy;
 import at.livekit.api.map.InfoEntry;
 import at.livekit.api.map.PlayerInfoProvider;
 import at.livekit.api.map.Waypoint;
+import at.livekit.livekit.Economy;
+import at.livekit.livekit.Economy.EconomyNotAvailableException;
 import at.livekit.plugin.Config;
 import at.livekit.plugin.Plugin;
 
@@ -37,6 +39,12 @@ public class BasicPlayerInfoProvider extends PlayerInfoProvider implements Liste
     public void onResolvePlayerInfo(OfflinePlayer player, List<InfoEntry> entries) {
         entries.add( new InfoEntry("Last Played", player.isOnline() ? ChatColor.GREEN+"Now" : _formatter.format(new Date(player.getLastPlayed())), Privacy.PUBLIC) );
         entries.add( new InfoEntry("First Joined", _formatter.format(new Date(player.getFirstPlayed())), Privacy.PRIVATE) );
+        
+        Economy economy = Economy.getInstance();
+        try{
+            if(economy.isAvailable()) entries.add( new InfoEntry("Balance", ""+ChatColor.GREEN+Economy.getInstance().getBalance(player)+Economy.getInstance().getCurrencyString(), Privacy.PRIVATE) );
+        } catch(EconomyNotAvailableException e) {e.printStackTrace();}
+
 
         if(player.isOnline()) {
             Player online = player.getPlayer();

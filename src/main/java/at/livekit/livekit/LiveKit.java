@@ -19,12 +19,14 @@ import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 import at.livekit.api.core.ILiveKit;
+import at.livekit.api.economy.IEconomyAdapter;
 import at.livekit.api.map.POI;
 import at.livekit.api.map.POIInfoProvider;
 import at.livekit.api.map.PlayerInfoProvider;
 import at.livekit.authentication.Pin;
 import at.livekit.authentication.Session;
 import at.livekit.modules.BaseModule;
+import at.livekit.modules.EconomyModule;
 import at.livekit.modules.ModuleManager;
 import at.livekit.modules.POIModule;
 import at.livekit.modules.PlayerModule;
@@ -127,6 +129,8 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
 
     public void onEnable() throws Exception {
         //PlayerAuth.initialize();
+
+        
 
         _modules.onEnable(invokationMap);
         Method[] methods = this.getClass().getDeclaredMethods();
@@ -931,6 +935,17 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
         PlayerModule module = (PlayerModule)_modules.getModule("PlayerModule");
         if(module != null) {
             module.notifyDownstream(player);
+        }
+    }
+
+    @Override
+    public void setEconomyAdapter(IEconomyAdapter adapter) {
+        Economy.getInstance().setEconomyAdapter(adapter);
+        EconomyModule module = (EconomyModule) _modules.getModule("EconomyModule");
+        if(module != null) {
+            if(!module.isEnabled() && Config.moduleEnabled(module.getType())) {
+                enableModule("EconomyModule");
+            }
         }
     }
 
