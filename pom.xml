@@ -11,8 +11,6 @@
 </properties>
 
 <build>
-
-
 	<finalName>LiveKit</finalName>
 	<sourceDirectory>src/main/java</sourceDirectory>
 	<resources>
