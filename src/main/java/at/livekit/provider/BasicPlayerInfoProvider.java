@@ -42,8 +42,8 @@ public class BasicPlayerInfoProvider extends PlayerInfoProvider implements Liste
         
         Economy economy = Economy.getInstance();
         try{
-            if(economy.isAvailable()) entries.add( new InfoEntry("Balance", ""+ChatColor.GREEN+Economy.getInstance().getBalance(player)+Economy.getInstance().getCurrencyString(), Privacy.PRIVATE) );
-        } catch(EconomyNotAvailableException e) {e.printStackTrace();}
+            if(economy.isAvailable()) entries.add( new InfoEntry("Balance", ""+ChatColor.GREEN+Economy.getInstance().getBalanceFormatted(player), Privacy.PRIVATE) );
+        } catch(Exception e) {e.printStackTrace();}
 
 
         if(player.isOnline()) {

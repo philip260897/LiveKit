@@ -1,13 +1,9 @@
 package at.livekit.livekit;
 
-import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
-import org.bukkit.plugin.RegisteredServiceProvider;
 
 import at.livekit.api.economy.IEconomyAdapter;
 import at.livekit.api.economy.TransactionResult;
-import at.livekit.plugin.Plugin;
-import at.livekit.utils.VaultEconomyAdapter;
 
 public class Economy {
     
@@ -19,22 +15,6 @@ public class Economy {
             instance = new Economy();
         }
         return instance;
-    }
-
-    public void initializeDefault() {
-        if(Bukkit.getPluginManager().getPlugin("Vault") == null) {
-            return;
-        }
-
-        RegisteredServiceProvider<net.milkbowl.vault.economy.Economy> rsp = Bukkit.getServer().getServicesManager().getRegistration(net.milkbowl.vault.economy.Economy.class);
-        net.milkbowl.vault.economy.Economy econ = rsp.getProvider();
-        
-        if(econ == null) {
-            return;
-        }
-
-        Plugin.log("Found Vault! Using economy ["+econ.getName()+"]");
-        setEconomyAdapter(new VaultEconomyAdapter(econ));
     }
 
     protected void setEconomyAdapter(IEconomyAdapter adapter) {
@@ -53,6 +33,11 @@ public class Economy {
     public double getBalance(OfflinePlayer player) throws EconomyNotAvailableException {
         if(!isAvailable()) throw new EconomyNotAvailableException();
         return this.adapter.getBalance(player);
+    }
+
+    public String getBalanceFormatted(OfflinePlayer player) throws EconomyNotAvailableException {
+        if(!isAvailable()) throw new EconomyNotAvailableException();
+        return this.adapter.getBalanceFormatted(player);
     }
 
     public TransactionResult transfer(OfflinePlayer from, OfflinePlayer to, double amount) throws EconomyNotAvailableException {

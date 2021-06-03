@@ -20,6 +20,11 @@ public class VaultEconomyAdapter implements IEconomyAdapter {
     }
 
     @Override
+    public String getBalanceFormatted(OfflinePlayer player) {
+        return economy.format(getBalance(player));
+    }
+
+    @Override
     public String getCurrencyString() {
         return economy.currencyNameSingular();
     }

@@ -1,36 +1,24 @@
 package at.livekit.plugin;
 
-import java.io.FilterOutputStream;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.logging.Handler;
-import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
-import com.google.common.util.concurrent.Futures;
-
-import org.apache.logging.log4j.core.Appender;
-import org.apache.logging.log4j.core.LogEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.Location;
-import org.bukkit.World;
-import org.bukkit.WorldType;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.server.ServerLoadEvent;
+import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import at.livekit.api.core.Color;
 import at.livekit.api.core.ILiveKit;
 import at.livekit.api.core.ILiveKitPlugin;
 import at.livekit.api.core.LKLocation;
 import at.livekit.api.core.Privacy;
-import at.livekit.api.map.InfoEntry;
-import at.livekit.api.map.POI;
 import at.livekit.api.map.Waypoint;
 import at.livekit.authentication.AuthenticationHandler;
 import at.livekit.authentication.Pin;
@@ -61,8 +49,9 @@ import at.livekit.utils.HeadLibraryEvent;
 import at.livekit.utils.HeadLibraryV2;
 import at.livekit.utils.Metrics;
 import at.livekit.utils.Utils;
+import at.livekit.utils.VaultEconomyAdapter;
 
-public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugin {
+public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugin, Listener {
 
 	private static Logger logger;
 	private static Plugin instance;
@@ -78,8 +67,6 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 	public void onEnable() {
 		instance = this;
 		logger = getLogger();
-
-		
 
 		//create config folder if doesn't exist
 		if(!getDataFolder().exists()) {
@@ -98,8 +85,6 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 			getServer().getPluginManager().disablePlugin(this);
 			return;
 		}
-
-		Economy.getInstance().initializeDefault();
 
 		try{
 			storage = new JSONStorage();
@@ -141,6 +126,8 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 			LiveKit.getInstance().onEnable();
 		}catch(Exception ex){ex.printStackTrace();}
 
+		Bukkit.getServer().getPluginManager().registerEvents(this, Plugin.getInstance());
+
 		try{
 			Metrics metrics = new Metrics(this, 10516);
 		}catch(Exception ex){Plugin.debug("bStats could not be initialized! "+ex.getMessage());}
@@ -167,6 +154,32 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 		ConsoleListener.registerListener();
     }
     
+	@EventHandler
+	public void onServerLoadEvent(ServerLoadEvent event) {
+		//try enable economy after everything has loaded
+		if(Economy.getInstance().isAvailable() == false) {
+			if(Bukkit.getPluginManager().getPlugin("Vault") == null) {
+				Plugin.debug("Vault not found! No default Economy available!");
+				return;
+			}
+
+			RegisteredServiceProvider<net.milkbowl.vault.economy.Economy> rsp = Bukkit.getServer().getServicesManager().getRegistration(net.milkbowl.vault.economy.Economy.class);
+			if(rsp == null) {
+				Plugin.debug("Economy rsp == null!");
+				return;
+			}
+			
+			net.milkbowl.vault.economy.Economy econ = rsp.getProvider();
+			if(econ == null) {
+				Plugin.debug("Econ provider null!");
+				return;
+			}
+
+			Plugin.log("Found Vault! Using economy ["+econ.getName()+"]");
+			LiveKit.getInstance().setEconomyAdapter(new VaultEconomyAdapter(econ));
+		}
+	}
+
     @Override
     public void onDisable() {
 		//unregister before livekit gets disabled
@@ -779,7 +792,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 				return true;
 			}
 
-			/*if(args[0].equalsIgnoreCase("modules")) {
+			if(args[0].equalsIgnoreCase("modules")) {
 				if(!checkPerm(sender, "livekit.commands.admin")) return true;
 
 				sender.sendMessage(prefix+"Modules:");
@@ -788,7 +801,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 				}
 
 				return true;
-			}*/
+			}
 			
 			/*if(args[0].equalsIgnoreCase("subs")) {
 				if(!checkPerm(sender, "livekit.commands.admin")) return true;
@@ -816,7 +829,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 			}*/
 		}
 		if(args.length == 3) {
-			/*if(args[0].equalsIgnoreCase("modules")) {
+			if(args[0].equalsIgnoreCase("modules")) {
 				if(!checkPerm(sender, "livekit.commands.admin")) return true;
 
 				String module = args[1];
@@ -833,7 +846,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 				}
 
 				return true;
-			}*/
+			}
 			/*if(args[0].equalsIgnoreCase("load")) {
 				if(!checkPerm(sender, "livekit.commands.admin")) return true;
 				
@@ -1077,7 +1090,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 	}
 
 	public static void debug(String message) {
-		//logger.warning(message);
+		logger.warning(message);
 	}
 
 	@Override

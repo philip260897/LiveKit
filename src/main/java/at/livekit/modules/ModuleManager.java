@@ -147,6 +147,7 @@ public class ModuleManager
                 if(_modules.containsKey(moduleType)) {
                     BaseModule module = _modules.get(moduleType);
                     if(module.isEnabled()) {
+                        Plugin.debug("Disabling "+module.getType());
                         module.onDisable(signatures);
                 
 
@@ -178,6 +179,7 @@ public class ModuleManager
                 if(_modules.containsKey(moduleType)) {
                     BaseModule module = _modules.get(moduleType);
                     if(!module.isEnabled()) {
+                        Plugin.debug("Enabling "+module.getType());
                         module.onEnable(signatures);
 
                         //handle subscription update && update identity subscriptions if some got disabled!
