@@ -149,7 +149,7 @@ public class InventoryModule extends BaseModule implements Listener
     protected IPacket actionOpenInventory(Identity identity, ActionPacket packet) {
         String uuid = packet.getData().getString("uuid");
         
-        if(!uuid.equals(identity.getUuid()) || !identity.hasPermission("livekit.module.admin")) return new StatusPacket(0, "Permission denied!");
+        if(!uuid.equals(identity.getUuid()) && !identity.hasPermission("livekit.module.admin")) return new StatusPacket(0, "Permission denied!");
         
         OfflinePlayer target = Bukkit.getOfflinePlayer(UUID.fromString(uuid));
         if(target == null || !target.isOnline()) return new StatusPacket(0, "Player is offline");

@@ -19,6 +19,7 @@ import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 import at.livekit.api.core.ILiveKit;
+import at.livekit.api.economy.IEconomyAdapter;
 import at.livekit.api.map.POI;
 import at.livekit.api.map.POIInfoProvider;
 import at.livekit.api.map.PlayerInfoProvider;
@@ -932,6 +933,12 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
         if(module != null) {
             module.notifyDownstream(player);
         }
+    }
+
+    @Override
+    public void setEconomyAdapter(IEconomyAdapter arg0) {
+        // TODO Auto-generated method stub
+        
     }
 
 	/*@Override
