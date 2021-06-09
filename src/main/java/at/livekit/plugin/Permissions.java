@@ -28,6 +28,7 @@ public class Permissions
         permissions.add("livekit.module.poi");
         permissions.add("livekit.module.console");
         permissions.add("livekit.module.inventory");
+        permissions.add("livekit.module.economy");
         
         permissions.add("livekit.chat.write");
         permissions.add("livekit.poi.personalpins");
