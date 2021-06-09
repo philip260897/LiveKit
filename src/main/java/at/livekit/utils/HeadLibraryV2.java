@@ -11,6 +11,9 @@ import java.util.List;
 import java.util.UUID;
 
 import javax.imageio.ImageIO;
+
+import com.j256.ormlite.field.DatabaseField;
+
 import org.bukkit.OfflinePlayer;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -97,11 +100,18 @@ public class HeadLibraryV2 implements Runnable
 
     public static class HeadInfo{
         //private String uuid;
+        @DatabaseField(id = true)
         private String name;
+        @DatabaseField
         private String head = null;
+        @DatabaseField
         private boolean first = true;
+        @DatabaseField
         private boolean failed = false;
+        @DatabaseField
         private long timestamp = 0;
+
+        HeadInfo(){}
 
         public HeadInfo(String name) {
             this.name = name;

@@ -118,7 +118,7 @@ public class JSONStorage implements IStorageAdapter {
 
                 for(int j = 0; j < sessions.length(); j++) {
                     JSONObject sessionEntry = sessions.getJSONObject(j);
-                    Session session = new Session(sessionEntry.getLong("timestamp"), sessionEntry.getLong("last"), sessionEntry.getString("auth"), null, null);
+                    Session session = new Session(playerId, sessionEntry.getLong("timestamp"), sessionEntry.getLong("last"), sessionEntry.getString("auth"), null, null);
                     ps.add(session);
                 }
 
@@ -226,14 +226,30 @@ public class JSONStorage implements IStorageAdapter {
     }
 
     @Override
-    public List<Pin> loadPins() throws Exception {
+    public Pin loadPin(String pin) throws Exception {
         if(JSONStorage.DEBUG_DELAY) Thread.sleep(JSONStorage.DEBUG_DELAY_MS);
         
         List<Pin> pins = new ArrayList<Pin>();
         //pins.add(new Pin("867678c4-391b-42a9-a4cb-3ad14089f3f6", "123456", System.currentTimeMillis()));
         synchronized(_cachedPins) {
-            for(Pin pin : _cachedPins.values()) {
-                pins.add(pin);
+            for(Pin p : _cachedPins.values()) {
+                if(p.getPin().equals(pin)) {
+                    return p;
+                }
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public List<Pin> loadPinsForPlayer(String uuid) throws Exception {
+        if(JSONStorage.DEBUG_DELAY) Thread.sleep(JSONStorage.DEBUG_DELAY_MS);
+        
+        List<Pin> pins = new ArrayList<Pin>();
+        //pins.add(new Pin("867678c4-391b-42a9-a4cb-3ad14089f3f6", "123456", System.currentTimeMillis()));
+        synchronized(_cachedPins) {
+            for(Pin p : _cachedPins.values()) {
+                pins.add(p);
             }
         }
         return pins;

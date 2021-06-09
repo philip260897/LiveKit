@@ -29,8 +29,9 @@ public interface IStorageAdapter
 
     public void createPin(String uuid, Pin pin) throws Exception;
 
-    public List<Pin> loadPins() throws Exception;
+    public Pin loadPin(String pin) throws Exception;
 
+    public List<Pin> loadPinsForPlayer(String uuid) throws Exception;
     
     public void savePlayerHead(String uuid, HeadInfo info) throws Exception;
 

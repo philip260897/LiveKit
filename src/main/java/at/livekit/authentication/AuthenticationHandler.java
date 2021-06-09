@@ -16,7 +16,7 @@ public class AuthenticationHandler
         return Utils.executeAsyncForSyncResult(new Callable<Pin>(){
             @Override
             public Pin call() throws Exception {
-                List<Pin> existing = Plugin.getStorage().loadPins();
+                List<Pin> existing = Plugin.getStorage().loadPinsForPlayer(player.getUniqueId().toString());
                 for(Pin pin : existing) {
                     if(pin.getUUID().equals(player.getUniqueId().toString())) {
                         Plugin.getStorage().deletePin(player.getUniqueId().toString(), pin);

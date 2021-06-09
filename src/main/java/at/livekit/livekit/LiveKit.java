@@ -675,13 +675,10 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
                 //identity = PlayerAuth.validateClaim(pin);
 
                 try{
-                    List<Pin> pins = Plugin.getStorage().loadPins();
-                    for(Pin p : pins) {
-                        if(p.getPin().equals(pin) && p.isValid()) {
-                            identity = p.getUUID();
-
-                            Plugin.getStorage().deletePin(p.getUUID(), p);
-                        }
+                    Pin p = Plugin.getStorage().loadPin(pin);
+                    if(p != null) {
+                        identity = p.getUUID();
+                        Plugin.getStorage().deletePin(p.getUUID(), p);
                     }
 
                     if(identity != null) {
@@ -736,7 +733,7 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
                     _server.send(client.getIdentifier(), _modules.onJoinAsync(client.getIdentifier()));
                 }catch(Exception ex){ex.printStackTrace();}
 
-                Session session = Session.createNew(null, null);
+                Session session = Session.createNew(identity, null, null);
                 try{
                     Plugin.getStorage().createSession(identity, session);
                 }catch(Exception ex){ex.printStackTrace();}

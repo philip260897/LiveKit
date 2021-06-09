@@ -1,11 +1,16 @@
 package at.livekit.authentication;
 
+import com.j256.ormlite.field.DatabaseField;
+
 import at.livekit.utils.Utils;
 
 public class Pin 
 {
+    @DatabaseField(id = true)
     private String uuid;
+    @DatabaseField
     private long timestamp;
+    @DatabaseField(width = 32)
     private String pin;
     
     private Pin(){}

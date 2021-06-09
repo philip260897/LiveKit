@@ -54,6 +54,7 @@ import at.livekit.provider.BasicPlayerPinProvider;
 import at.livekit.provider.POISpawnProvider;
 import at.livekit.storage.IStorageAdapter;
 import at.livekit.storage.JSONStorage;
+import at.livekit.storage.SQLStorage;
 import at.livekit.utils.ConsoleListener;
 import at.livekit.utils.FutureSyncCallback;
 import at.livekit.utils.HeadLibraryEvent;
@@ -78,12 +79,14 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 		instance = this;
 		logger = getLogger();
 
-		
+	
 
 		//create config folder if doesn't exist
 		if(!getDataFolder().exists()) {
 			getDataFolder().mkdirs();
 		}
+
+
 
 		name = this.getDescription().getName();
 		prefix = color+"["+ChatColor.WHITE+name+color+"] "+ChatColor.WHITE;
@@ -99,7 +102,12 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 		}
 
 		try{
-			storage = new JSONStorage();
+			try{
+				System.out.println("jdbc:sqlite:"+getDataFolder().getPath()+"/sample.db");
+				storage = new SQLStorage("jdbc:sqlite:"+getDataFolder().getPath()+"/sample.db");
+			}catch(Exception exception){exception.printStackTrace();}	
+
+			//storage = new JSONStorage();
 			storage.initialize();
 		} catch(Exception exception) {
 			exception.printStackTrace();
