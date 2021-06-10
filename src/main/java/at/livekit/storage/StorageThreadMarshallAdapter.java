@@ -4,6 +4,7 @@ import java.util.List;
 
 public abstract class StorageThreadMarshallAdapter implements IStorageAdapterGeneric{
 
+    public static boolean DISABLE = false;
 
     @Override
     public <T> T loadSingle(Class<T> clazz, String id) throws Exception {
@@ -52,6 +53,8 @@ public abstract class StorageThreadMarshallAdapter implements IStorageAdapterGen
     }
 
     protected void checkThread(String name, Object...values) throws Exception {
+        if(StorageThreadMarshallAdapter.DISABLE) return;
+        
         Thread current = Thread.currentThread();
 
         if(current.getName().equalsIgnoreCase("Server thread")) {

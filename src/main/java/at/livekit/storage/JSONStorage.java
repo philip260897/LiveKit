@@ -270,5 +270,13 @@ public class JSONStorage extends StorageThreadMarshallAdapter
         }
     }
     
-
+    @Override
+    public void migrateTo(IStorageAdapterGeneric adapter) throws Exception {
+        for(Entry<Class<?>, List<?>> entry : _cache.entrySet()) {
+            Plugin.log("Migrating "+entry.getKey().getSimpleName()+" with "+entry.getValue().size()+" entries");
+            for(Object o : entry.getValue()) {
+                adapter.create(o);
+            }
+        }
+    }
 }

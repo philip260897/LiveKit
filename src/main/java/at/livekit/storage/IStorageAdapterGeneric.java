@@ -25,4 +25,6 @@ public interface IStorageAdapterGeneric
     public <T> void delete(T entry) throws Exception;
 
     public <T> void createOrUpdate(T entry) throws Exception;
+
+    public void migrateTo(IStorageAdapterGeneric adapter) throws Exception;
 }

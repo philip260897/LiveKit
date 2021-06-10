@@ -7,12 +7,14 @@ import at.livekit.api.map.POI;
 import at.livekit.api.map.PersonalPin;
 import at.livekit.authentication.Pin;
 import at.livekit.authentication.Session;
+import at.livekit.plugin.Plugin;
 import at.livekit.utils.HeadLibraryV2.HeadInfo;
 
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.dao.DaoManager;
@@ -131,5 +133,15 @@ public class SQLStorage extends StorageThreadMarshallAdapter
             return dao;
         }
         throw new Exception("Storage not found for class "+clazz.getSimpleName());
+    }
+
+    @Override
+    public void migrateTo(IStorageAdapterGeneric adapter) throws Exception {
+        for(Entry<Class<?>, Dao<?,String>> entry : _daos.entrySet()) {
+            Plugin.log("Migrating "+entry.getValue().getTableName()+" with "+entry.getValue().countOf()+" entries");
+            for(Object o : entry.getValue()) {
+                adapter.create(o);
+            }
+        }
     }
 }

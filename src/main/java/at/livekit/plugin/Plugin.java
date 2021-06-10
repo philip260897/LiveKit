@@ -49,6 +49,7 @@ import at.livekit.provider.POISpawnProvider;
 import at.livekit.storage.IStorageAdapterGeneric;
 import at.livekit.storage.JSONStorage;
 import at.livekit.storage.SQLStorage;
+import at.livekit.storage.StorageThreadMarshallAdapter;
 import at.livekit.utils.ConsoleListener;
 import at.livekit.utils.FutureSyncCallback;
 import at.livekit.utils.HeadLibraryEvent;
@@ -96,14 +97,11 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 		}
 
 		try{
-			try{
-				
-				//storage = new SQLStorage("jdbc:sqlite:"+getDataFolder().getPath()+"/sample.db");
-				storage = new JSONStorage();
-			}catch(Exception exception){exception.printStackTrace();}	
 
-			//storage = new JSONStorage();
-			storage.initialize();
+			SQLStorage sqlStorage = new SQLStorage("jdbc:sqlite:"+getDataFolder().getPath()+"/sample.db");
+			sqlStorage.initialize();
+
+			storage = sqlStorage;
 		} catch(Exception exception) {
 			exception.printStackTrace();
 			logger.severe("Error initializing Storage, shutting down");
