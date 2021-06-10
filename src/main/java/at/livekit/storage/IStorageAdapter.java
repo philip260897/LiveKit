@@ -7,7 +7,6 @@ import at.livekit.api.map.POI;
 import at.livekit.api.map.Waypoint;
 import at.livekit.authentication.Pin;
 import at.livekit.authentication.Session;
-import at.livekit.modules.LiveMapModule.RegionData;
 import at.livekit.utils.HeadLibraryV2.HeadInfo;
 
 public interface IStorageAdapter 

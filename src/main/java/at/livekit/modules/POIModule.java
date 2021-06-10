@@ -85,7 +85,7 @@ public class POIModule extends BaseModule {
             @Override
             public void run() {
                 try{
-                    List<POI> pois = Plugin.getStorage().loadPOIs();
+                    List<POI> pois = Plugin.getStorage().loadAll(POI.class);
                     synchronized(_pois) {
                         _pois.addAll(pois);
                     }
@@ -288,8 +288,8 @@ public class POIModule extends BaseModule {
             }).get();
 
 
-            POI poi = new POI(LKLocation.fromLocation(location), name, description, BasicPOIProvider.POI_COLOR, teleport, true);
-            Plugin.getStorage().savePOI(poi);
+            POI poi = POI.create(LKLocation.fromLocation(location), name, description, BasicPOIProvider.POI_COLOR, teleport, true);
+            Plugin.getStorage().create(poi);
             addPOI(poi);
 
         }catch(Exception ex) {
@@ -312,7 +312,7 @@ public class POIModule extends BaseModule {
 
         try {
             removePOI(poi);
-            Plugin.getStorage().deletePOI(poi);
+            Plugin.getStorage().delete(poi);
         }catch(Exception ex){
             ex.printStackTrace();
             return new StatusPacket(0, "POI removale failed! "+ex.getMessage());

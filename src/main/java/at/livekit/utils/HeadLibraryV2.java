@@ -13,6 +13,7 @@ import java.util.UUID;
 import javax.imageio.ImageIO;
 
 import com.j256.ormlite.field.DatabaseField;
+import com.j256.ormlite.table.DatabaseTable;
 
 import org.bukkit.OfflinePlayer;
 import org.json.JSONArray;
@@ -97,7 +98,7 @@ public class HeadLibraryV2 implements Runnable
         return returnValue;
     }
     
-
+    @DatabaseTable(tableName = "lk_heads")
     public static class HeadInfo{
         //private String uuid;
         @DatabaseField(id = true)
@@ -162,7 +163,7 @@ public class HeadLibraryV2 implements Runnable
     @Override
     public void run() {
         try{
-            List<HeadInfo> heads = Plugin.getStorage().loadPlayerHeads();
+            List<HeadInfo> heads = Plugin.getStorage().loadAll(HeadInfo.class);
             synchronized(_cache) {
                 for(HeadInfo head : heads) {
                     _cache.put(head.getName(), head);
@@ -191,7 +192,7 @@ public class HeadLibraryV2 implements Runnable
 
                 if(info == null) {
                     try{
-                        info = Plugin.getStorage().loadPlayerHead(name);
+                        info = Plugin.getStorage().loadSingle(HeadInfo.class, "name", name);
                     }catch(Exception ex){ex.printStackTrace();}
                 }
 
@@ -217,7 +218,7 @@ public class HeadLibraryV2 implements Runnable
                             _cache.put(name, info);
                         }
                         try{
-                            Plugin.getStorage().savePlayerHead(name, info);
+                            Plugin.getStorage().createOrUpdate(info);
                         }catch(Exception ex){ex.printStackTrace();}
 
                         if(HeadLibraryV2.listener != null) HeadLibraryV2.listener.onHeadResolved(info.name, info.head);
@@ -231,7 +232,7 @@ public class HeadLibraryV2 implements Runnable
                             _cache.put(name, info);
                         }
                         try{
-                            Plugin.getStorage().savePlayerHead(name, info);
+                            Plugin.getStorage().createOrUpdate(info);
                         }catch(Exception ex){ex.printStackTrace();}
 
                         if(rateLimit != 0) {

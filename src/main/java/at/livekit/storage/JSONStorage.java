@@ -403,7 +403,8 @@ public class JSONStorage implements IStorageAdapter {
                 JSONArray wp = pentry.getJSONArray("pins");
                 List<Waypoint> waypoints=  new ArrayList<Waypoint>();
                 for(int j = 0; j < wp.length(); j++) {
-                    waypoints.add(Waypoint.fromJson(wp.getJSONObject(j)));
+                    //TODO: CONVERT WAYPOINTS
+                    //waypoints.add(Waypoint.fromJson(wp.getJSONObject(j)));
                 }
                 _cachedPlayerPins.put(pentry.getString("playerId"), waypoints);
             }

@@ -675,17 +675,17 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
                 //identity = PlayerAuth.validateClaim(pin);
 
                 try{
-                    Pin p = Plugin.getStorage().loadPin(pin);
+                    Pin p = Plugin.getStorage().loadSingle(Pin.class, "pin", pin);
                     if(p != null) {
                         identity = p.getUUID();
-                        Plugin.getStorage().deletePin(p.getUUID(), p);
+                        Plugin.getStorage().delete(p);
                     }
 
                     if(identity != null) {
-                        List<Session> sessions = Plugin.getStorage().loadSessions(identity);
+                        List<Session> sessions = Plugin.getStorage().load(Session.class, identity);
                         while(sessions.size() >= 5) {
                             Session session = sessions.remove(0);
-                            Plugin.getStorage().deleteSession(identity, session);
+                            Plugin.getStorage().delete(session);
                         }
                     }
                 }catch(Exception ex){ex.printStackTrace();}
@@ -697,11 +697,11 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
                 boolean success = false;
 
                 try{
-                    List<Session> sessions = Plugin.getStorage().loadSessions(identity);
+                    List<Session> sessions = Plugin.getStorage().load(Session.class, identity);
                     for(Session session : sessions) {
                         
                         if(session.getAuthentication().equals(authorization)) {
-                            Plugin.getStorage().deleteSession(identity, session);
+                            Plugin.getStorage().delete(session);
                             success = true;
                         }
                     }
@@ -735,7 +735,7 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
 
                 Session session = Session.createNew(identity, null, null);
                 try{
-                    Plugin.getStorage().createSession(identity, session);
+                    Plugin.getStorage().create(session);
                 }catch(Exception ex){ex.printStackTrace();}
             
                 return new IdentityPacket(identity, client.getIdentifier().getName(), HeadLibraryV2.get(client.getIdentifier().getName(), true), session.getAuthentication());

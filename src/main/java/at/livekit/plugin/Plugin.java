@@ -24,14 +24,11 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import at.livekit.api.core.Color;
 import at.livekit.api.core.ILiveKit;
 import at.livekit.api.core.ILiveKitPlugin;
 import at.livekit.api.core.LKLocation;
 import at.livekit.api.core.Privacy;
-import at.livekit.api.map.InfoEntry;
-import at.livekit.api.map.POI;
-import at.livekit.api.map.Waypoint;
+import at.livekit.api.map.PersonalPin;
 import at.livekit.authentication.AuthenticationHandler;
 import at.livekit.authentication.Pin;
 import at.livekit.authentication.Session;
@@ -43,17 +40,13 @@ import at.livekit.map.RenderScheduler;
 import at.livekit.map.RenderWorld;
 import at.livekit.map.RenderBounds.RenderShape;
 import at.livekit.map.RenderJob.RenderJobMode;
-import at.livekit.modules.BaseModule;
-import at.livekit.modules.ConsoleModule;
 import at.livekit.modules.PlayerModule;
 import at.livekit.modules.LiveMapModule;
 import at.livekit.modules.PlayerModule.LPlayer;
-import at.livekit.provider.BasicPOIProvider;
 import at.livekit.provider.BasicPlayerInfoProvider;
 import at.livekit.provider.BasicPlayerPinProvider;
 import at.livekit.provider.POISpawnProvider;
-import at.livekit.storage.IStorageAdapter;
-import at.livekit.storage.JSONStorage;
+import at.livekit.storage.IStorageAdapterGeneric;
 import at.livekit.storage.SQLStorage;
 import at.livekit.utils.ConsoleListener;
 import at.livekit.utils.FutureSyncCallback;
@@ -72,7 +65,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 	private static String prefix;
 	private static String prefixError;
 
-	private static IStorageAdapter storage;
+	private static IStorageAdapterGeneric storage;
 
 	@Override
 	public void onEnable() {
@@ -875,9 +868,9 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
             if(args[0].equalsIgnoreCase("pins")) {
 				if(!checkPerm(sender, "livekit.poi.personalpins")) return true;
 
-                BasicPlayerPinProvider.listPlayerPinsAsync(player, new FutureSyncCallback<List<Waypoint>>(){
+                BasicPlayerPinProvider.listPlayerPinsAsync(player, new FutureSyncCallback<List<PersonalPin>>(){
                     @Override
-                    public void onSyncResult(List<Waypoint> result) {
+                    public void onSyncResult(List<PersonalPin> result) {
                         if(result.size() != 0) {
 							player.sendMessage(Plugin.getPrefix()+"Your pins:");
 							for(int i = 0; i < result.size(); i++) {
@@ -901,12 +894,12 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
                 for(int i = 2; i < args.length; i++) name+=" "+args[i];
 				
 				final String finalName = name;
-				BasicPlayerPinProvider.listPlayerPinsAsync(player, new FutureSyncCallback<List<Waypoint>>(){
+				BasicPlayerPinProvider.listPlayerPinsAsync(player, new FutureSyncCallback<List<PersonalPin>>(){
                     @Override
-                    public void onSyncResult(List<Waypoint> result) {
+                    public void onSyncResult(List<PersonalPin> result) {
                         if(result.size() < Config.getPersonalPinLimit()) {
 							
-							final Waypoint waypoint = new Waypoint(LKLocation.fromLocation(player.getLocation()), finalName, "Custom set pin", BasicPlayerPinProvider.PLAYER_PIN_COLOR, false, Privacy.PRIVATE);
+							final PersonalPin waypoint = PersonalPin.create(player, LKLocation.fromLocation(player.getLocation()), finalName, "Custom set pin", BasicPlayerPinProvider.PLAYER_PIN_COLOR, false, Privacy.PRIVATE);
 							BasicPlayerPinProvider.setPlayerPinAsync(player, waypoint, new FutureSyncCallback<Void>(){
 								@Override
 								public void onSyncResult(Void result) {
@@ -930,11 +923,11 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
                 try{
                     int id = Integer.parseInt(args[1]) - 1;
 
-                    BasicPlayerPinProvider.listPlayerPinsAsync(player, new FutureSyncCallback<List<Waypoint>>(){
+                    BasicPlayerPinProvider.listPlayerPinsAsync(player, new FutureSyncCallback<List<PersonalPin>>(){
                         @Override
-                        public void onSyncResult(List<Waypoint> result) {
+                        public void onSyncResult(List<PersonalPin> result) {
                             if(id >= result.size()) player.sendMessage(Plugin.getPrefixError()+"Wrong Pin ID! '/livekit pins' to list available pins");
-                            Waypoint toRemove = result.get(id);
+                            PersonalPin toRemove = result.get(id);
 
                             BasicPlayerPinProvider.removePlayerPinAsync(player, toRemove, new FutureSyncCallback<Void>(){
                                 @Override
@@ -1057,7 +1050,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 		return instance;
 	}
 
-	public static IStorageAdapter getStorage() {
+	public static IStorageAdapterGeneric getStorage() {
 		return storage;
 	}
 

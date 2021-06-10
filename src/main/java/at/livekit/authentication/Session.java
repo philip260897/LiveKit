@@ -1,9 +1,11 @@
 package at.livekit.authentication;
 
 import com.j256.ormlite.field.DatabaseField;
+import com.j256.ormlite.table.DatabaseTable;
 
 import at.livekit.utils.Utils;
 
+@DatabaseTable(tableName = "lk_sessions")
 public class Session {
 
     @DatabaseField(id = true)
