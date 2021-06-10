@@ -27,7 +27,7 @@ public class BasicPlayerPinProvider extends AsyncPlayerInfoProvider {
         return Utils.executeAsyncForSyncResult(new Callable<List<PersonalPin>>(){
             @Override
             public List<PersonalPin> call() throws Exception {
-                return Plugin.getStorage().load(PersonalPin.class, "player", player.getUniqueId().toString());
+                return Plugin.getStorage().load(PersonalPin.class, "playeruuid", player.getUniqueId());
             }
 
         }, onResult, onError);
@@ -63,7 +63,7 @@ public class BasicPlayerPinProvider extends AsyncPlayerInfoProvider {
     @Override
     public void onResolvePlayerLocation(OfflinePlayer player, List<PersonalPin> waypoints) {
         try{
-            List<PersonalPin> pins = Plugin.getStorage().load(PersonalPin.class, "playeruuid", player);
+            List<PersonalPin> pins = Plugin.getStorage().load(PersonalPin.class, "playeruuid", player.getUniqueId());
             waypoints.addAll(pins);
         }catch(Exception ex){
             ex.printStackTrace();

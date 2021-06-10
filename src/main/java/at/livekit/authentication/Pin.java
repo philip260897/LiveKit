@@ -1,5 +1,7 @@
 package at.livekit.authentication;
 
+import java.util.UUID;
+
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.table.DatabaseTable;
 
@@ -9,7 +11,7 @@ import at.livekit.utils.Utils;
 public class Pin 
 {
     @DatabaseField(id = true)
-    private String uuid;
+    private UUID uuid;
     @DatabaseField
     private long timestamp;
     @DatabaseField(width = 32)
@@ -17,7 +19,7 @@ public class Pin
     
     private Pin(){}
 
-    public Pin(String uuid, String pin, long timestamp) {
+    public Pin(UUID uuid, String pin, long timestamp) {
         this.uuid = uuid;
         this.pin = pin;
         this.timestamp = timestamp;
@@ -27,7 +29,7 @@ public class Pin
         return System.currentTimeMillis() - timestamp < 2*1000*60;
     }
 
-    public String getUUID() {
+    public UUID getUUID() {
         return uuid;
     }
 
@@ -39,7 +41,7 @@ public class Pin
         return pin;
     }
 
-    public static Pin createNew(String uuid) {
+    public static Pin createNew(UUID uuid) {
         Pin pin = new Pin();
         pin.uuid = uuid;
         pin.timestamp = System.currentTimeMillis();

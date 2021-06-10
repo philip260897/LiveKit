@@ -16,13 +16,13 @@ public class AuthenticationHandler
         return Utils.executeAsyncForSyncResult(new Callable<Pin>(){
             @Override
             public Pin call() throws Exception {
-                List<Pin> existing = Plugin.getStorage().load(Pin.class, "uuid", player.getUniqueId().toString());
+                List<Pin> existing = Plugin.getStorage().load(Pin.class, "uuid", player.getUniqueId());
                 for(Pin pin : existing) {
-                    if(pin.getUUID().equals(player.getUniqueId().toString())) {
+                    if(pin.getUUID().equals(player.getUniqueId())) {
                         Plugin.getStorage().delete(pin);
                     }
                 }
-                Pin pin = Pin.createNew(player.getUniqueId().toString());
+                Pin pin = Pin.createNew(player.getUniqueId());
                 Plugin.getStorage().create(pin);
 
                 return pin;
@@ -35,7 +35,7 @@ public class AuthenticationHandler
         return Utils.executeAsyncForSyncResult(new Callable<List<Session>>(){
             @Override
             public List<Session> call() throws Exception {
-                List<Session> existing = Plugin.getStorage().load(Session.class, player.getUniqueId().toString());
+                List<Session> existing = Plugin.getStorage().load(Session.class, "uuid", player.getUniqueId());
                 return existing;
             }
 
@@ -46,7 +46,7 @@ public class AuthenticationHandler
         return Utils.executeAsyncForSyncResult(new Callable<Void>(){
             @Override
             public Void call() throws Exception {
-                List<Session> existing = Plugin.getStorage().load(Session.class, player.getUniqueId().toString());
+                List<Session> existing = Plugin.getStorage().load(Session.class, "uuid", player.getUniqueId());
                 for(Session session : existing) {
                     Plugin.getStorage().delete(session);
                 }

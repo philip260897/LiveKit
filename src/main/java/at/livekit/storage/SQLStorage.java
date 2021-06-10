@@ -3,6 +3,9 @@ package at.livekit.storage;
 import com.j256.ormlite.support.ConnectionSource;
 import com.j256.ormlite.table.TableUtils;
 
+import at.livekit.api.datapersistors.ColorPersistor;
+import at.livekit.api.map.POI;
+import at.livekit.api.map.PersonalPin;
 import at.livekit.authentication.Pin;
 import at.livekit.authentication.Session;
 import at.livekit.utils.HeadLibraryV2.HeadInfo;
@@ -36,6 +39,9 @@ public class SQLStorage implements IStorageAdapterGeneric
         registerStorageClass(Session.class);
         registerStorageClass(Pin.class);
         registerStorageClass(HeadInfo.class);
+        registerStorageClass(POI.class);
+        registerStorageClass(PersonalPin.class);
+
     }
 
     @Override
@@ -64,10 +70,10 @@ public class SQLStorage implements IStorageAdapterGeneric
         return dao.queryForFirst(where.prepare());
     }
 
-    @Override
+    /*@Override
     public <T> List<T> load(Class<T> clazz, String id) throws Exception {
         return load(clazz, "uuid", id);
-    }
+    }*/
 
     @Override
     public <T> List<T> load(Class<T> clazz, String key, Object value) throws Exception {

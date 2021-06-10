@@ -47,6 +47,7 @@ import at.livekit.provider.BasicPlayerInfoProvider;
 import at.livekit.provider.BasicPlayerPinProvider;
 import at.livekit.provider.POISpawnProvider;
 import at.livekit.storage.IStorageAdapterGeneric;
+import at.livekit.storage.JSONStorage;
 import at.livekit.storage.SQLStorage;
 import at.livekit.utils.ConsoleListener;
 import at.livekit.utils.FutureSyncCallback;
@@ -96,8 +97,9 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 
 		try{
 			try{
-				System.out.println("jdbc:sqlite:"+getDataFolder().getPath()+"/sample.db");
-				storage = new SQLStorage("jdbc:sqlite:"+getDataFolder().getPath()+"/sample.db");
+				
+				//storage = new SQLStorage("jdbc:sqlite:"+getDataFolder().getPath()+"/sample.db");
+				storage = new JSONStorage();
 			}catch(Exception exception){exception.printStackTrace();}	
 
 			//storage = new JSONStorage();
