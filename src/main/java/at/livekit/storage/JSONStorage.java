@@ -194,10 +194,6 @@ public class JSONStorage implements IStorageAdapterGeneric
         if(field == null) throw new Exception("Storage class "+clazz.getSimpleName()+" has no "+key+" field!");
         if(field.getType() != value.getClass()) throw new Exception("Key DataType and Value DataType don't match ("+clazz.getSimpleName()+", "+key+", "+value+", "+key.getClass().getSimpleName()+", "+value.getClass().getSimpleName()+")");
 
-        for(T t : cache) {
-            System.out.println(new Gson().toJson(t));
-        }
-
         synchronized(cache) {
             return cache.stream().filter(new Predicate<T>(){
                 @Override
