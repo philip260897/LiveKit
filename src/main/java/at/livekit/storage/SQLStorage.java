@@ -19,6 +19,8 @@ import java.util.Map.Entry;
 import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.dao.DaoManager;
 import com.j256.ormlite.jdbc.JdbcConnectionSource;
+import com.j256.ormlite.logger.Level;
+import com.j256.ormlite.logger.Logger;
 import com.j256.ormlite.stmt.Where;
 
 
@@ -28,6 +30,8 @@ public class SQLStorage extends StorageThreadMarshallAdapter
     private static Map<Class<?>, Dao<?, String>> _daos = new HashMap<Class<?>, Dao<?, String>>();  
 
     public SQLStorage(String connection) throws SQLException {
+        Logger.setGlobalLogLevel(Level.OFF);
+
         if(SQLStorage.connectionSource == null) {
             SQLStorage.connectionSource = new JdbcConnectionSource(connection);
         }
@@ -36,7 +40,7 @@ public class SQLStorage extends StorageThreadMarshallAdapter
     @Override
     public void initialize() throws Exception {
         if(_daos.size() != 0) return;
-
+        
         registerStorageClass(Session.class);
         registerStorageClass(Pin.class);
         registerStorageClass(HeadInfo.class);

@@ -10,6 +10,8 @@ import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
 import com.google.common.util.concurrent.Futures;
+import com.j256.ormlite.logger.Level;
+import com.j256.ormlite.logger.LocalLogBackend;
 
 import org.apache.logging.log4j.core.Appender;
 import org.apache.logging.log4j.core.LogEvent;
@@ -69,8 +71,10 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 
 	private static IStorageAdapterGeneric storage;
 
+
 	@Override
 	public void onEnable() {
+
 		instance = this;
 		logger = getLogger();
 
