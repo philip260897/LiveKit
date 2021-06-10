@@ -18,6 +18,7 @@ import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.table.DatabaseTable;
 
 import org.apache.commons.lang.NotImplementedException;
+import org.bukkit.Bukkit;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -28,7 +29,7 @@ import at.livekit.authentication.Session;
 import at.livekit.plugin.Plugin;
 import at.livekit.utils.HeadLibraryV2.HeadInfo;
 
-public class JSONStorage implements IStorageAdapterGeneric 
+public class JSONStorage extends StorageThreadMarshallAdapter
 {
     private File workingDir;
     private Map<Class<?>, List<?>> _cache = new HashMap<>();
@@ -134,10 +135,14 @@ public class JSONStorage implements IStorageAdapterGeneric
 
     @Override
     public <T> T loadSingle(Class<T> clazz, String id) throws Exception {
+        super.loadSingle(clazz, id);
+
         List<T> cache = getCache(clazz);
         Field field = getIDField(clazz);
         if(field == null) throw new Exception("Storage class "+clazz.getSimpleName()+" has no ID field!");
         if(field.getType() != id.getClass()) throw new Exception("Key DataType and Value DataType don't match ("+clazz.getSimpleName()+", "+field.getName()+", "+id+", "+field.getType().getSimpleName()+", "+id.getClass().getSimpleName()+")");
+
+       
 
         for(T t : cache) {
             Object idObj = field.get(t);
@@ -150,10 +155,14 @@ public class JSONStorage implements IStorageAdapterGeneric
 
     @Override
     public <T> T loadSingle(Class<T> clazz, String key, Object value) throws Exception {
+        super.loadSingle(clazz, key, value);
+
         List<T> cache = getCache(clazz);
         Field field = getField(clazz, key);
         if(field == null) throw new Exception("Storage class "+clazz.getSimpleName()+" has no "+key+" field!");
         if(field.getType() != value.getClass()) throw new Exception("Key DataType and Value DataType don't match ("+clazz.getSimpleName()+", "+key+", "+value+", "+key.getClass().getSimpleName()+", "+value.getClass().getSimpleName()+")");
+
+        
 
         synchronized(cache) {
             return cache.stream().filter(new Predicate<T>(){
@@ -189,6 +198,8 @@ public class JSONStorage implements IStorageAdapterGeneric
 
     @Override
     public <T> List<T> load(Class<T> clazz, String key, Object value) throws Exception {
+        super.load(clazz, key, value);
+
         List<T> cache = getCache(clazz);
         Field field = getField(clazz, key);
         if(field == null) throw new Exception("Storage class "+clazz.getSimpleName()+" has no "+key+" field!");
@@ -209,8 +220,9 @@ public class JSONStorage implements IStorageAdapterGeneric
 
     @Override
     public <T> List<T> loadAll(Class<T> clazz) throws Exception {
-        List<T> cache = getCache(clazz);
+        super.loadAll(clazz);
 
+        List<T> cache = getCache(clazz);
         synchronized(cache) {
             return cache.stream().filter(e->true).collect(Collectors.toList());
         }
@@ -218,8 +230,9 @@ public class JSONStorage implements IStorageAdapterGeneric
 
     @Override
     public <T> void create(T entry) throws Exception {
-        List<T> cache = getCache((Class<T>)entry.getClass());
+        super.create(entry);
 
+        List<T> cache = getCache((Class<T>)entry.getClass());
         synchronized(cache) {
             cache.add(entry);
         }
@@ -227,6 +240,7 @@ public class JSONStorage implements IStorageAdapterGeneric
 
     @Override
     public <T> void update(T entry) throws Exception {
+        super.update(entry);
         /*List<T> cache = getCache((Class<T>)entry.getClass());
 
         synchronized(cache) {
@@ -237,8 +251,9 @@ public class JSONStorage implements IStorageAdapterGeneric
 
     @Override
     public <T> void delete(T entry) throws Exception {
-        List<T> cache = getCache((Class<T>)entry.getClass());
+        super.delete(entry);
 
+        List<T> cache = getCache((Class<T>)entry.getClass());
         synchronized(cache) {
             cache.remove(entry);
         }
@@ -246,12 +261,14 @@ public class JSONStorage implements IStorageAdapterGeneric
 
     @Override
     public <T> void createOrUpdate(T entry) throws Exception {
-        List<T> cache = getCache((Class<T>)entry.getClass());
+        super.createOrUpdate(entry);
 
+        List<T> cache = getCache((Class<T>)entry.getClass());
         synchronized(cache) {
             if(!cache.contains(entry)) cache.add(entry);
             else update(entry);
         }
     }
     
+
 }

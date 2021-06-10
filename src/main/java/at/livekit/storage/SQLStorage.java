@@ -3,7 +3,6 @@ package at.livekit.storage;
 import com.j256.ormlite.support.ConnectionSource;
 import com.j256.ormlite.table.TableUtils;
 
-import at.livekit.api.datapersistors.ColorPersistor;
 import at.livekit.api.map.POI;
 import at.livekit.api.map.PersonalPin;
 import at.livekit.authentication.Pin;
@@ -21,7 +20,7 @@ import com.j256.ormlite.jdbc.JdbcConnectionSource;
 import com.j256.ormlite.stmt.Where;
 
 
-public class SQLStorage implements IStorageAdapterGeneric
+public class SQLStorage extends StorageThreadMarshallAdapter
 {
     private static ConnectionSource connectionSource;
     private static Map<Class<?>, Dao<?, String>> _daos = new HashMap<Class<?>, Dao<?, String>>();  
@@ -41,7 +40,6 @@ public class SQLStorage implements IStorageAdapterGeneric
         registerStorageClass(HeadInfo.class);
         registerStorageClass(POI.class);
         registerStorageClass(PersonalPin.class);
-
     }
 
     @Override
@@ -58,12 +56,16 @@ public class SQLStorage implements IStorageAdapterGeneric
 
     @Override
     public <T> T loadSingle(Class<T> clazz, String id) throws Exception {
+        super.loadSingle(clazz, id);
+
         Dao<T, String> dao = getDao(clazz);
         return dao.queryForId(id);
     }
 
     @Override
     public <T> T loadSingle(Class<T> clazz, String key, Object value) throws Exception {
+        super.loadSingle(clazz, key, value);
+
         Dao<T, String> dao = getDao(clazz);
         Where<T, String> where = dao.queryBuilder().where();
         where.eq(key, value);
@@ -77,36 +79,48 @@ public class SQLStorage implements IStorageAdapterGeneric
 
     @Override
     public <T> List<T> load(Class<T> clazz, String key, Object value) throws Exception {
+        super.load(clazz, key, value);
+
         Dao<T, String> dao = getDao(clazz);
         return dao.queryForEq(key, value);
     }
 
     @Override
     public <T> List<T> loadAll(Class<T> clazz) throws Exception {
+        super.loadAll(clazz);
+
         Dao<T, String> dao = getDao(clazz);
         return dao.queryForAll();
     }
 
     @Override
     public <T> void create(T entry) throws Exception {
+        super.create(entry);
+
         Dao<T, String> dao = getDao(entry.getClass());
         dao.create(entry);
     }
 
     @Override
     public <T> void update(T entry) throws Exception {
+        super.update(entry);
+
         Dao<T, String> dao = getDao(entry.getClass());
         dao.update(entry);
     }
 
     @Override
     public <T> void delete(T entry) throws Exception {
+        super.delete(entry);
+
         Dao<T, String> dao = getDao(entry.getClass());
         dao.delete(entry);
     }
 
     @Override
     public <T> void createOrUpdate(T entry) throws Exception {
+        super.createOrUpdate(entry);
+
         Dao<T, String> dao = getDao(entry.getClass());
         dao.createOrUpdate(entry);
     }
