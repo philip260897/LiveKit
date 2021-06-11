@@ -18,10 +18,11 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import at.livekit.api.map.POI;
-import at.livekit.api.map.Waypoint;
+import at.livekit.api.map.PersonalPin;
 import at.livekit.authentication.Pin;
 import at.livekit.authentication.Session;
 import at.livekit.plugin.Plugin;
+import at.livekit.storage.IStorageAdapterGeneric;
 import at.livekit.utils.Legacy;
 import at.livekit.utils.HeadLibraryV2.HeadInfo;
 
@@ -41,7 +42,7 @@ public class JSONStorage implements IStorageAdapter {
 
     private HashMap<String, HeadInfo> _cachedHeads = new HashMap<String, HeadInfo>();
     private List<POI> _cachedPOIS = new ArrayList<POI>();
-    private HashMap<String, List<Waypoint>> _cachedPlayerPins = new HashMap<>();
+    private HashMap<String, List<PersonalPin>> _cachedPlayerPins = new HashMap<>();
 
     public JSONStorage() throws IOException {
         
@@ -402,10 +403,10 @@ public class JSONStorage implements IStorageAdapter {
             for(int i = 0; i < root.length(); i++) {
                 JSONObject pentry = root.getJSONObject(i);
                 JSONArray wp = pentry.getJSONArray("pins");
-                List<Waypoint> waypoints=  new ArrayList<Waypoint>();
+                List<PersonalPin> waypoints=  new ArrayList<PersonalPin>();
                 for(int j = 0; j < wp.length(); j++) {
-                    //TODO: CONVERT WAYPOINTS
-                    //waypoints.add(Waypoint.fromJson(wp.getJSONObject(j)));
+                    
+                    waypoints.add(PersonalPin.fromJson(wp.getJSONObject(j), pentry.getString("playerId")));
                 }
                 _cachedPlayerPins.put(pentry.getString("playerId"), waypoints);
             }
@@ -417,13 +418,13 @@ public class JSONStorage implements IStorageAdapter {
 
         JSONArray array = new JSONArray();
         synchronized(_cachedPlayerPins) {
-            for(Entry<String, List<Waypoint>> entry : _cachedPlayerPins.entrySet()) {
+            for(Entry<String, List<PersonalPin>> entry : _cachedPlayerPins.entrySet()) {
                 JSONObject jentry = new JSONObject();
                 array.put(jentry);
                 jentry.put("playerId", entry.getKey());
                 JSONArray wparray = new JSONArray();
                 jentry.put("pins", wparray);
-                for(Waypoint wp : entry.getValue()) wparray.put(wp.toJson());
+                for(PersonalPin wp : entry.getValue()) wparray.put(wp.toJson());
             }
         }
 
@@ -434,19 +435,19 @@ public class JSONStorage implements IStorageAdapter {
     }
 
     @Override
-    public void savePlayerPin(OfflinePlayer player, Waypoint waypoint) throws Exception {
+    public void savePlayerPin(OfflinePlayer player, PersonalPin waypoint) throws Exception {
         if(JSONStorage.DEBUG_DELAY) Thread.sleep(JSONStorage.DEBUG_DELAY_MS);
 
         synchronized(_cachedPlayerPins) {
             if(!_cachedPlayerPins.containsKey(player.getUniqueId().toString())) {
-                _cachedPlayerPins.put(player.getUniqueId().toString(), new ArrayList<Waypoint>());
+                _cachedPlayerPins.put(player.getUniqueId().toString(), new ArrayList<PersonalPin>());
             }
             _cachedPlayerPins.get(player.getUniqueId().toString()).add(waypoint);
         }
     }
 
     @Override
-    public void deletePlayerPin(OfflinePlayer player, Waypoint waypoint) throws Exception {
+    public void deletePlayerPin(OfflinePlayer player, PersonalPin waypoint) throws Exception {
         if(JSONStorage.DEBUG_DELAY) Thread.sleep(JSONStorage.DEBUG_DELAY_MS);
 
         synchronized(_cachedPlayerPins) {
@@ -457,10 +458,10 @@ public class JSONStorage implements IStorageAdapter {
     }
 
     @Override
-    public List<Waypoint> loadPlayerPins(OfflinePlayer player) throws Exception {
+    public List<PersonalPin> loadPlayerPins(OfflinePlayer player) throws Exception {
         if(JSONStorage.DEBUG_DELAY) Thread.sleep(JSONStorage.DEBUG_DELAY_MS);
 
-        List<Waypoint> waypoints = new ArrayList<Waypoint>();
+        List<PersonalPin> waypoints = new ArrayList<PersonalPin>();
 
         synchronized(_cachedPlayerPins) {
             if(_cachedPlayerPins.containsKey(player.getUniqueId().toString())) {
@@ -471,25 +472,33 @@ public class JSONStorage implements IStorageAdapter {
         return waypoints;
     }
 
-    /*@Override
-    public void saveRegion(String world, RegionData region) throws Exception {
-        File file = new File(_folderMap, world+"/"+ region.getX()+"_"+region.getZ()+".region");
-        if(!file.exists()) file.createNewFile();
-
-        try (FileOutputStream fos = new FileOutputStream(file)) {
-            fos.write(region.data);
-        } catch(Exception ex){ex.printStackTrace();}
-    }
-
     @Override
-    public RegionData loadRegion(String world, int regionX, int regionZ) throws Exception{
-        File file = new File(_folderMap, world+"/"+ regionX +"_"+regionZ+".region");
-        if(file.exists()) {
-            byte[] data = Files.readAllBytes(file.toPath());
-            RegionData region = new RegionData(regionX, regionZ, data);
-            region.timestamp = Utils.decodeTimestamp(data);
-            return region;
+    public void migrateTo(IStorageAdapterGeneric adapter) throws Exception {
+        if(!adapter.isEmpty()) throw new Exception("Target Storage already has data! Can't convert!");
+
+        for(Entry<String, List<Session>> entry : _cachedSessions.entrySet()) {
+            for(Session session : entry.getValue()) {
+                adapter.create(session);
+            }
         }
-        return null;
-    }*/
+        for(Entry<String, List<PersonalPin>> entry : _cachedPlayerPins.entrySet()) {
+            for(PersonalPin personal : entry.getValue()) {
+                adapter.create(personal);
+            }
+        }
+        for(Entry<String, Pin> entry : _cachedPins.entrySet()) {
+            adapter.create(entry.getValue());
+        }
+        for(Entry<String, HeadInfo> entry : _cachedHeads.entrySet()) {
+            adapter.create(entry.getValue());
+        }
+        for(POI entry : _cachedPOIS) {
+            adapter.create(entry);
+        }
+
+        _filePOIs.delete();
+        _filePlayerHeads.delete();
+        _filePlayerPins.delete();
+        _fileSessions.delete();
+    }
 }

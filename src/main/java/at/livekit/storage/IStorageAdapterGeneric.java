@@ -26,5 +26,7 @@ public interface IStorageAdapterGeneric
 
     public <T> void createOrUpdate(T entry) throws Exception;
 
+    public boolean isEmpty();
+
     public void migrateTo(IStorageAdapterGeneric adapter) throws Exception;
 }

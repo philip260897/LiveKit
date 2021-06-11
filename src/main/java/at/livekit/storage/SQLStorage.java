@@ -148,4 +148,16 @@ public class SQLStorage extends StorageThreadMarshallAdapter
             }
         }
     }
+
+    @Override
+    public boolean isEmpty() {
+        try{
+            for(Dao<?,String> conn : _daos.values()) {
+                if(conn.countOf() != 0) {
+                    return false;
+                }
+            }
+        }catch(Exception ex){ex.printStackTrace(); return false; }
+        return true;
+    }
 }

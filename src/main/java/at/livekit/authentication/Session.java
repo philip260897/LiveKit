@@ -10,7 +10,7 @@ import at.livekit.utils.Utils;
 @DatabaseTable(tableName = "lk_sessions")
 public class Session {
 
-    @DatabaseField(id = true)
+    @DatabaseField(generatedId = true)
     private int id;
     @DatabaseField(index = true)
     private UUID uuid;

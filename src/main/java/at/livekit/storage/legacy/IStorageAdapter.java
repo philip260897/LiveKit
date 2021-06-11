@@ -4,9 +4,10 @@ import java.util.List;
 import org.bukkit.OfflinePlayer;
 
 import at.livekit.api.map.POI;
-import at.livekit.api.map.Waypoint;
+import at.livekit.api.map.PersonalPin;
 import at.livekit.authentication.Pin;
 import at.livekit.authentication.Session;
+import at.livekit.storage.IStorageAdapterGeneric;
 import at.livekit.utils.HeadLibraryV2.HeadInfo;
 
 public interface IStorageAdapter 
@@ -51,13 +52,13 @@ public interface IStorageAdapter
     public List<POI> loadPOIs() throws Exception;
 
 
-    public void savePlayerPin(OfflinePlayer player, Waypoint waypoints) throws Exception;
+    public void savePlayerPin(OfflinePlayer player, PersonalPin waypoints) throws Exception;
 
-    public void deletePlayerPin(OfflinePlayer player, Waypoint waypoint) throws Exception;
+    public void deletePlayerPin(OfflinePlayer player, PersonalPin waypoint) throws Exception;
 
-    public List<Waypoint> loadPlayerPins(OfflinePlayer player) throws Exception;
+    public List<PersonalPin> loadPlayerPins(OfflinePlayer player) throws Exception;
 
-
+    public void migrateTo(IStorageAdapterGeneric adapter) throws Exception;
    // public void saveRegion(String world, RegionData region) throws Exception;
 
     //public RegionData loadRegion(String world, int regionX, int regionZ) throws Exception;

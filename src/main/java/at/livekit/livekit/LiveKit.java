@@ -401,7 +401,7 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
         }catch(Exception ex){ex.printStackTrace();}
 
         try{
-            executor.shutdownNow();
+            if(executor != null) executor.shutdownNow();
         }catch(Exception ex){ex.printStackTrace();}
 
         LiveKit.instance = null;

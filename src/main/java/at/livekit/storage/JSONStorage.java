@@ -279,4 +279,14 @@ public class JSONStorage extends StorageThreadMarshallAdapter
             }
         }
     }
+
+    @Override
+    public boolean isEmpty() {
+        for(List<?> list : _cache.values()) {
+            if(list.size() != 0) {
+                return false;
+            }
+        }
+        return true;
+    }
 }

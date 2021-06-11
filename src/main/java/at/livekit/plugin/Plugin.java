@@ -47,6 +47,7 @@ import at.livekit.utils.ConsoleListener;
 import at.livekit.utils.FutureSyncCallback;
 import at.livekit.utils.HeadLibraryEvent;
 import at.livekit.utils.HeadLibraryV2;
+import at.livekit.utils.Legacy;
 import at.livekit.utils.Metrics;
 import at.livekit.utils.Utils;
 import at.livekit.utils.VaultEconomyAdapter;
@@ -101,6 +102,14 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 				default: throw new Exception(storageType+" Not recognized! Try JSON, SQLITE, MYSQL or POSTGRESQL");
 			}
 			storage.initialize();
+
+			if(Legacy.hasLegacyStorage()) {
+				StorageThreadMarshallAdapter.DISABLE = true;
+				Plugin.log("Legacy Storage detected, converting!");
+				Legacy.convertLegacyStorage();
+				StorageThreadMarshallAdapter.DISABLE = false;
+			}
+
 		} catch(Exception exception) {
 			exception.printStackTrace();
 			logger.severe("Error initializing Storage, shutting down");
