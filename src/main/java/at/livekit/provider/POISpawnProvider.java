@@ -55,7 +55,7 @@ public class POISpawnProvider extends POIInfoProvider implements Listener {
 
     private POI spawnPoint(World world) {
         for(POI wp : _spawnPoints) {
-            if(wp.getLocation().getUUID().equals(world.getUID())) {
+            if(wp.getLocation().getWorld().equals(world.getName())) {
                 return wp;
             }
         }
@@ -75,7 +75,7 @@ public class POISpawnProvider extends POIInfoProvider implements Listener {
             entries.add(new InfoEntry("Spawns", "96"));
             entries.add(new InfoEntry("Status", ChatColor.GREEN+"Available"));
         }*/
-        World world = Bukkit.getWorld(poi.getLocation().getUUID());
+        World world = Bukkit.getWorld(poi.getLocation().getWorld());
         if(world != null) {
             entries.add(new InfoEntry("World", world.getName()));
         }

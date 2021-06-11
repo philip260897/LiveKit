@@ -11,6 +11,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
+import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -209,6 +210,8 @@ public class POIModule extends BaseModule {
         Player online = player.getPlayer();
         Location location = waypoint.getLocation().toLocation();
         if(location == null) return new StatusPacket(0, "Location does not exist");
+
+        location = location.getWorld().getHighestBlockAt(location.getBlockX(), location.getBlockZ()).getRelative(BlockFace.UP,1).getLocation();
 
         online.teleport(location);
 
