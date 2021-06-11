@@ -1,17 +1,34 @@
 package at.livekit.authentication;
 
+import java.util.UUID;
+
+import com.j256.ormlite.field.DatabaseField;
+import com.j256.ormlite.table.DatabaseTable;
+
 import at.livekit.utils.Utils;
 
+@DatabaseTable(tableName = "lk_sessions")
 public class Session {
+
+    @DatabaseField(id = true)
+    private int id;
+    @DatabaseField(index = true)
+    private UUID uuid;
+    @DatabaseField
     private long timestamp;
+    @DatabaseField
     private long last;
+    @DatabaseField
     private String sessionKey;
+    @DatabaseField
     private String ip;
+    @DatabaseField
     private String data;
 
     private Session(){}
 
-    public Session(long timestamp, long last, String sessionKey, String ip, String data) {
+    public Session(UUID uuid, long timestamp, long last, String sessionKey, String ip, String data) {
+        this.uuid = uuid;
         this.timestamp = timestamp;
         this.sessionKey = sessionKey;
         this.ip = ip;
@@ -39,8 +56,9 @@ public class Session {
         return last;
     }
 
-    public static Session createNew(String ip, String data) {
+    public static Session createNew(UUID uuid, String ip, String data) {
         Session session = new Session();
+        session.uuid = uuid;
         session.sessionKey = Utils.generateRandom(128);
         session.timestamp = System.currentTimeMillis();
         session.ip = ip;

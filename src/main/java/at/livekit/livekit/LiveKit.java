@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.Map.Entry;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -678,20 +679,17 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
                 //identity = PlayerAuth.validateClaim(pin);
 
                 try{
-                    List<Pin> pins = Plugin.getStorage().loadPins();
-                    for(Pin p : pins) {
-                        if(p.getPin().equals(pin) && p.isValid()) {
-                            identity = p.getUUID();
-
-                            Plugin.getStorage().deletePin(p.getUUID(), p);
-                        }
+                    Pin p = Plugin.getStorage().loadSingle(Pin.class, "pin", pin);
+                    if(p != null) {
+                        identity = p.getUUID().toString();
+                        Plugin.getStorage().delete(p);
                     }
 
                     if(identity != null) {
-                        List<Session> sessions = Plugin.getStorage().loadSessions(identity);
+                        List<Session> sessions = Plugin.getStorage().load(Session.class, "uuid", UUID.fromString(identity));
                         while(sessions.size() >= 5) {
                             Session session = sessions.remove(0);
-                            Plugin.getStorage().deleteSession(identity, session);
+                            Plugin.getStorage().delete(session);
                         }
                     }
                 }catch(Exception ex){ex.printStackTrace();}
@@ -703,11 +701,11 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
                 boolean success = false;
 
                 try{
-                    List<Session> sessions = Plugin.getStorage().loadSessions(identity);
+                    List<Session> sessions = Plugin.getStorage().load(Session.class, "uuid", UUID.fromString(identity));
                     for(Session session : sessions) {
                         
                         if(session.getAuthentication().equals(authorization)) {
-                            Plugin.getStorage().deleteSession(identity, session);
+                            Plugin.getStorage().delete(session);
                             success = true;
                         }
                     }
@@ -739,9 +737,9 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
                     _server.send(client.getIdentifier(), _modules.onJoinAsync(client.getIdentifier()));
                 }catch(Exception ex){ex.printStackTrace();}
 
-                Session session = Session.createNew(null, null);
+                Session session = Session.createNew(UUID.fromString(identity), null, null);
                 try{
-                    Plugin.getStorage().createSession(identity, session);
+                    Plugin.getStorage().create(session);
                 }catch(Exception ex){ex.printStackTrace();}
             
                 return new IdentityPacket(identity, client.getIdentifier().getName(), HeadLibraryV2.get(client.getIdentifier().getName(), true), session.getAuthentication());

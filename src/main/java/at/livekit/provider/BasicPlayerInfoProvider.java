@@ -3,6 +3,7 @@ package at.livekit.provider;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
@@ -18,6 +19,7 @@ import org.bukkit.event.player.PlayerExpChangeEvent;
 import at.livekit.api.core.LKLocation;
 import at.livekit.api.core.Privacy;
 import at.livekit.api.map.InfoEntry;
+import at.livekit.api.map.PersonalPin;
 import at.livekit.api.map.PlayerInfoProvider;
 import at.livekit.api.map.Waypoint;
 import at.livekit.livekit.Economy;
@@ -54,10 +56,10 @@ public class BasicPlayerInfoProvider extends PlayerInfoProvider implements Liste
     }
 
     @Override
-    public void onResolvePlayerLocation(OfflinePlayer player, List<Waypoint> waypoints) {
+    public void onResolvePlayerLocation(OfflinePlayer player, List<PersonalPin> waypoints) {
         Location location = player.getBedSpawnLocation();
         if(location != null) {
-            Waypoint waypoint = new Waypoint(LKLocation.fromLocation(location), "Bed Spawn", "Bed Spawn Location of "+player.getName(), BasicPlayerPinProvider.PLAYER_PIN_COLOR, Config.canTeleportBed(), Privacy.PRIVATE);
+            PersonalPin waypoint = PersonalPin.create(player, LKLocation.fromLocation(location), "Bed Spawn", "Bed Spawn Location of "+player.getName(), BasicPlayerPinProvider.PLAYER_PIN_COLOR, Config.canTeleportBed(), Privacy.PRIVATE);
             waypoints.add(waypoint);
         }
     }

@@ -1,4 +1,4 @@
-package at.livekit.storage;
+package at.livekit.storage.legacy;
 
 import java.util.List;
 import org.bukkit.OfflinePlayer;
@@ -7,7 +7,6 @@ import at.livekit.api.map.POI;
 import at.livekit.api.map.Waypoint;
 import at.livekit.authentication.Pin;
 import at.livekit.authentication.Session;
-import at.livekit.modules.LiveMapModule.RegionData;
 import at.livekit.utils.HeadLibraryV2.HeadInfo;
 
 public interface IStorageAdapter 
@@ -29,8 +28,9 @@ public interface IStorageAdapter
 
     public void createPin(String uuid, Pin pin) throws Exception;
 
-    public List<Pin> loadPins() throws Exception;
+    public Pin loadPin(String pin) throws Exception;
 
+    public List<Pin> loadPinsForPlayer(String uuid) throws Exception;
     
     public void savePlayerHead(String uuid, HeadInfo info) throws Exception;
 

@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.bukkit.Bukkit;
-import org.bukkit.World;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
@@ -66,7 +65,7 @@ public class Config
     }
 
     public static String getPassword() {
-        return config.getString("server.password");
+        return getNullableString("server.password");
     }
 
     public static String getConsolePassword() {
@@ -83,6 +82,29 @@ public class Config
 
     public static boolean canTeleportSpawn() {
         return config.getBoolean("modules.POIModule.teleport_spawn");
+    }
+
+    public static String getStorageType() {
+        return config.getString("storage.type");
+    }
+
+    public static String getStorageUser() {
+        return getNullableString("storage.user");
+    }
+
+    public static String getStoragePassword() {
+        return getNullableString("storage.password");
+    }
+
+    public static String getStorageHost() {
+        return getNullableString("storage.host");
+    }
+
+    public static String getNullableString(String path) {
+        String string = config.getString(path);
+        if(string == null) return null;
+        if(string.equalsIgnoreCase("null")) return null;
+        return string;
     }
     
     /*public static String getModuleString(String name, String setting) {
@@ -172,6 +194,20 @@ public class Config
         if(config.get("modules.InventoryModule") == null) {
             Plugin.log("Patching config with new Inventory module...");
             config.set("modules.InventoryModule.enabled", true);
+
+            save = true;
+        }
+
+        if(config.get("storage.type") == null) {
+            Plugin.log("Patching storage config...");
+            config.set("storage.type", "JSON");
+            config.set("storage.host", "NULL");
+            config.set("storage.user", "NULL");
+            config.set("storage.password", "NULL");
+
+            if(getPassword() == null) {
+                config.set("server.password", "NULL");
+            }
 
             save = true;
         }

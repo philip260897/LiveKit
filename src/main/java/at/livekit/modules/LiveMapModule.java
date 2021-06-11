@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
@@ -53,6 +54,7 @@ public class LiveMapModule extends BaseModule implements Listener
 
 
     private String world;
+    private UUID worldUUID;
     private RenderWorld renderWorld = null;
     private List<IPacket> _updates = new ArrayList<IPacket>();
 
@@ -157,7 +159,8 @@ public class LiveMapModule extends BaseModule implements Listener
             waitingForWorld = true;
             return;
         }
-        
+        worldUUID = w.getUID();
+
         RenderScheduler.setTotalWorkers(RenderScheduler.getTotalWorkers()+1);
 
         renderWorld = new RenderWorld(world, w.getUID().toString());
