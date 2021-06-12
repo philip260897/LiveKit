@@ -17,6 +17,7 @@ import at.livekit.packets.StatusPacket;
 
 public class EconomyModule extends BaseModule implements Listener {
 
+    private String currency = "$";
 
     public EconomyModule(ModuleListener listener) {
         super(1, "Economy", "livekit.module.economy", UpdateRate.NEVER, listener);
@@ -26,12 +27,26 @@ public class EconomyModule extends BaseModule implements Listener {
     public void onEnable(Map<String,ActionMethod> signature) {
         if(!Economy.getInstance().isAvailable()) return;
 
+        try{
+            currency = Economy.getInstance().getCurrencyString();
+        } catch(Exception ex){
+            ex.printStackTrace();
+        }
+
         super.onEnable(signature);
     }
 
     @Override
     public void onDisable(Map<String,ActionMethod> signature) {
         super.onDisable(signature);
+    }
+
+    @Override
+    public IPacket onJoinAsync(Identity identity) {
+        JSONObject data = new JSONObject();
+        data.put("currency", currency);
+
+        return new ModuleUpdatePacket(this, data, true);
     }
 
     @Action(name = "GetBalance")
@@ -43,6 +58,22 @@ public class EconomyModule extends BaseModule implements Listener {
 
                 JSONObject json = new JSONObject();
                 json.put("balance", economy.getBalance(player));
+                return new StatusPacket(1, json);
+            }
+        }catch(Exception ex){ex.printStackTrace();}
+
+        return new StatusPacket(0);
+    }
+
+    @Action(name = "GetBalanceFormatted")
+    protected IPacket actionGetBalanceFormatted(Identity identity, ActionPacket packet) {
+        try{
+            Economy economy = Economy.getInstance();
+            if(economy.isAvailable()) {
+                OfflinePlayer player = Bukkit.getOfflinePlayer(UUID.fromString(identity.getUuid()));
+
+                JSONObject json = new JSONObject();
+                json.put("balance", economy.getBalanceFormatted(player));
                 return new StatusPacket(1, json);
             }
         }catch(Exception ex){ex.printStackTrace();}
