@@ -115,12 +115,6 @@
         <artifactId>ormlite-jdbc</artifactId>
         <version>5.5</version>
     </dependency>
-    <!-- https://mvnrepository.com/artifact/org.xerial/sqlite-jdbc -->
-    <dependency>
-        <groupId>org.xerial</groupId>
-        <artifactId>sqlite-jdbc</artifactId>
-        <version>3.34.0</version>
-    </dependency>
     <dependency>
         <groupId>at.livekit</groupId>
         <artifactId>LiveKitAPI</artifactId>

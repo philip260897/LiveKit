@@ -46,7 +46,6 @@ public class Texturepack {
 
             if(intKey.intValue() >= nextId) nextId = intKey.intValue()+1;
         }
-        _textures.put("GRASS_PATH", 372);
 
         int additionalTextures = 0;
         for(Material mat : Material.values()) {
@@ -70,6 +69,7 @@ public class Texturepack {
             for(Material mat : Material.values()) {
                 root.put(texturepack.getTexture(mat)+":"+mat.toString(), "#00000000");
             }
+            root.put("372:GRASS_PATH", "#00000000");
             File file = new File( System.getProperty("user.dir") + "/plugins/LiveKit/textures.json" );
             if(!file.exists()) file.createNewFile();
 

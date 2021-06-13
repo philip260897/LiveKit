@@ -9,3 +9,7 @@ commands:
   livekit:
     description: LiveKit commands
     usage: /livekit
+libraries:
+    - org.xerial:sqlite-jdbc:jar:3.34.0
+    - mysql:mysql-connector-java:jar:8.0.25
+    - org.postgresql:postgresql:jar:42.2.21
