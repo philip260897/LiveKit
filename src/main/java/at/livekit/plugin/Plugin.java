@@ -1,19 +1,25 @@
 package at.livekit.plugin;
 
+import java.io.File;
+import java.io.PrintWriter;
 import java.util.List;
 import java.util.logging.Logger;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.server.ServerLoadEvent;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import at.livekit.api.core.ILiveKit;
 import at.livekit.api.core.ILiveKitPlugin;
@@ -245,7 +251,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 
 					handled = true;
 				}*/
-				/*if(args[0].equalsIgnoreCase("tp")) {
+				if(args[0].equalsIgnoreCase("tp")) {
 					JSONObject object = new JSONObject();
 					
 					for(int i = 0; i < Material.values().length; i++) {
@@ -275,7 +281,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 						writer.flush();
 						writer.close();
 					}catch(Exception ex){ex.printStackTrace();}
-				}*/
+				}
 				/*if(args[0].equalsIgnoreCase("loptions")) {
 					LiveMapModule module = ((LiveMapModule) LiveKit.getInstance().getModuleManager().getModule("LiveMapModule"));
 					RenderingOptions options = module.getOptions();

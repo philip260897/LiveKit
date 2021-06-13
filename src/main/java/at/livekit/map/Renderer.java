@@ -1,5 +1,6 @@
 package at.livekit.map;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.HashMap;
 
@@ -13,24 +14,29 @@ import org.bukkit.block.BlockFace;
 import at.livekit.map.RenderWorld.RenderTask;
 import at.livekit.packets.BlockPacket;
 import at.livekit.packets.ChunkPacket;
+import at.livekit.plugin.Texturepack;
 
 public class Renderer 
 {
-    private static HashMap<String, Integer> _idMap = null;
+    //private static HashMap<String, Integer> _idMap = null;
+    private static Texturepack _texturepack;
 
-    private static void initialize() {
-        if(_idMap == null) {
+    private static void initialize(ClassLoader loader) throws Exception {
+        /*if(_idMap == null) {
             _idMap = new HashMap<String, Integer>(Material.values().length);
             for (int i = 0; i < Material.values().length; i++) {
                 _idMap.put(Material.values()[i].toString(), i);
             }
+        }*/
+        if(_texturepack == null) {
+            _texturepack = new Texturepack();
         }
     }
 
     private static byte[] DEFAULT_BLOCK = new byte[]{(byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff};
     public static boolean render(String world, RenderTask task, long cpuTime, long frameStart, RenderBounds bounds) throws Exception {
         long start = System.currentTimeMillis();
-        initialize();
+        initialize(task.getClass().getClassLoader());
 
         if (task != null) {
             if(task.region == null || task.region.isDead()) throw new Exception("RenderTask region is dead!");
@@ -205,7 +211,7 @@ public class Renderer
         }
 
         byte[] data = new byte[4];
-        int dataId = getMaterialId(block.getType());
+        int dataId = _texturepack.getTexture(block.getType());
         data[1] = (byte) dataId;
         data[0] = (byte) (dataId >> 8);
 
@@ -233,7 +239,7 @@ public class Renderer
         return 0;
     }*/
 
-    private static int getMaterialId(Material material) {
+    /*private static int getMaterialId(Material material) {
         //long start = System.nanoTime();
         
         Integer id = _idMap.get(material.toString());
@@ -241,5 +247,5 @@ public class Renderer
         //System.out.println((System.nanoTime() - start)/1000+"us");
         
         return id != null ? id.intValue() : 0;
-    }
+    }*/
 }
