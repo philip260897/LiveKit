@@ -6,8 +6,8 @@
   <name>LiveKit</name>
   
   <properties>
-  <maven.compiler.source>1.8</maven.compiler.source>
-  <maven.compiler.target>1.8</maven.compiler.target>
+  <maven.compiler.source>16</maven.compiler.source>
+  <maven.compiler.target>16</maven.compiler.target>
 </properties>
 
 <build>
@@ -77,8 +77,8 @@
 			<artifactId>maven-compiler-plugin</artifactId>
 			<version>2.3.2</version>
 			<configuration>
-			<source>1.16</source>
-			<target>1.16</target>
+			<source>16</source>
+			<target>16</target>
 			</configuration>
 		</plugin>
 	</plugins>
