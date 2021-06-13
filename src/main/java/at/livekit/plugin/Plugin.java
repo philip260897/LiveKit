@@ -77,14 +77,14 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 		instance = this;
 		logger = getLogger();
 
-	
-
 		//create config folder if doesn't exist
 		if(!getDataFolder().exists()) {
 			getDataFolder().mkdirs();
 		}
 
-
+		try{
+			Texturepack.getInstance();
+		}catch(Exception ex){ex.printStackTrace();}
 
 		name = this.getDescription().getName();
 		prefix = color+"["+ChatColor.WHITE+name+color+"] "+ChatColor.WHITE;
@@ -252,7 +252,8 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 					handled = true;
 				}*/
 				if(args[0].equalsIgnoreCase("tp")) {
-					JSONObject object = new JSONObject();
+					Texturepack.generateTexturePack();
+					/*JSONObject object = new JSONObject();
 					
 					for(int i = 0; i < Material.values().length; i++) {
 						object.put(i+":"+Material.values()[i].name(), "#00000000");
@@ -265,7 +266,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 						writer.write(object.toString());
 						writer.flush();
 						writer.close();
-					}catch(Exception ex){ex.printStackTrace();}
+					}catch(Exception ex){ex.printStackTrace();}*/
 
 					JSONArray array = new JSONArray();
 					for(int i = 0; i < EntityType.values().length; i++) {
