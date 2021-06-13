@@ -46,6 +46,7 @@ public class Texturepack {
 
             if(intKey.intValue() >= nextId) nextId = intKey.intValue()+1;
         }
+        _textures.put("GRASS_PATH", 372);
 
         int additionalTextures = 0;
         for(Material mat : Material.values()) {
