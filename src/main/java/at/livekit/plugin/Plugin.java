@@ -60,6 +60,8 @@ import at.livekit.utils.VaultEconomyAdapter;
 
 public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugin, Listener {
 
+	private static boolean DEBUG = true;
+
 	private static Logger logger;
 	private static Plugin instance;
 
@@ -106,7 +108,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 				case "json": storage = new JSONStorage(); break;
 				case "sqlite": storage = new SQLStorage("jdbc:sqlite:"+getDataFolder().getPath()+"/storage.db"); break;
 				case "mysql": storage = new SQLStorage("jdbc:mysql://"+Config.getStorageHost(), Config.getStorageUser(), Config.getStoragePassword()); break;
-				case "postgresql": storage = new SQLStorage("jdbc:mysql://"+Config.getStorageHost(), Config.getStorageUser(), Config.getStoragePassword()); break;
+				case "postgresql": storage = new SQLStorage("jdbc:postgresql://"+Config.getStorageHost(), Config.getStorageUser(), Config.getStoragePassword()); break;
 				default: throw new Exception(storageType+" Not recognized! Try JSON, SQLITE, MYSQL or POSTGRESQL");
 			}
 			storage.initialize();
@@ -1120,7 +1122,11 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 	}
 
 	public static void debug(String message) {
-		//logger.warning(message);
+		if(DEBUG) logger.warning(message);
+	}
+
+	public static boolean isDebug() {
+		return DEBUG;
 	}
 
 	@Override

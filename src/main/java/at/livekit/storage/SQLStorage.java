@@ -10,6 +10,7 @@ import at.livekit.authentication.Session;
 import at.livekit.plugin.Plugin;
 import at.livekit.utils.HeadLibraryV2.HeadInfo;
 
+import java.lang.reflect.Field;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
@@ -18,7 +19,9 @@ import java.util.Map.Entry;
 
 import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.dao.DaoManager;
+import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.jdbc.JdbcConnectionSource;
+import com.j256.ormlite.jdbc.db.PostgresDatabaseType;
 import com.j256.ormlite.logger.Level;
 import com.j256.ormlite.logger.Logger;
 import com.j256.ormlite.stmt.Where;
@@ -34,11 +37,13 @@ public class SQLStorage extends StorageThreadMarshallAdapter
     }
 
     public SQLStorage(String connection, String username, String password) throws SQLException {
-        Logger.setGlobalLogLevel(Level.OFF);
-
+        //Logger.setGlobalLogLevel(Level.OFF);
+        
         if(SQLStorage.connectionSource == null) {
             SQLStorage.connectionSource = new JdbcConnectionSource(connection, username, password);
         }
+
+    
     }
 
     @Override
@@ -57,11 +62,26 @@ public class SQLStorage extends StorageThreadMarshallAdapter
         try{
             SQLStorage.connectionSource.close();
         }catch(Exception ex){ex.printStackTrace();}
+
+        _daos.clear();
     }
 
-    private <T> void registerStorageClass(Class<T> clazz) throws SQLException {
+    private <T> void registerStorageClass(Class<T> clazz) throws Exception {
         _daos.put(clazz, (Dao<T, String>) DaoManager.createDao(connectionSource, clazz));
-        TableUtils.createTableIfNotExists(connectionSource, clazz);
+
+        if(!getDao(clazz).isTableExists()) {
+            TableUtils.createTable(connectionSource, clazz);
+        }
+        
+        if(Plugin.isDebug()) {
+            for(Field f : clazz.getDeclaredFields()) {
+                if(f.getAnnotation(DatabaseField.class) != null) {
+                    if(!f.getName().toLowerCase().equals(f.getName())) {
+                        throw new Exception("Invalid field naming! "+(clazz.getSimpleName()+":"+f.getName()+". Only lowercase allowed!"));
+                    }
+                }
+            }
+        }
     }
 
     @Override

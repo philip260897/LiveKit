@@ -59,7 +59,9 @@ public class Texturepack {
     }
 
     public int getTexture(Material material) {
-        return _textures.containsKey(material.toString()) ? _textures.get(material.toString()) : 0;
+        Integer id = _textures.get(material.toString());
+        if(id == null) return 0;
+        return id.intValue();
     }
 
     protected static void generateTexturePack() {

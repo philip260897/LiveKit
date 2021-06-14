@@ -6,6 +6,7 @@ import java.util.HashMap;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
+import org.bukkit.HeightMap;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -29,7 +30,7 @@ public class Renderer
             }
         }*/
         if(_texturepack == null) {
-            _texturepack = new Texturepack();
+            _texturepack = Texturepack.getInstance();
         }
     }
 
@@ -86,18 +87,23 @@ public class Renderer
                 for (int z = task.renderingZ; z < 16; z++) {
                     for (int x = task.renderingX; x < 16; x++) {
                         long bstart = System.nanoTime();
+                        long getblock = 0;
 
                         Block block = null;
                         blockX = c.getX() * 16 + x;
                         blockZ = c.getZ() * 16 + z;
                         //get block data only if in bounds
                         if(bounds.blockInBounds(blockX, blockZ)) { 
+                            //block = c.getWorld().getHighestBlockAt(blockX, blockZ);
+                            //block = getHighestBlockAt(c, x, z);
                             block = c.getWorld().getHighestBlockAt(blockX, blockZ);
-                            //block = c.getWorld().getBlockAt(blockX, 127, blockZ);
                             block = getBlockForRendering(block);
-                        }
 
-                        long getblock = System.nanoTime();
+                            
+                        }
+                        getblock = System.nanoTime();
+
+                        
                         
                         int localX = blockX % 512;
                         if (localX < 0)
@@ -117,18 +123,21 @@ public class Renderer
 
                         long write = System.nanoTime();
 
+                        System.out.println(((System.nanoTime()-bstart)/1000)+"us write: "+((write - render)/1000)+"us render: "+((render - getblock)/1000)+" block: "+((getblock - bstart)/1000)+" block update "+block.getType()+" y: "+block.getY());
+                         
+
                         if(System.currentTimeMillis() - frameStart > cpuTime) {
                             task.renderingZ = z;
                             task.renderingX = x+1;
 
                             if(! (z == 15 && x == 15)) { 
                                 long end = System.currentTimeMillis();
-                                //System.out.println("Abort rendering: "+(end - chunk)+"ms chunk: "+(chunk - setup)+"ms setup: "+(setup - start)+"ms total: "+(end - start)+"ms");
+                                System.out.println("Abort rendering: "+(end - chunk)+"ms chunk: "+(chunk - setup)+"ms setup: "+(setup - start)+"ms total: "+(end - start)+"ms");
                                 return false;
                             }
                         }
-
-                       // System.out.println(((System.nanoTime()-bstart)/1000)+"us write: "+((write - render)/1000)+"us render: "+((render - getblock)/1000)+" block: "+((getblock - bstart)/1000)+" block update "+block.getType()+" y: "+block.getY());
+                               
+                        
                     }
                     task.renderingX = 0;
                 }
@@ -160,7 +169,7 @@ public class Renderer
             else task.result = new BlockPacket(task.getChunkOrBlock().x, task.getChunkOrBlock().z, task.buffer, timestamp);
 
             long end = System.currentTimeMillis();
-            //System.out.println("DONE cleanup: "+(end-rdone)+"ms rendering: "+(rdone - chunk)+"ms chunk: "+(chunk - setup)+"ms setup: "+(setup - start)+"ms total: "+(end - start)+"ms");
+            System.out.println("DONE cleanup: "+(end-rdone)+"ms rendering: "+(rdone - chunk)+"ms chunk: "+(chunk - setup)+"ms setup: "+(setup - start)+"ms total: "+(end - start)+"ms");
 
             return true;
         } else {
@@ -181,6 +190,30 @@ public class Renderer
             block = block.getRelative(BlockFace.DOWN);
         }
         return block;
+    }
+
+    private static Block getHighestBlockAt(Chunk c, int x, int z) {
+        long start = System.currentTimeMillis();
+
+        //World world = c.getWorld();
+
+        long w = System.currentTimeMillis();
+
+        Block b = c.getBlock(x, 255, z);
+
+        long bbs = System.currentTimeMillis();
+        
+        do {
+            if(b.getType() != Material.AIR) {
+                System.out.println( (System.currentTimeMillis() - start) + "ms (" + b.getX()%16 + "," + b.getY() + "," + b.getZ()%16+") "+((System.currentTimeMillis()-start)/(255-b.getY()))+"ms/b");
+                return b;
+            }
+            b = b.getRelative(BlockFace.DOWN);
+        }while(b.getY() > 0);
+
+        
+
+        return b;
     }
 
     private static byte[] getBlockData(Block block) {

@@ -14,7 +14,7 @@ public class Pin
     private UUID uuid;
     @DatabaseField
     private long timestamp;
-    @DatabaseField(width = 32)
+    @DatabaseField(width = 32, index = true)
     private String pin;
     
     private Pin(){}

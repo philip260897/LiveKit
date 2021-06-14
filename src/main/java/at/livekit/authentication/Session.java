@@ -15,41 +15,27 @@ public class Session {
     @DatabaseField(index = true)
     private UUID uuid;
     @DatabaseField
+    private String sessionkey;
+    @DatabaseField
     private long timestamp;
     @DatabaseField
     private long last;
-    @DatabaseField
-    private String sessionKey;
-    @DatabaseField
-    private String ip;
-    @DatabaseField
-    private String data;
 
     private Session(){}
 
     public Session(UUID uuid, long timestamp, long last, String sessionKey, String ip, String data) {
         this.uuid = uuid;
         this.timestamp = timestamp;
-        this.sessionKey = sessionKey;
-        this.ip = ip;
-        this.data = data;
+        this.sessionkey = sessionKey;
         this.last = last;
     }
 
     public String getAuthentication() {
-        return sessionKey;
+        return sessionkey;
     }
 
     public long getTimestamp() {
         return timestamp;
-    }
-
-    public String getIP() {
-        return ip;
-    }
-
-    public String getData() {
-        return data;
     }
 
     public Long getLast() {
@@ -59,10 +45,8 @@ public class Session {
     public static Session createNew(UUID uuid, String ip, String data) {
         Session session = new Session();
         session.uuid = uuid;
-        session.sessionKey = Utils.generateRandom(128);
+        session.sessionkey = Utils.generateRandom(128);
         session.timestamp = System.currentTimeMillis();
-        session.ip = ip;
-        session.data = data;
         return session;
     }
 }
