@@ -94,14 +94,15 @@ public class Renderer
                         blockZ = c.getZ() * 16 + z;
                         //get block data only if in bounds
                         if(bounds.blockInBounds(blockX, blockZ)) { 
-                            //block = c.getWorld().getHighestBlockAt(blockX, blockZ);
+                            bstart = System.nanoTime();
+                            block = c.getWorld().getHighestBlockAt(blockX, blockZ);
                             //block = getHighestBlockAt(c, x, z);
                             block = c.getWorld().getHighestBlockAt(blockX, blockZ);
-                            block = getBlockForRendering(block);
+                            //block = getBlockForRendering(block);
 
-                            
+                            getblock = System.nanoTime();
                         }
-                        getblock = System.nanoTime();
+                        
 
                         
                         
@@ -123,7 +124,7 @@ public class Renderer
 
                         long write = System.nanoTime();
 
-                        System.out.println(((System.nanoTime()-bstart)/1000)+"us write: "+((write - render)/1000)+"us render: "+((render - getblock)/1000)+" block: "+((getblock - bstart)/1000)+" block update "+block.getType()+" y: "+block.getY());
+                        //System.out.println(((System.nanoTime()-bstart)/1000)+"us write: "+((write - render)/1000)+"us render: "+((render - getblock)/1000)+" block: "+((getblock - bstart)/1000)+" block update "+block.getType()+" y: "+block.getY()+" "+Thread.currentThread().getName());
                          
 
                         if(System.currentTimeMillis() - frameStart > cpuTime) {
@@ -132,7 +133,7 @@ public class Renderer
 
                             if(! (z == 15 && x == 15)) { 
                                 long end = System.currentTimeMillis();
-                                System.out.println("Abort rendering: "+(end - chunk)+"ms chunk: "+(chunk - setup)+"ms setup: "+(setup - start)+"ms total: "+(end - start)+"ms");
+                                //System.out.println("Abort rendering: "+(end - chunk)+"ms chunk: "+(chunk - setup)+"ms setup: "+(setup - start)+"ms total: "+(end - start)+"ms");
                                 return false;
                             }
                         }
@@ -169,7 +170,7 @@ public class Renderer
             else task.result = new BlockPacket(task.getChunkOrBlock().x, task.getChunkOrBlock().z, task.buffer, timestamp);
 
             long end = System.currentTimeMillis();
-            System.out.println("DONE cleanup: "+(end-rdone)+"ms rendering: "+(rdone - chunk)+"ms chunk: "+(chunk - setup)+"ms setup: "+(setup - start)+"ms total: "+(end - start)+"ms");
+            //System.out.println("DONE cleanup: "+(end-rdone)+"ms rendering: "+(rdone - chunk)+"ms chunk: "+(chunk - setup)+"ms setup: "+(setup - start)+"ms total: "+(end - start)+"ms");
 
             return true;
         } else {
