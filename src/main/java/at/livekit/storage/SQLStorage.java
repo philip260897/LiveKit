@@ -30,10 +30,14 @@ public class SQLStorage extends StorageThreadMarshallAdapter
     private static Map<Class<?>, Dao<?, String>> _daos = new HashMap<Class<?>, Dao<?, String>>();  
 
     public SQLStorage(String connection) throws SQLException {
+        this(connection, null, null);
+    }
+
+    public SQLStorage(String connection, String username, String password) throws SQLException {
         Logger.setGlobalLogLevel(Level.OFF);
 
         if(SQLStorage.connectionSource == null) {
-            SQLStorage.connectionSource = new JdbcConnectionSource(connection);
+            SQLStorage.connectionSource = new JdbcConnectionSource(connection, username, password);
         }
     }
 

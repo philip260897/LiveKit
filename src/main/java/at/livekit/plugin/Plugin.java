@@ -105,6 +105,8 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 			switch(storageType.toLowerCase()){
 				case "json": storage = new JSONStorage(); break;
 				case "sqlite": storage = new SQLStorage("jdbc:sqlite:"+getDataFolder().getPath()+"/storage.db"); break;
+				case "mysql": storage = new SQLStorage("jdbc:mysql://"+Config.getStorageHost(), Config.getStorageUser(), Config.getStoragePassword()); break;
+				case "postgresql": storage = new SQLStorage("jdbc:mysql://"+Config.getStorageHost(), Config.getStorageUser(), Config.getStoragePassword()); break;
 				default: throw new Exception(storageType+" Not recognized! Try JSON, SQLITE, MYSQL or POSTGRESQL");
 			}
 			storage.initialize();
