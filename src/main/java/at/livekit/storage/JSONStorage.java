@@ -246,7 +246,7 @@ public class JSONStorage extends StorageThreadMarshallAdapter
         synchronized(cache) {
             cache.add(entry);
         }*/
-        throw new NotImplementedException();
+        //throw new NotImplementedException();
     }
 
     @Override

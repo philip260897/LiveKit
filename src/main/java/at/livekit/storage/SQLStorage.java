@@ -28,8 +28,8 @@ import com.j256.ormlite.stmt.Where;
 
 public class SQLStorage extends StorageThreadMarshallAdapter
 {
-    private static ConnectionSource connectionSource;
-    private static Map<Class<?>, Dao<?, String>> _daos = new HashMap<Class<?>, Dao<?, String>>();  
+    private ConnectionSource connectionSource;
+    private Map<Class<?>, Dao<?, String>> _daos = new HashMap<Class<?>, Dao<?, String>>();  
 
     public SQLStorage(String connection) throws SQLException {
         this(connection, null, null);
@@ -40,8 +40,8 @@ public class SQLStorage extends StorageThreadMarshallAdapter
             Logger.setGlobalLogLevel(Level.OFF);
         }
         
-        if(SQLStorage.connectionSource == null) {
-            SQLStorage.connectionSource = new JdbcConnectionSource(connection, username, password);
+        if(connectionSource == null) {
+            connectionSource = new JdbcConnectionSource(connection, username, password);
         }
     }
 
@@ -59,7 +59,7 @@ public class SQLStorage extends StorageThreadMarshallAdapter
     @Override
     public void dispose() {
         try{
-            SQLStorage.connectionSource.close();
+            connectionSource.close();
         }catch(Exception ex){ex.printStackTrace();}
 
         _daos.clear();
@@ -164,6 +164,7 @@ public class SQLStorage extends StorageThreadMarshallAdapter
 
     @Override
     public void migrateTo(IStorageAdapterGeneric adapter) throws Exception {
+        
         for(Entry<Class<?>, Dao<?,String>> entry : _daos.entrySet()) {
             Plugin.log("Migrating "+entry.getValue().getTableName()+" with "+entry.getValue().countOf()+" entries");
             for(Object o : entry.getValue()) {

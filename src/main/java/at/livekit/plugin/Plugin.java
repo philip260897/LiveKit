@@ -48,6 +48,7 @@ import at.livekit.provider.POISpawnProvider;
 import at.livekit.storage.IStorageAdapterGeneric;
 import at.livekit.storage.JSONStorage;
 import at.livekit.storage.SQLStorage;
+import at.livekit.storage.StorageManager;
 import at.livekit.storage.StorageThreadMarshallAdapter;
 import at.livekit.utils.ConsoleListener;
 import at.livekit.utils.FutureSyncCallback;
@@ -102,24 +103,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 		}
 
 		try{
-
-			String storageType = Config.getStorageType();
-			switch(storageType.toLowerCase()){
-				case "json": storage = new JSONStorage(); break;
-				case "sqlite": storage = new SQLStorage("jdbc:sqlite:"+getDataFolder().getPath()+"/storage.db"); break;
-				case "mysql": storage = new SQLStorage("jdbc:mysql://"+Config.getStorageHost(), Config.getStorageUser(), Config.getStoragePassword()); break;
-				case "postgresql": storage = new SQLStorage("jdbc:postgresql://"+Config.getStorageHost(), Config.getStorageUser(), Config.getStoragePassword()); break;
-				default: throw new Exception(storageType+" Not recognized! Try JSON, SQLITE, MYSQL or POSTGRESQL");
-			}
-			storage.initialize();
-
-			if(Legacy.hasLegacyStorage()) {
-				StorageThreadMarshallAdapter.DISABLE = true;
-				Plugin.log("Legacy Storage detected, converting!");
-				Legacy.convertLegacyStorage();
-				StorageThreadMarshallAdapter.DISABLE = false;
-			}
-
+			storage = StorageManager.initialize();
 		} catch(Exception exception) {
 			exception.printStackTrace();
 			logger.severe("Error initializing Storage, shutting down");
@@ -216,9 +200,13 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 		//unregister before livekit gets disabled
 		ConsoleListener.unregisterListener();
 
-		LiveKit.getInstance().onDisable();
+		try{
+			LiveKit.getInstance().onDisable();
+		}catch(Exception ex){ex.printStackTrace();}
 
-		storage.dispose();
+		try{
+			if(storage != null) storage.dispose();
+		}catch(Exception ex){ex.printStackTrace();}
 			
 		try{
 			HeadLibraryV2.onDisable();

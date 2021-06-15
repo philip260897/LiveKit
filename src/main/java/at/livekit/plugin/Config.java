@@ -8,6 +8,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
+import at.livekit.storage.StorageManager.StorageSettings;
 import at.livekit.utils.Utils;
 
 public class Config 
@@ -84,7 +85,28 @@ public class Config
         return config.getBoolean("modules.POIModule.teleport_spawn");
     }
 
-    public static String getStorageType() {
+    public static StorageSettings getStorageSettings() {
+        return getStorageSettings("storage");
+    }
+
+    public static StorageSettings getMigrateStorage() {
+        return getStorageSettings("migrate");
+    }
+
+    private static StorageSettings getStorageSettings(String base) {
+        if(config.contains(base)) {
+            return new StorageSettings(config.getString(base+".type"), config.getString(base+".host"), config.getString(base+".user"), config.getString(base+".password"));
+        }
+        return null;
+    }
+
+    public static void resetMigration() {
+        try{
+            config.set("migrate", null);
+            config.save(configFile);
+        }catch(Exception ex){ex.printStackTrace();}
+    }
+    /*public static String getStorageType() {
         return config.getString("storage.type");
     }
 
@@ -98,7 +120,7 @@ public class Config
 
     public static String getStorageHost() {
         return getNullableString("storage.host");
-    }
+    }*/
 
     public static String getNullableString(String path) {
         String string = config.getString(path);
