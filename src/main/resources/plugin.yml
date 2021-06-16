@@ -9,9 +9,6 @@ commands:
   livekit:
     description: LiveKit commands
     usage: /livekit
-  lk:
-    description: LiveKit test command
-    usage: /lk
 libraries:
     - org.xerial:sqlite-jdbc:jar:3.34.0
     - mysql:mysql-connector-java:jar:8.0.25
