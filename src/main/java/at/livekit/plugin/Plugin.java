@@ -172,7 +172,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 
 		CommandHandler.initialize();
 		LiveKitCommandExecutor base = new LiveKitCommandExecutor();
-		
+
 		getCommand("lk").setExecutor(base);
 		getCommand("lk").setTabCompleter(base);
     }

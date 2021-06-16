@@ -8,6 +8,7 @@ import org.bukkit.command.CommandSender;
 
 import at.livekit.commands.resolvers.AnyArgumentResolver;
 import at.livekit.commands.resolvers.ArgumentResolver;
+import at.livekit.commands.resolvers.ModuleArgumentResolver;
 import at.livekit.commands.resolvers.NumArgumentResolver;
 import at.livekit.commands.resolvers.PlayerArgumentResolver;
 import at.livekit.commands.resolvers.RadiusArgumentResolver;
@@ -22,10 +23,12 @@ public class CommandHandler
     
     public static void initialize() {
         resolvers.put("{any}", new AnyArgumentResolver());
+        resolvers.put("{message}", new AnyArgumentResolver());
         resolvers.put("{world}", new WorldArgumentResolver());
         resolvers.put("{radius}", new RadiusArgumentResolver());
         resolvers.put("{num}", new NumArgumentResolver());
         resolvers.put("{player}", new PlayerArgumentResolver());
+        resolvers.put("{module}", new ModuleArgumentResolver());
     }
 
     public static void setPermissionCallback(CommandHandlerPermissionCallback callback) {
@@ -48,7 +51,7 @@ public class CommandHandler
         for(LKCommand commands : registered) {
             if(commands.match(label, args, false)) {
                 if(!permissionCallback.hasConsoleAccess(sender, commands.getConsoleAccess(), true)) return new MatchResult(MatchResult.RESULT_CONSOLE_NOT_ALLOWED);
-                if(!permissionCallback.hasPermission(sender, commands.getPermission(), true)) return new MatchResult(MatchResult.RESULT_PERMISSION_DENIED);
+                if(commands.getPermission() != null && !permissionCallback.hasPermission(sender, commands.getPermission(), true)) return new MatchResult(MatchResult.RESULT_PERMISSION_DENIED);
 
                 commands.setContext(label, args);
                 commands.execute(sender);

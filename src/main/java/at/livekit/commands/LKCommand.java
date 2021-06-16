@@ -19,6 +19,18 @@ public class LKCommand {
     private CExecutor executor;
 
     public LKCommand(String match, String permission, boolean consoleAllowed, CExecutor executor) {
+        this(match, permission, consoleAllowed, executor, true);
+    }
+
+    public LKCommand(String match, String permission, boolean consoleAllowed, CExecutor executor, boolean register) {
+        this(match, permission, consoleAllowed, executor, register, null);
+    }
+
+    public LKCommand(String match, String permission, boolean consoleAllowed, CExecutor executor, String description) {
+        this(match, permission, consoleAllowed, executor, true, description);
+    }
+
+    public LKCommand(String match, String permission, boolean consoleAllowed, CExecutor executor, boolean register, String description) {
         CommandHandler.registerCommand(this);
 
         this.match = match;
@@ -56,8 +68,17 @@ public class LKCommand {
             if(holder != null && holder.getArgument().equals(placeholder)) {
                 if(count == id) {
                     if(holder.getResolver() == null) return null;
-                    Object o = holder.getResolver().resolveArgument(contextArgs[i]);
-                    return (T) o;
+
+                    if(holder.getArgument().equalsIgnoreCase("message")) {
+                        String message = "";
+                        for(int j = i; j < contextArgs.length; j++) {
+                            message += contextArgs[j] + ((j < contextArgs.length-1) ? " "  : "");
+                        }
+                        return (T) message;
+                    } else {
+                        Object o = holder.getResolver().resolveArgument(contextArgs[i]);
+                        return (T) o;
+                    }
                 }
                 count++;
             }
@@ -85,7 +106,10 @@ public class LKCommand {
     }
 
     protected boolean match(String label, String[] args, boolean partial) {
-        if (mArgs.length != args.length && !partial)
+        CPlaceholder message = mArgs.length >= 1 ? CPlaceholder.fromString(mArgs[mArgs.length-1]) : null;
+        if(message != null && !message.getArgument().equalsIgnoreCase("message")) message = null;
+
+        if (mArgs.length != args.length && !partial && (message == null))
             return false;
         if (!mLabel.equalsIgnoreCase(label))
             return false;
