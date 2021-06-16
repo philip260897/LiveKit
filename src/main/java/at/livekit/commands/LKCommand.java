@@ -1,6 +1,7 @@
 package at.livekit.commands;
 
 import org.bukkit.command.CommandSender;
+import org.junit.runner.Describable;
 
 import at.livekit.commands.resolvers.ArgumentResolver;
 
@@ -9,6 +10,7 @@ public class LKCommand {
     private String match;
     private String permission;
     private boolean consoleAllowed;
+    private String description;
 
     private String mLabel;
     private String[] mArgs;
@@ -31,18 +33,39 @@ public class LKCommand {
     }
 
     public LKCommand(String match, String permission, boolean consoleAllowed, CExecutor executor, boolean register, String description) {
-        CommandHandler.registerCommand(this);
+        if(register) CommandHandler.registerCommand(this);
 
         this.match = match;
         this.permission = permission;
         this.consoleAllowed = consoleAllowed;
         this.executor = executor;
+        this.description = description;
 
         this.mLabel = match.split(" ")[0];
         this.mArgs = new String[match.split(" ").length - 1];
         for (int i = 1; i < match.split(" ").length; i++) {
             this.mArgs[i - 1] = match.split(" ")[i];
         }
+    }
+
+    public String getFormattedCommand() {
+        String cmd = "/livekit";
+
+        for(String arg : mArgs) {
+            CPlaceholder holder = CPlaceholder.fromString(arg);
+            if(holder == null) {
+                cmd +=" "+arg;
+
+            } else {
+                cmd += " <"+holder.getFriendlyName()+">";
+            }
+        }
+
+        return cmd;
+    }
+
+    public String getDescription() {
+        return description;
     }
 
     public String getArgumentAt(int index) {

@@ -61,7 +61,7 @@ import at.livekit.utils.Metrics;
 import at.livekit.utils.Utils;
 import at.livekit.utils.VaultEconomyAdapter;
 
-public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugin, Listener {
+public class Plugin extends JavaPlugin implements ILiveKitPlugin, Listener {
 
 	private static boolean DEBUG = true;
 
@@ -171,10 +171,10 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 		ConsoleListener.registerListener();
 
 		CommandHandler.initialize();
-		LiveKitCommandExecutor base = new LiveKitCommandExecutor();
 
-		getCommand("lk").setExecutor(base);
-		getCommand("lk").setTabCompleter(base);
+		LiveKitCommandExecutor base = new LiveKitCommandExecutor();
+		getCommand("livekit").setExecutor(base);
+		getCommand("livekit").setTabCompleter(base);
     }
     
 	@EventHandler
@@ -225,7 +225,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 	static ChatColor pluginColor = ChatColor.BLUE;
 	static String chatPrefix = pluginColor+"[livekit] "+ChatColor.WHITE;
 
-	@Override
+	/*@Override
 	public boolean onCommand(CommandSender sender, Command command, String label, String[] args){
 		if(label.equalsIgnoreCase("livekit")) {
 			boolean handled = false;
@@ -251,38 +251,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 
 					handled = true;
 				}*/
-				if(args[0].equalsIgnoreCase("tp")) {
-					Texturepack.generateTexturePack();
-					/*JSONObject object = new JSONObject();
-					
-					for(int i = 0; i < Material.values().length; i++) {
-						object.put(i+":"+Material.values()[i].name(), "#00000000");
-					}
-					try{
-						File file = new File( System.getProperty("user.dir") + "/plugins/LiveKit/textures.json" );
-						if(!file.exists()) file.createNewFile();
-
-						PrintWriter writer = new PrintWriter(file);
-						writer.write(object.toString());
-						writer.flush();
-						writer.close();
-					}catch(Exception ex){ex.printStackTrace();}*/
-
-					JSONArray array = new JSONArray();
-					for(int i = 0; i < EntityType.values().length; i++) {
-						array.put(EntityType.values()[i].name());
-					}
-
-					try{
-						File file = new File( System.getProperty("user.dir") + "/plugins/LiveKit/entities.json" );
-						if(!file.exists()) file.createNewFile();
-
-						PrintWriter writer = new PrintWriter(file);
-						writer.write(array.toString());
-						writer.flush();
-						writer.close();
-					}catch(Exception ex){ex.printStackTrace();}
-				}
+				
 				/*if(args[0].equalsIgnoreCase("loptions")) {
 					LiveMapModule module = ((LiveMapModule) LiveKit.getInstance().getModuleManager().getModule("LiveMapModule"));
 					RenderingOptions options = module.getOptions();
@@ -300,7 +269,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 						module.fullRender();
 					}catch(Exception ex){ex.printStackTrace();}
 				}*/
-			}
+			/*}
 
 			if(!handled) {
 				sender.sendMessage(prefixError+"Unknown command. Try /livekit help");
@@ -650,7 +619,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 						return true;
 					}
 				}*/
-			}
+	/*		}
 		}
 
 		/*if(args.length >= 1) {
@@ -787,7 +756,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 				}
 			}
 		}*/
-		return false;
+		/*return false;
 	}
 
 	private boolean handleAdminCommands(CommandSender sender, Command command, String label, String[] args) {
@@ -855,7 +824,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 				Player player = (Player)sender;
 				sender.sendMessage(mWorld.getHighestBlockAt(player.getLocation()).getType().name());
 			}*/
-		}
+		/*}
 		if(args.length == 3) {
 			if(args[0].equalsIgnoreCase("modules")) {
 				if(!checkPerm(sender, "livekit.commands.admin")) return true;
@@ -896,7 +865,7 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 					return true;
 				}
 			}*/
-		}
+/*		}
 		return false;
 	}
 
@@ -983,9 +952,9 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
                         }
                     }, Utils.errorHandler(sender));
 
-                }catch(Exception ex){/*ex.printStackTrace();*/ player.sendMessage(Plugin.getPrefixError()+"Wrong Pin ID!");}
+                }catch(Exception ex){/*ex.printStackTrace();*/ /*player.sendMessage(Plugin.getPrefixError()+"Wrong Pin ID!");}
 
-                return true;
+    /*            return true;
             }
         }
 

@@ -63,13 +63,30 @@ public class CommandHandler
         return new MatchResult(MatchResult.RESULT_UNKNOWN_CMD);
     }
 
+    public static String getHelp(CommandSender sender) {
+        String help = "";
+
+        for(LKCommand cmd : registered) {
+            if(cmd.getDescription() == null) continue;
+            if(!permissionCallback.hasConsoleAccess(sender, cmd.getConsoleAccess(), false)) continue;
+            if(cmd.getPermission() != null && !permissionCallback.hasPermission(sender, cmd.getPermission(), false)) continue;
+            
+            help += help.length() == 0 ? "" : "\n";
+            help += permissionCallback.formatHelpEntry(cmd.getFormattedCommand(), cmd.getDescription());
+        }
+
+        return help;
+    }
+
     public static List<String> getAutoComplete(CommandSender sender, String label, String[] args) {
         List<String> suggestions = new ArrayList<String>();
 
 
         for(LKCommand cmd : registered) {
             if(cmd.match(label, args, true)) {
-                //TODO: sender has access to command?
+
+                if(!permissionCallback.hasConsoleAccess(sender, cmd.getConsoleAccess(), false)) continue;
+                if(cmd.getPermission() != null && !permissionCallback.hasPermission(sender, cmd.getPermission(), false)) continue;
                 
                 String argument = cmd.getArgumentAt(args.length-1);
                 if(argument != null) {
@@ -129,5 +146,7 @@ public class CommandHandler
         public boolean hasConsoleAccess(CommandSender sender, boolean consoleAccess, boolean verbose);
 
         public void unknownCommand(CommandSender sender, boolean verbose);
+
+        public String formatHelpEntry(String command, String description );
     }
 }

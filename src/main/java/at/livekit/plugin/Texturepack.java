@@ -64,7 +64,7 @@ public class Texturepack {
         return id.intValue();
     }
 
-    protected static void generateTexturePack() {
+    public static void generateTexturePack() {
         try {
             Texturepack texturepack = Texturepack.getInstance();
             JSONObject root = new JSONObject();

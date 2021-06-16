@@ -1,5 +1,7 @@
 package at.livekit.commands;
 
+import java.io.File;
+import java.io.PrintWriter;
 import java.util.List;
 
 import org.bukkit.ChatColor;
@@ -9,7 +11,9 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.command.TabCompleter;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
+import org.json.JSONArray;
 
 import at.livekit.api.core.LKLocation;
 import at.livekit.api.core.Privacy;
@@ -32,6 +36,7 @@ import at.livekit.modules.LiveMapModule;
 import at.livekit.plugin.Config;
 import at.livekit.plugin.Permissions;
 import at.livekit.plugin.Plugin;
+import at.livekit.plugin.Texturepack;
 import at.livekit.provider.BasicPlayerPinProvider;
 import at.livekit.utils.FutureSyncCallback;
 import at.livekit.utils.HeadLibraryV2;
@@ -39,38 +44,39 @@ import at.livekit.utils.Utils;
 
 public class LiveKitCommandExecutor implements CommandExecutor, TabCompleter {
 
-    private LKCommand LIVEKIT = new LKCommand("lk", null, true, this::cmdLiveKit);
-    private LKCommand LIVEKIT_CLAIM = new LKCommand("lk claim", "livekit.commands.basics", false, this::cmdLiveKitClaim);
-    private LKCommand LIVEKIT_INFO = new LKCommand("lk info", "livekit.commands.basics", false, this::cmdLiveKitInfo);
-    private LKCommand LIVEKIT_CLEARSESSIONS = new LKCommand("lk clearsessions", "livekit.commands.basics", false, this::cmdLiveKitClearsessions);
-    private LKCommand PIN_LIST = new LKCommand("lk pins", "livekit.poi.personalpins", false, this::cmdPinList);
-    private LKCommand PIN_SET = new LKCommand("lk setpin {message(name)}", "livekit.poi.personalpins", false, this::cmdPinSet);
-    private LKCommand PIN_REMOVE = new LKCommand("lk removepin {num}", "livekit.poi.personalpins", false, this::cmdPinRemove);
-    private LKCommand HEADREFRESH = new LKCommand("lk headrefresh", "livekit.commands.basics", false, this::cmdHeadrefresh);
+    private LKCommand LIVEKIT = new LKCommand("livekit", null, true, this::cmdLiveKit, "LiveKit basic info");
+    private LKCommand LIVEKIT_HELP = new LKCommand("livekit help", null, true, this::cmdLiveKitHelp);
+    private LKCommand LIVEKIT_HELP2 = new LKCommand("livekit ?", null, true, this::cmdLiveKitHelp);
+    private LKCommand LIVEKIT_CLAIM = new LKCommand("livekit claim", "livekit.commands.basic", false, this::cmdLiveKitClaim, "Generate a claim pin, used to identify yourself in the App");
+    private LKCommand LIVEKIT_INFO = new LKCommand("livekit info", "livekit.commands.basic", false, this::cmdLiveKitInfo, "Info about App sessions identified as you");
+    private LKCommand LIVEKIT_CLEARSESSIONS = new LKCommand("livekit clearsessions", "livekit.commands.basic", false, this::cmdLiveKitClearsessions, "Clear all active sessions. App clients need to re-claim");
+    private LKCommand PIN_LIST = new LKCommand("livekit pins", "livekit.poi.personalpins", false, this::cmdPinList, "Set a personal pin at your current location");
+    private LKCommand PIN_SET = new LKCommand("livekit setpin {message(name)}", "livekit.poi.personalpins", false, this::cmdPinSet, "List of all your set pins");
+    private LKCommand PIN_REMOVE = new LKCommand("livekit removepin {num(id)}", "livekit.poi.personalpins", false, this::cmdPinRemove, "Remove a pin. Obtain the <id> from /livekit pins");
+    private LKCommand HEADREFRESH = new LKCommand("livekit headrefresh", "livekit.commands.basic", false, this::cmdHeadrefresh, "Refresh your Head (only neccessary if you changed your skin)");
 
-    private LKCommand MAP_INFO = new LKCommand("lk map", "livekit.commands.admin", true, this::cmdMapInfo); 
-    private LKCommand MAP_CPU_SET = new LKCommand("lk map cpu {num(%)}", "livekit.commands.admin", true, this::cmdMapSetCPU); 
+    private LKCommand MAP_INFO = new LKCommand("livekit map", "livekit.commands.admin", true, this::cmdMapInfo, "Display info about live map"); 
+    private LKCommand MAP_CPU_SET = new LKCommand("livekit map cpu {num(%)}", "livekit.commands.admin", true, this::cmdMapSetCPU, "Speed up rendering performance at the cost of server lag. Use with care. Default: 40%"); 
 
-    private LKCommand WORLD_INFO = new LKCommand("lk {world}", "livekit.commands.admin", true, this::cmdWorldInfo);
-    private LKCommand WORLD_RENDER_FULL = new LKCommand("lk {world} render full", "livekit.commands.admin", true, this::cmdWorldRender);
-    private LKCommand WORLD_RENDER_FULL_MISSING = new LKCommand("lk {world} render full -m", "livekit.commands.admin", true, this::cmdWorldRender);
-    private LKCommand WORLD_RENDER_FULL_STOP = new LKCommand("lk {world} render stop", "livekit.commands.admin", true, this::cmdWorldRenderStop);
-    private LKCommand WORLD_RENDER_RADIUS = new LKCommand("lk {world} render {radius}", "livekit.commands.admin", false, this::cmdWorldRenderRadius);
-    private LKCommand WORLD_RENDER_RADIUS_MISSING = new LKCommand("lk {world} render {radius} -m", "livekit.commands.admin", false, this::cmdWorldRenderRadius);
+    private LKCommand WORLD_INFO = new LKCommand("livekit {world}", "livekit.commands.admin", true, this::cmdWorldInfo, "Show general info and rendering status of <world>");
+    private LKCommand WORLD_RENDER_FULL = new LKCommand("livekit {world} render full", "livekit.commands.admin", true, this::cmdWorldRender, " Start full render on <world>");
+    private LKCommand WORLD_RENDER_FULL_MISSING = new LKCommand("livekit {world} render full -m", "livekit.commands.admin", true, this::cmdWorldRender, "Start full render on <world> and only render missing tiles");
+    private LKCommand WORLD_RENDER_FULL_STOP = new LKCommand("livekit {world} render stop", "livekit.commands.admin", true, this::cmdWorldRenderStop, "Stop current rendering job");
+    private LKCommand WORLD_RENDER_RADIUS = new LKCommand("livekit {world} render {radius}", "livekit.commands.admin", false, this::cmdWorldRenderRadius, "Renders a rectangular radius around the players position. (Worlds must match)");
+    private LKCommand WORLD_RENDER_RADIUS_MISSING = new LKCommand("livekit {world} render {radius} -m", "livekit.commands.admin", false, this::cmdWorldRenderRadius, "Renders missing tiles in a rectangular radius around the players position. (Worlds must match)");
 
-    private LKCommand WORLD_BOUNDS_INFO = new LKCommand("lk {world} bounds", "livekit.commands.admin", true, this::cmdWorldBoundsInfo);
-    private LKCommand WORLD_BOUNDS_RADIUS = new LKCommand("lk {world} bounds {radius}", "livekit.commands.admin", true, this::cmdWorldBounds);
-    private LKCommand WORLD_BOUNDS_RADIUS_CIRCULAR = new LKCommand("lk {world} bounds {radius} -c", "livekit.commands.admin", true, this::cmdWorldBounds);
-    private LKCommand WORLD_BOUNDS_LTRB = new LKCommand("lk {world} bounds {radius(left)} {radius(top)} {radius(right)} {radius(bottom)}", "livekit.commands.admin", true, this::cmdWorldBoundsLTRB);
+    private LKCommand WORLD_BOUNDS_INFO = new LKCommand("livekit {world} bounds", "livekit.commands.admin", true, this::cmdWorldBoundsInfo, "Displays bounds of <world>");
+    private LKCommand WORLD_BOUNDS_RADIUS = new LKCommand("livekit {world} bounds {radius}", "livekit.commands.admin", true, this::cmdWorldBounds, "Creates rectangular Bound with radius <radius>");
+    private LKCommand WORLD_BOUNDS_RADIUS_CIRCULAR = new LKCommand("livekit {world} bounds {radius} -c", "livekit.commands.admin", true, this::cmdWorldBounds, "Creates circular Bound with radius <radius>");
+    private LKCommand WORLD_BOUNDS_LTRB = new LKCommand("livekit {world} bounds {radius(left)} {radius(top)} {radius(right)} {radius(bottom)}", "livekit.commands.admin", true, this::cmdWorldBoundsLTRB, "Set bounds for <world> in blocks");
     
-    
-    private LKCommand HEADREFRESH_OTHER = new LKCommand("lk headrefresh {player}", "livekit.commands.admin", true, this::cmdHeadrefreshOther);
+    private LKCommand HEADREFRESH_OTHER = new LKCommand("livekit headrefresh {player}", "livekit.commands.admin", true, this::cmdHeadrefreshOther, "Refresh a players Head (only neccessary if player changed skin)");
 
-    private LKCommand ADMIN_PERMRELOAD = new LKCommand("lk permreload", "livekit.commands.admin", true, this::cmdPermreload, Plugin.isDebug());
-    private LKCommand ADMIN_MODULES = new LKCommand("lk modules", "livekit.commands.admin", true, this::cmdModules, Plugin.isDebug());
-    private LKCommand ADMIN_MODULES_ENABLE = new LKCommand("lk modules {module} enable", "livekit.commands.admin", true, this::cmdModulesToggle, Plugin.isDebug());
-    private LKCommand ADMIN_MODULES_DISABLE = new LKCommand("lk modules {module} disable", "livekit.commands.admin", true, this::cmdModulesToggle, Plugin.isDebug());
-    
+    private LKCommand ADMIN_PERMRELOAD = new LKCommand("livekit permreload", "livekit.commands.admin", true, this::cmdPermreload, Plugin.isDebug());
+    private LKCommand ADMIN_MODULES = new LKCommand("livekit modules", "livekit.commands.admin", true, this::cmdModules, Plugin.isDebug());
+    private LKCommand ADMIN_MODULES_ENABLE = new LKCommand("livekit modules {module} enable", "livekit.commands.admin", true, this::cmdModulesToggle, Plugin.isDebug());
+    private LKCommand ADMIN_MODULES_DISABLE = new LKCommand("livekit modules {module} disable", "livekit.commands.admin", true, this::cmdModulesToggle, Plugin.isDebug());
+    private LKCommand ADMIN_TEXTUREPACK = new LKCommand("livekit tp", "livekit.commands.admin", true, this::cmdTexturepack, Plugin.isDebug());
 
     private String prefix;
     private String prefixError;
@@ -96,6 +102,10 @@ public class LiveKitCommandExecutor implements CommandExecutor, TabCompleter {
             public void unknownCommand(CommandSender sender, boolean verbose) {
                 if(verbose) sender.sendMessage(Plugin.getPrefixError()+"Unknown command. Try /livekit help");
             }
+            @Override
+            public String formatHelpEntry(String command, String description) {
+                return ChatColor.GREEN+command+ChatColor.RESET + " - " + description;
+            }
         });
     }
 
@@ -111,6 +121,16 @@ public class LiveKitCommandExecutor implements CommandExecutor, TabCompleter {
         System.out.println("Match Result: "+result.getStatus());
 
         return true;
+    }
+
+    /**
+     * LiveKit all commands overview
+     * @param sender
+     * @param cmd
+     */
+    private void cmdLiveKitHelp(CommandSender sender, LKCommand cmd) {
+        sender.sendMessage(prefix+"Help");
+        sender.sendMessage(CommandHandler.getHelp(sender));
     }
 
     /**
@@ -558,6 +578,26 @@ public class LiveKitCommandExecutor implements CommandExecutor, TabCompleter {
             }
             LiveKit.getInstance().notifyQueue("SettingsModule");
         }
+    }
+
+    private void cmdTexturepack(CommandSender sender, LKCommand cmd) {
+        try{
+            Texturepack.generateTexturePack();
+   
+
+            JSONArray array = new JSONArray();
+            for(int i = 0; i < EntityType.values().length; i++) {
+                array.put(EntityType.values()[i].name());
+            }
+
+            File file = new File( System.getProperty("user.dir") + "/plugins/LiveKit/entities.json" );
+            if(!file.exists()) file.createNewFile();
+
+            PrintWriter writer = new PrintWriter(file);
+            writer.write(array.toString());
+            writer.flush();
+            writer.close();
+        }catch(Exception ex){ex.printStackTrace();}
     }
     
 	private boolean checkPerm(CommandSender sender, String permission, boolean verbose) {
