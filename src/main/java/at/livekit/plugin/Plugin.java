@@ -29,7 +29,8 @@ import at.livekit.api.map.PersonalPin;
 import at.livekit.authentication.AuthenticationHandler;
 import at.livekit.authentication.Pin;
 import at.livekit.authentication.Session;
-import at.livekit.commands.BaseCommands;
+import at.livekit.commands.CommandHandler;
+import at.livekit.commands.LiveKitCommandExecutor;
 import at.livekit.livekit.Economy;
 import at.livekit.livekit.Identity;
 import at.livekit.livekit.LiveKit;
@@ -169,7 +170,9 @@ public class Plugin extends JavaPlugin implements CommandExecutor, ILiveKitPlugi
 		//registers console listener (console enable check is done inside)
 		ConsoleListener.registerListener();
 
-		BaseCommands base = new BaseCommands();
+		CommandHandler.initialize();
+		LiveKitCommandExecutor base = new LiveKitCommandExecutor();
+		
 		getCommand("lk").setExecutor(base);
 		getCommand("lk").setTabCompleter(base);
     }

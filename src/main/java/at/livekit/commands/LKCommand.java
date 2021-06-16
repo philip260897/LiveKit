@@ -1,0 +1,121 @@
+package at.livekit.commands;
+
+import org.bukkit.command.CommandSender;
+
+import at.livekit.commands.resolvers.ArgumentResolver;
+
+public class LKCommand {
+
+    private String match;
+    private String permission;
+    private boolean consoleAllowed;
+
+    private String mLabel;
+    private String[] mArgs;
+
+    private String contextLabel;
+    private String[] contextArgs;
+
+    private CExecutor executor;
+
+    public LKCommand(String match, String permission, boolean consoleAllowed, CExecutor executor) {
+        CommandHandler.registerCommand(this);
+
+        this.match = match;
+        this.permission = permission;
+        this.consoleAllowed = consoleAllowed;
+        this.executor = executor;
+
+        this.mLabel = match.split(" ")[0];
+        this.mArgs = new String[match.split(" ").length - 1];
+        for (int i = 1; i < match.split(" ").length; i++) {
+            this.mArgs[i - 1] = match.split(" ")[i];
+        }
+    }
+
+    public String getArgumentAt(int index) {
+        if (index >= mArgs.length)
+            return null;
+        return mArgs[index];
+    }
+
+    public void execute(CommandSender sender) {
+        if(executor != null) {
+            executor.execute(sender, this);
+        }
+    }
+
+    public <T> T get(String argument) {
+        String[] split = argument.split(":");
+        String placeholder = split[0];
+        int id = (split.length > 1) ? Integer.parseInt(split[1])-1 : 0;
+        
+        int count = 0;
+        for(int i = 0; i < mArgs.length; i++) {
+            CPlaceholder holder = CPlaceholder.fromString(mArgs[i]);
+            if(holder != null && holder.getArgument().equals(placeholder)) {
+                if(count == id) {
+                    if(holder.getResolver() == null) return null;
+                    Object o = holder.getResolver().resolveArgument(contextArgs[i]);
+                    return (T) o;
+                }
+                count++;
+            }
+        }
+
+        return null;
+    }
+
+    protected boolean getConsoleAccess() {
+        return consoleAllowed;
+    }
+
+    protected String getPermission() {
+        return permission;
+    }
+
+    protected void setContext(String label, String[] args) {
+        this.contextArgs = args;
+        this.contextLabel = label;
+    }
+
+    public void invalidate() {
+        this.contextArgs = null;
+        this.contextLabel = null;
+    }
+
+    protected boolean match(String label, String[] args, boolean partial) {
+        if (mArgs.length != args.length && !partial)
+            return false;
+        if (!mLabel.equalsIgnoreCase(label))
+            return false;
+
+        for (int i = 0; i < mArgs.length; i++) {
+            if (i >= args.length)
+                return partial;
+
+            String mArg = mArgs[i];
+            String arg = args[i];
+
+            if (!(partial && i == args.length - 1) ? !mArg.equalsIgnoreCase(arg) : !mArg.startsWith(arg)) {
+                CPlaceholder placeholder = CPlaceholder.fromString(mArg);
+                if (placeholder == null) {
+                    return false;
+                }
+                ArgumentResolver resolver = placeholder.getResolver();
+                if (resolver == null) {
+                    return false;
+                }
+                if (!resolver.isValid(arg) && !(partial && (i == args.length - 1))) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    public interface CExecutor {
+        public void execute(CommandSender sender, LKCommand command);
+    }
+}
