@@ -7,63 +7,34 @@ import java.util.logging.Logger;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.Material;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandExecutor;
-import org.bukkit.command.CommandSender;
-import org.bukkit.entity.EntityType;
-import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.server.ServerLoadEvent;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.json.JSONArray;
-import org.json.JSONObject;
 
 import at.livekit.api.core.ILiveKit;
 import at.livekit.api.core.ILiveKitPlugin;
-import at.livekit.api.core.LKLocation;
-import at.livekit.api.core.Privacy;
-import at.livekit.api.map.PersonalPin;
-import at.livekit.authentication.AuthenticationHandler;
-import at.livekit.authentication.Pin;
-import at.livekit.authentication.Session;
 import at.livekit.commands.CommandHandler;
 import at.livekit.commands.LiveKitCommandExecutor;
 import at.livekit.livekit.Economy;
-import at.livekit.livekit.Identity;
 import at.livekit.livekit.LiveKit;
-import at.livekit.map.RenderBounds;
-import at.livekit.map.RenderJob;
-import at.livekit.map.RenderScheduler;
-import at.livekit.map.RenderWorld;
-import at.livekit.map.RenderBounds.RenderShape;
-import at.livekit.map.RenderJob.RenderJobMode;
 import at.livekit.modules.PlayerModule;
-import at.livekit.modules.BaseModule;
-import at.livekit.modules.LiveMapModule;
 import at.livekit.modules.PlayerModule.LPlayer;
 import at.livekit.provider.BasicPlayerInfoProvider;
 import at.livekit.provider.BasicPlayerPinProvider;
 import at.livekit.provider.POISpawnProvider;
 import at.livekit.storage.IStorageAdapterGeneric;
-import at.livekit.storage.JSONStorage;
-import at.livekit.storage.SQLStorage;
 import at.livekit.storage.StorageManager;
-import at.livekit.storage.StorageThreadMarshallAdapter;
 import at.livekit.utils.ConsoleListener;
-import at.livekit.utils.FutureSyncCallback;
 import at.livekit.utils.HeadLibraryEvent;
 import at.livekit.utils.HeadLibraryV2;
-import at.livekit.utils.Legacy;
 import at.livekit.utils.Metrics;
-import at.livekit.utils.Utils;
 import at.livekit.utils.VaultEconomyAdapter;
 
 public class Plugin extends JavaPlugin implements ILiveKitPlugin, Listener {
 
-	private static boolean DEBUG = true;
+	private static boolean DEBUG = false;
 
 	private static Logger logger;
 	private static Plugin instance;
@@ -220,33 +191,6 @@ public class Plugin extends JavaPlugin implements ILiveKitPlugin, Listener {
 			HeadLibraryV2.onDisable();
 		}catch(Exception ex){ex.printStackTrace();}
 	}
-
-
-	static ChatColor pluginColor = ChatColor.BLUE;
-	static String chatPrefix = pluginColor+"[livekit] "+ChatColor.WHITE;
-
-
-
-	/*private boolean checkPerm(CommandSender sender, String permission) {
-		return checkPerm(sender, permission, true);
-	}
-
-	private boolean checkPerm(CommandSender sender, String permission, boolean verbose) {
-		if(sender.isOp()) return true;
-
-		if(sender instanceof Player) {
-			Player player = (Player)sender;
-			boolean access = Permissions.has(player, permission);
-			if(!access && verbose) player.sendMessage(prefixError+"You need "+permission+" permission to access this command!");
-			return access;
-		}
-		return false;
-	}
-
-	private String friendlyBool(boolean bool) {
-		if(bool) return ChatColor.GREEN+"Yes"+ChatColor.RESET;
-		else return ChatColor.RED+"No"+ChatColor.RESET;
-	}*/
 
 	public static Plugin getInstance() {
 		return instance;
