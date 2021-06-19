@@ -12,6 +12,7 @@ import java.util.UUID;
 
 import javax.imageio.ImageIO;
 
+import com.j256.ormlite.field.DataType;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.table.DatabaseTable;
 
@@ -103,7 +104,7 @@ public class HeadLibraryV2 implements Runnable
         //private String uuid;
         @DatabaseField(id = true)
         private String name;
-        @DatabaseField
+        @DatabaseField(dataType = DataType.LONG_STRING)
         private String head = null;
         @DatabaseField
         private boolean first = true;
