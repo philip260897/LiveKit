@@ -6,8 +6,8 @@
   <name>LiveKit</name>
   
   <properties>
-  <maven.compiler.source>16</maven.compiler.source>
-  <maven.compiler.target>16</maven.compiler.target>
+  <maven.compiler.source>1.8</maven.compiler.source>
+  <maven.compiler.target>1.8</maven.compiler.target>
 </properties>
 
 <build>
@@ -26,60 +26,37 @@
 	</resource>
 	</resources>
 	<plugins>
-      <!--plugin>
-      <groupId>org.apache.maven.plugins</groupId>
-      <artifactId>maven-shade-plugin</artifactId>
-      <version>3.1.0</version>
-      <configuration>
-        <relocations>
-          <relocation>
-            <pattern>org.bstats</pattern>
-            
-            <shadedPattern>at.livekit.plugin</shadedPattern>
-          </relocation>
-        </relocations>
-      </configuration>
-      <executions>
-        <execution>
-          <phase>package</phase>
-          <goals>
-            <goal>shade</goal>
-          </goals>
-        </execution>
-      </executions>
-    </plugin -->
       <plugin>
-
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <version>2.2-beta-4</version>
-                <configuration>
-                <descriptorRefs>
-                    <descriptorRef>jar-with-dependencies</descriptorRef>
-                </descriptorRefs>
-                <finalName>LiveKit-${project.version}</finalName>
-                <appendAssemblyId>false</appendAssemblyId>
-                <archive>
-                    <manifest>
-                    <mainClass>com.philiplindner.main.App</mainClass>
-                    </manifest>
-                </archive>
-                </configuration>
-                <executions>
-                <execution>
-                    <phase>package</phase>
-                    <goals>
-                    <goal>single</goal>
-                    </goals>
-                </execution>
-                </executions>
-            </plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <version>2.2-beta-4</version>
+        <configuration>
+        <descriptorRefs>
+          <descriptorRef>jar-with-dependencies</descriptorRef>
+        </descriptorRefs>
+        <finalName>LiveKit-${project.version}</finalName>
+        <appendAssemblyId>false</appendAssemblyId>
+        <archive>
+        <manifest>
+          <mainClass>com.philiplindner.main.App</mainClass>
+        </manifest>
+        </archive>
+        </configuration>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+            <goal>single</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
 		<plugin>
 			<artifactId>maven-compiler-plugin</artifactId>
 			<version>2.3.2</version>
 			<configuration>
-			<source>16</source>
-			<target>16</target>
+			<source>1.8</source>
+			<target>1.8</target>
 			</configuration>
 		</plugin>
 	</plugins>
