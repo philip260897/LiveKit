@@ -3,6 +3,7 @@ package at.livekit.commands;
 import java.io.File;
 import java.io.PrintWriter;
 import java.util.List;
+import java.util.Set;
 
 import org.bukkit.ChatColor;
 import org.bukkit.World;
@@ -324,7 +325,7 @@ public class LiveKitCommandExecutor implements CommandExecutor, TabCompleter {
      * @param cmd
      */
     private void cmdMapInfo(CommandSender sender, LKCommand cmd) {
-        List<String> worlds = Config.getLiveMapWorlds();
+        Set<String> worlds = Config.getLiveMapWorlds().keySet();
         sender.sendMessage(prefix+"Live Map info");
         sender.sendMessage("Worlds: ");
         for(String s : worlds) sender.sendMessage(" - "+s);

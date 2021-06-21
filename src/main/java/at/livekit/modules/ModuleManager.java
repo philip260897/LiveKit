@@ -53,8 +53,8 @@ public class ModuleManager
         this.registerModule(new SettingsModule(listener));
         this.registerModule(new PlayerModule(listener));
 
-        for(String world : Config.getLiveMapWorlds()) {
-            this.registerModule(new LiveMapModule(world, listener));
+        for(String world : Config.getLiveMapWorlds().keySet()) {
+            this.registerModule(new LiveMapModule(world, listener, Config.getLiveMapWorlds()));
             this.registerModule(new WeatherTimeModule(world, listener));
         }
 

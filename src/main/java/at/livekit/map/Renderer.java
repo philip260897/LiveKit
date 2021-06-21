@@ -62,10 +62,10 @@ public class Renderer
 
                 if(task.isChunk()) {
                     task.unload = !bWorld.isChunkLoaded(task.getChunkOrBlock().x, task.getChunkOrBlock().z);
-                    //if(task.unload) bWorld.loadChunk(task.getChunkOrBlock().x, task.getChunkOrBlock().z);
-                    //if(task.unload) bWorld.loadChunk(task.getChunkOrBlock().x, task.getChunkOrBlock().z);
+                    
+                    
                     task.rchunk = bWorld.getChunkAt(task.getChunkOrBlock().x, task.getChunkOrBlock().z);
-                    /*if(task.unload)*/ //task.rchunk.load();
+                    if(/*task.unload &&*/ !task.isChunkLoadEvent()) task.rchunk.load();
                 }
             }
 

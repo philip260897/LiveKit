@@ -583,6 +583,10 @@ public class RenderWorld
             this.regionZ = (int) Math.floor(((double) offset.z / (chunk ? 32.0 : 512.0 )));
         }
 
+        public boolean isChunkLoadEvent() {
+            return offset.onlyIfAbsent;
+        }
+
         public boolean isChunk() {
             return chunk;
         }

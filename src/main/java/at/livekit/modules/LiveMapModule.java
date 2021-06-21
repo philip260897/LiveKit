@@ -54,15 +54,18 @@ public class LiveMapModule extends BaseModule implements Listener
 
 
     private String world;
+    private Map<String, String> availableWorlds;
+
     private UUID worldUUID;
     private RenderWorld renderWorld = null;
     private List<IPacket> _updates = new ArrayList<IPacket>();
 
     private boolean waitingForWorld = false;
 
-    public LiveMapModule(String world, ModuleListener listener) {
+    public LiveMapModule(String world, ModuleListener listener, Map<String, String> availableWorlds) {
         super(1, "Live Map", "livekit.module.map", UpdateRate.MAX, listener, world);
         this.world = world;
+        this.availableWorlds = availableWorlds;
     }
 
     @Action(name = "ResolveRegion", sync = false)
@@ -186,6 +189,7 @@ public class LiveMapModule extends BaseModule implements Listener
 
         JSONObject json = new JSONObject();
         json.put("world", world);
+        json.put("worldNames", availableWorlds);
         json.put("blockInfo", identity.hasPermission("livekit.map.info"));
         JSONArray regions = new JSONArray();
         json.put("regions", regions);
@@ -596,6 +600,7 @@ public class LiveMapModule extends BaseModule implements Listener
     @EventHandler(priority = EventPriority.MONITOR)
     private void onChunkLoadEvent(ChunkLoadEvent event) {
         if(!isEnabled() || !event.getWorld().getName().equals(world)) return;
+
         renderWorld.updateChunk(event.getChunk(), true);
     }
 

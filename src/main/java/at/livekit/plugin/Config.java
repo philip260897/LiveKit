@@ -2,7 +2,9 @@ package at.livekit.plugin;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -57,8 +59,16 @@ public class Config
         return (List<String>) config.getList("permissions.default");
     }
 
-    public static List<String> getLiveMapWorlds() {
-        return (List<String>) config.getList("modules.LiveMapModule.worlds");
+    public static Map<String, String> getLiveMapWorlds() {
+        HashMap<String, String> map = new HashMap<String, String>();
+        for(String world : (List<String>) config.getList("modules.LiveMapModule.worlds")) {
+            if(world.contains(":")) {
+                map.put(world.split(":")[0], world.split(":")[1]);
+            } else {
+                map.put(world, world);
+            }
+        }
+        return map;
     }
 
     public static boolean moduleEnabled(String name) {
