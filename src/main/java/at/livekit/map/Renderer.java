@@ -96,17 +96,12 @@ public class Renderer
                         blockZ = c.getZ() * 16 + z;
                         //get block data only if in bounds
                         if(bounds.blockInBounds(blockX, blockZ)) { 
-                            bstart = System.currentTimeMillis();
-                            World w = c.getWorld();
-                            task.rchunk = w.getChunkAt(task.getChunkOrBlock().x, task.getChunkOrBlock().z);
-                            long wstart = System.currentTimeMillis();
-                            block = w.getHighestBlockAt(blockX, blockZ);
-                            //block = getHighestBlockAt(c, x, z);
-                            //block = c.getWorld().getHighestBlockAt(blockX, blockZ);
-                            //block = getBlockForRendering(block);
+                            //task.rchunk = bWorld.getChunkAt(task.getChunkOrBlock().x, task.getChunkOrBlock().z);
+                            block = bWorld.getHighestBlockAt(blockX, blockZ);
+                            block = getBlockForRendering(block);
 
                             getblock = System.currentTimeMillis();
-                            if(getblock-bstart != 0) System.out.println("["+block.getX()+", "+block.getY()+", "+block.getZ()+"] Took "+(getblock-start)+"ms world "+(wstart-bstart)+"ms");
+                            //if(getblock-bstart != 0) System.out.println("["+block.getX()+", "+block.getY()+", "+block.getZ()+"] Took "+(getblock-start)+"ms world "+(wstart-bstart)+"ms");
                         }
                         
 
@@ -190,10 +185,12 @@ public class Renderer
             while(block.getY() > 0 && air == false) {
                block = block.getRelative(BlockFace.DOWN,!air ? 3 : 1);
                if(block.getType() == Material.AIR) air = true;
+               if(block.getType() == Material.VOID_AIR) air = true;
+               if(block.getType() == Material.CAVE_AIR) air = true;
             }
         }
 
-        while(block.getType() == Material.AIR && block.getY() > 0) {
+        while((block.getType() == Material.AIR || block.getType() == Material.VOID_AIR || block.getType() == Material.CAVE_AIR ) && block.getY() > 0) {
             block = block.getRelative(BlockFace.DOWN);
         }
         return block;

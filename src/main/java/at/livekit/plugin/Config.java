@@ -61,12 +61,14 @@ public class Config
 
     public static Map<String, String> getLiveMapWorlds() {
         HashMap<String, String> map = new HashMap<String, String>();
+        int count = 0;
         for(String world : (List<String>) config.getList("modules.LiveMapModule.worlds")) {
             if(world.contains(":")) {
-                map.put(world.split(":")[0], world.split(":")[1]);
+                map.put(world.split(":")[0], count+":"+world.split(":")[1]);
             } else {
-                map.put(world, world);
+                map.put(world, count+":"+world);
             }
+            count++;
         }
         return map;
     }

@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.Map.Entry;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
@@ -189,12 +190,22 @@ public class LiveMapModule extends BaseModule implements Listener
 
         JSONObject json = new JSONObject();
         json.put("world", world);
+
+        JSONArray availableWorlds = new JSONArray();
         json.put("worldNames", availableWorlds);
         json.put("blockInfo", identity.hasPermission("livekit.map.info"));
         JSONArray regions = new JSONArray();
         json.put("regions", regions);
 
-        
+        synchronized(this.availableWorlds) {
+            for(Entry<String,String> entry : this.availableWorlds.entrySet()) {
+                JSONObject wentry = new JSONObject();
+                wentry.put("index", Integer.parseInt(entry.getValue().split(":")[0]));
+                wentry.put("world", entry.getKey());
+                wentry.put("friendly", entry.getValue().split(":")[1]);
+                availableWorlds.put(wentry);
+            }
+        }
 
         synchronized(renderWorld.getRegions()) {
             for(RegionInfo region : renderWorld.getRegions()) {
