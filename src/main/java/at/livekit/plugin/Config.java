@@ -239,7 +239,6 @@ public class Config
             config.set("storage.sql.user", "NULL");
             config.set("storage.sql.database", "NULL");
             config.set("storage.sql.password", "NULL");
-            config.set("storage.sql.prefix", "livekit_");
 
             if(getPassword() == null) {
                 config.set("server.password", "NULL");

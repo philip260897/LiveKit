@@ -19,16 +19,9 @@ import at.livekit.plugin.Texturepack;
 
 public class Renderer 
 {
-    //private static HashMap<String, Integer> _idMap = null;
     private static Texturepack _texturepack;
 
     private static void initialize(ClassLoader loader) throws Exception {
-        /*if(_idMap == null) {
-            _idMap = new HashMap<String, Integer>(Material.values().length);
-            for (int i = 0; i < Material.values().length; i++) {
-                _idMap.put(Material.values()[i].toString(), i);
-            }
-        }*/
         if(_texturepack == null) {
             _texturepack = Texturepack.getInstance();
         }
@@ -196,39 +189,8 @@ public class Renderer
         return block;
     }
 
-    private static Block getHighestBlockAt(Chunk c, int x, int z) {
-        long start = System.currentTimeMillis();
-
-        //World world = c.getWorld();
-
-        long w = System.currentTimeMillis();
-
-        Block b = c.getBlock(x, 255, z);
-
-        long bbs = System.currentTimeMillis();
-        
-        do {
-            if(b.getType() != Material.AIR) {
-                System.out.println( (System.currentTimeMillis() - start) + "ms (" + b.getX()%16 + "," + b.getY() + "," + b.getZ()%16+") "+((System.currentTimeMillis()-start)/(255-b.getY()))+"ms/b");
-                return b;
-            }
-            b = b.getRelative(BlockFace.DOWN);
-        }while(b.getY() > 0);
-
-        
-
-        return b;
-    }
-
     private static byte[] getBlockData(Block block) {
         Integer height = null;
-        //Block _original = block;
-
-        //long millis = System.currentTimeMillis();
-
-
-
-        //if(System.currentTimeMillis()-millis != 0) System.out.println(System.currentTimeMillis()-millis + " for block finding");
 
         byte biome = 0x00;
         if (block.getType() == Material.WATER) {
@@ -263,26 +225,4 @@ public class Renderer
         mat == Material.ACACIA_LEAVES || mat == Material.BIRCH_LEAVES || mat == Material.OAK_LEAVES
                 || mat == Material.DARK_OAK_LEAVES || mat == Material.SPRUCE_LEAVES || mat == Material.JUNGLE_LEAVES;
     }
-
-   /* private static int getMaterialId(Material material) {
-        long start = System.nanoTime();
-        for (int i = 0; i < Material.values().length; i++) {
-            if (material == Material.values()[i]) {
-                System.out.println((System.nanoTime() - start)/1000+"us");
-                return i;
-            }
-        }
-        
-        return 0;
-    }*/
-
-    /*private static int getMaterialId(Material material) {
-        //long start = System.nanoTime();
-        
-        Integer id = _idMap.get(material.toString());
-
-        //System.out.println((System.nanoTime() - start)/1000+"us");
-        
-        return id != null ? id.intValue() : 0;
-    }*/
 }
