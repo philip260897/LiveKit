@@ -42,6 +42,7 @@ public class SQLStorage extends StorageThreadMarshallAdapter
         
         if(connectionSource == null) {
             connectionSource = new JdbcConnectionSource(connection, username, password);
+            
         }
     }
 
@@ -69,6 +70,7 @@ public class SQLStorage extends StorageThreadMarshallAdapter
         _daos.put(clazz, (Dao<T, String>) DaoManager.createDao(connectionSource, clazz));
 
         if(!getDao(clazz).isTableExists()) {
+            
             TableUtils.createTable(connectionSource, clazz);
         }
         

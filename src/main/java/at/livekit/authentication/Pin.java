@@ -7,7 +7,7 @@ import com.j256.ormlite.table.DatabaseTable;
 
 import at.livekit.utils.Utils;
 
-@DatabaseTable(tableName = "lk_pins")
+@DatabaseTable(tableName = "livekit_pins")
 public class Pin 
 {
     @DatabaseField(id = true)

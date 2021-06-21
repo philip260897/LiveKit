@@ -99,7 +99,7 @@ public class HeadLibraryV2 implements Runnable
         return returnValue;
     }
     
-    @DatabaseTable(tableName = "lk_heads")
+    @DatabaseTable(tableName = "livekit_heads")
     public static class HeadInfo{
         //private String uuid;
         @DatabaseField(id = true)

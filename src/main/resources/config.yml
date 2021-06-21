@@ -5,9 +5,11 @@ server:
   tickrate: 20
 storage:
   type: 'JSON'
-  host: 'NULL'
-  user: 'NULL'
-  password: 'NULL'
+  sql:
+    host: 'NULL'
+    database: 'NULL'
+    user: 'NULL'
+    password: 'NULL'
 anonymous:
   allow: true
   permissions:

@@ -596,7 +596,6 @@ public class LiveMapModule extends BaseModule implements Listener
     @EventHandler(priority = EventPriority.MONITOR)
     private void onChunkLoadEvent(ChunkLoadEvent event) {
         if(!isEnabled() || !event.getWorld().getName().equals(world)) return;
-
         renderWorld.updateChunk(event.getChunk(), true);
     }
 

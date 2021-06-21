@@ -6,8 +6,8 @@
   <name>LiveKit</name>
   
   <properties>
-  <maven.compiler.source>1.8</maven.compiler.source>
-  <maven.compiler.target>1.8</maven.compiler.target>
+  <maven.compiler.source>16</maven.compiler.source>
+  <maven.compiler.target>16</maven.compiler.target>
 </properties>
 
 <build>
@@ -78,8 +78,8 @@
 			<artifactId>maven-compiler-plugin</artifactId>
 			<version>2.3.2</version>
 			<configuration>
-			<source>1.8</source>
-			<target>1.8</target>
+			<source>16</source>
+			<target>16</target>
 			</configuration>
 		</plugin>
 	</plugins>
@@ -126,12 +126,19 @@
         <version>2.14.1</version>
     </dependency>
 
+
 	  <dependency>
         <groupId>com.github.MilkBowl</groupId>
         <artifactId>VaultAPI</artifactId>
         <version>1.7</version>
         <scope>provided</scope>
     </dependency>
+  <!-- https://mvnrepository.com/artifact/org.postgresql/postgresql -->
+  <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <version>42.2.22</version>
+  </dependency>
 
   <!-- https://mvnrepository.com/artifact/org.json/json -->
 	<dependency>

@@ -118,8 +118,6 @@ public class LiveKitCommandExecutor implements CommandExecutor, TabCompleter {
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         MatchResult result = CommandHandler.match(sender, label, args);
 
-        System.out.println("Match Result: "+result.getStatus());
-
         return true;
     }
 

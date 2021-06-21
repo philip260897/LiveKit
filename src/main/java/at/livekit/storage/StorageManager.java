@@ -46,8 +46,8 @@ public class StorageManager
         switch(settings.getType().toLowerCase()){
             case "json": storage = new JSONStorage(); break;
             case "sqlite": storage = new SQLStorage("jdbc:sqlite:"+Plugin.getInstance().getDataFolder().getPath()+"/storage.db"); break;
-            case "mysql": storage = new SQLStorage("jdbc:mysql://"+settings.getHost(), settings.getUsername(), settings.getPassword()); break;
-            case "postgresql": storage = new SQLStorage("jdbc:postgresql://"+settings.getHost(), settings.getUsername(), settings.getPassword()); break;
+            case "mysql": storage = new SQLStorage("jdbc:mysql://"+settings.getHost()+"/"+settings.getDatabase()+"?autoReconnect=true&useSSL=false", settings.getUsername(), settings.getPassword()); break;
+            case "postgresql": storage = new SQLStorage("jdbc:postgresql://"+settings.getHost()+"/"+settings.getDatabase()+"?autoReconnect=true&useSSL=false", settings.getUsername(), settings.getPassword()); break;
             default: throw new Exception(settings.getType()+" Not recognized! Try JSON, SQLITE, MYSQL or POSTGRESQL");
         }
         return storage;
@@ -58,16 +58,23 @@ public class StorageManager
         private String host;
         private String username;
         private String password;
+        //private String prefix;
+        private String database;
         
-        public StorageSettings(String type, String host, String username, String password) {
+        public StorageSettings(String type, String host, String database, String username, String password) {
             this.type = type;
             this.host = host;
+            this.database = database;
             this.username = username;
             this.password = password;
         }
 
         public String getType() {
             return type;
+        }
+
+        public String getDatabase() {
+            return database;
         }
 
         public String getHost() {

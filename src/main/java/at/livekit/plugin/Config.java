@@ -95,7 +95,7 @@ public class Config
 
     private static StorageSettings getStorageSettings(String base) {
         if(config.contains(base)) {
-            return new StorageSettings(config.getString(base+".type"), config.getString(base+".host"), config.getString(base+".user"), config.getString(base+".password"));
+            return new StorageSettings(config.getString(base+".type"), config.getString(base+".sql.host"), config.getString(base+".sql.database"), config.getString(base+".sql.user"), config.getString(base+".sql.password"));
         }
         return null;
     }
@@ -223,9 +223,11 @@ public class Config
         if(config.get("storage.type") == null) {
             Plugin.log("Patching storage config...");
             config.set("storage.type", "JSON");
-            config.set("storage.host", "NULL");
-            config.set("storage.user", "NULL");
-            config.set("storage.password", "NULL");
+            config.set("storage.sql.host", "NULL");
+            config.set("storage.sql.user", "NULL");
+            config.set("storage.sql.database", "NULL");
+            config.set("storage.sql.password", "NULL");
+            config.set("storage.sql.prefix", "livekit_");
 
             if(getPassword() == null) {
                 config.set("server.password", "NULL");

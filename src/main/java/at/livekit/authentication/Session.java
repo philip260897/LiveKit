@@ -7,7 +7,7 @@ import com.j256.ormlite.table.DatabaseTable;
 
 import at.livekit.utils.Utils;
 
-@DatabaseTable(tableName = "lk_sessions")
+@DatabaseTable(tableName = "livekit_sessions")
 public class Session {
 
     @DatabaseField(generatedId = true)

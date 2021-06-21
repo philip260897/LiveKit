@@ -63,7 +63,9 @@ public class Renderer
                 if(task.isChunk()) {
                     task.unload = !bWorld.isChunkLoaded(task.getChunkOrBlock().x, task.getChunkOrBlock().z);
                     //if(task.unload) bWorld.loadChunk(task.getChunkOrBlock().x, task.getChunkOrBlock().z);
+                    //if(task.unload) bWorld.loadChunk(task.getChunkOrBlock().x, task.getChunkOrBlock().z);
                     task.rchunk = bWorld.getChunkAt(task.getChunkOrBlock().x, task.getChunkOrBlock().z);
+                    /*if(task.unload)*/ //task.rchunk.load();
                 }
             }
 
@@ -94,13 +96,17 @@ public class Renderer
                         blockZ = c.getZ() * 16 + z;
                         //get block data only if in bounds
                         if(bounds.blockInBounds(blockX, blockZ)) { 
-                            bstart = System.nanoTime();
-                            block = c.getWorld().getHighestBlockAt(blockX, blockZ);
+                            bstart = System.currentTimeMillis();
+                            World w = c.getWorld();
+                            task.rchunk = w.getChunkAt(task.getChunkOrBlock().x, task.getChunkOrBlock().z);
+                            long wstart = System.currentTimeMillis();
+                            block = w.getHighestBlockAt(blockX, blockZ);
                             //block = getHighestBlockAt(c, x, z);
-                            block = c.getWorld().getHighestBlockAt(blockX, blockZ);
+                            //block = c.getWorld().getHighestBlockAt(blockX, blockZ);
                             //block = getBlockForRendering(block);
 
-                            getblock = System.nanoTime();
+                            getblock = System.currentTimeMillis();
+                            if(getblock-bstart != 0) System.out.println("["+block.getX()+", "+block.getY()+", "+block.getZ()+"] Took "+(getblock-start)+"ms world "+(wstart-bstart)+"ms");
                         }
                         
 
@@ -142,7 +148,7 @@ public class Renderer
                     }
                     task.renderingX = 0;
                 }
-                if(task.unload) Bukkit.getWorld(world).unloadChunk(task.getChunkOrBlock().x, task.getChunkOrBlock().z, false);
+                if(task.unload) { Bukkit.getWorld(world).unloadChunk(task.getChunkOrBlock().x, task.getChunkOrBlock().z, false);  }
             } else {
                 Block block = Bukkit.getWorld(world).getHighestBlockAt(task.getChunkOrBlock().x, task.getChunkOrBlock().z);
 
