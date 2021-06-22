@@ -834,7 +834,7 @@ public class PlayerModule extends BaseModule implements Listener
 
         private static LPlayer fromOfflinePlayer(OfflinePlayer player) {
             LPlayer p = new LPlayer(player.getUniqueId().toString());
-            p.name = player.getName();
+            p.name = player.getName() != null ? player.getName() : "Unknown";
             p.online = player.isOnline();
             /*if(!HeadLibrary.has(player.getName())) { 
                 HeadLibrary.resolveAsync(player.getName());
