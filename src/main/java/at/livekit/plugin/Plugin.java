@@ -151,7 +151,7 @@ public class Plugin extends JavaPlugin implements ILiveKitPlugin, Listener {
 	@EventHandler
 	public void onServerLoadEvent(ServerLoadEvent event) {
 		//try enable economy after everything has loaded
-		if(Economy.getInstance().isAvailable() == false) {
+		/*if(Economy.getInstance().isAvailable() == false) {
 			if(Bukkit.getPluginManager().getPlugin("Vault") == null) {
 				Plugin.debug("Vault not found! No default Economy available!");
 				return;
@@ -171,7 +171,7 @@ public class Plugin extends JavaPlugin implements ILiveKitPlugin, Listener {
 
 			Plugin.log("Found Vault! Using economy ["+econ.getName()+"]");
 			LiveKit.getInstance().setEconomyAdapter(new VaultEconomyAdapter(econ));
-		}
+		}*/
 	}
 
     @Override

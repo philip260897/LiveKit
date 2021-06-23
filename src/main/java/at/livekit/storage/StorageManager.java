@@ -26,7 +26,7 @@ public class StorageManager
         if(Legacy.hasLegacyStorage()) {
             StorageThreadMarshallAdapter.DISABLE = true;
             Plugin.log("Legacy Storage detected, converting!");
-            Legacy.convertLegacyStorage();
+            Legacy.convertLegacyStorage(storage);
             StorageThreadMarshallAdapter.DISABLE = false;
         }
 

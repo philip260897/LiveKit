@@ -11,6 +11,7 @@ import org.bukkit.World;
 import org.json.JSONObject;
 import at.livekit.map.RenderBounds;
 import at.livekit.plugin.Plugin;
+import at.livekit.storage.IStorageAdapterGeneric;
 import at.livekit.storage.legacy.IStorageAdapter;
 import at.livekit.storage.legacy.JSONStorage;
 import at.livekit.utils.HeadLibraryV2.HeadInfo;
@@ -157,10 +158,10 @@ public class Legacy
         return (_head.exists() || _playerPins.exists() || _poi.exists() || _sessions.exists());
     }
 
-    public static void convertLegacyStorage() throws Exception{
+    public static void convertLegacyStorage(IStorageAdapterGeneric target) throws Exception{
         IStorageAdapter legacy = new JSONStorage();
         legacy.initialize();
 
-        legacy.migrateTo(Plugin.getStorage());
+        legacy.migrateTo(target);
     }
 }
