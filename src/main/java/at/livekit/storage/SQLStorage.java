@@ -20,7 +20,8 @@ import java.util.Map.Entry;
 import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.dao.DaoManager;
 import com.j256.ormlite.field.DatabaseField;
-import com.j256.ormlite.jdbc.JdbcConnectionSource;
+import com.j256.ormlite.jdbc.JdbcPooledConnectionSource;
+import com.j256.ormlite.logger.LogBackendType;
 import com.j256.ormlite.logger.LoggerFactory;
 import com.j256.ormlite.logger.NullLogBackend;
 import com.j256.ormlite.stmt.Where;
@@ -28,7 +29,7 @@ import com.j256.ormlite.stmt.Where;
 
 public class SQLStorage extends StorageThreadMarshallAdapter
 {
-    private ConnectionSource connectionSource;
+    private JdbcPooledConnectionSource connectionSource;
     private Map<Class<?>, Dao<?, String>> _daos = new HashMap<Class<?>, Dao<?, String>>();  
 
     public SQLStorage(String connection) throws SQLException {
@@ -38,11 +39,15 @@ public class SQLStorage extends StorageThreadMarshallAdapter
     public SQLStorage(String connection, String username, String password) throws SQLException {
         if(!Plugin.isDebug()) {
             LoggerFactory.setLogBackendFactory(new NullLogBackend.NullLogBackendFactory());
+        } else {
+            LoggerFactory.setLogBackendType(LogBackendType.CONSOLE);
         }
         
         if(connectionSource == null) {
-            connectionSource = new JdbcConnectionSource(connection, username, password);
-            
+            connectionSource = new JdbcPooledConnectionSource(connection, username, password);
+            connectionSource.setMaxConnectionsFree(2);
+            connectionSource.setMaxConnectionAgeMillis(Long.MAX_VALUE);
+            connectionSource.setTestBeforeGet(true);
         }
     }
 
