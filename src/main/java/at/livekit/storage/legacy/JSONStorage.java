@@ -496,9 +496,12 @@ public class JSONStorage implements IStorageAdapter {
             adapter.create(entry);
         }
 
-        _filePOIs.delete();
-        _filePlayerHeads.delete();
-        _filePlayerPins.delete();
-        _fileSessions.delete();
+        File file = new File(Plugin.getInstance().getDataFolder(), "_backup");
+        if(!file.exists()) file.mkdir();
+
+        Files.move(_filePOIs.toPath(), new File(file, "poi.json").toPath());
+        Files.move(_filePlayerHeads.toPath(), new File(file, "heads.json").toPath());
+        Files.move(_filePlayerPins.toPath(), new File(file, "player_pins.json").toPath());
+        Files.move(_fileSessions.toPath(), new File(file, "sessions-v2.json").toPath());
     }
 }

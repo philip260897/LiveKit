@@ -685,6 +685,10 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
                         Plugin.getStorage().delete(p);
                     }
 
+                    /*if(pin.equals("123456")) {
+                        identity = "867678c4-391b-42a9-a4cb-3ad14089f3f6";
+                    }*/
+
                     if(identity != null) {
                         List<Session> sessions = Plugin.getStorage().load(Session.class, "uuid", UUID.fromString(identity));
                         while(sessions.size() >= 5) {

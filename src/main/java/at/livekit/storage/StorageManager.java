@@ -12,6 +12,8 @@ public class StorageManager
         StorageSettings settings = Config.getStorageSettings();
         if(settings == null) throw new Exception("Storage Settings could not be read!");
 
+        Plugin.log("Initializing storage adapter...["+settings.getType()+"]");
+
         storage = getStorageAdapter(settings);
         storage.initialize();
 

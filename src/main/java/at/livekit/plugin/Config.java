@@ -234,7 +234,7 @@ public class Config
 
         if(config.get("storage.type") == null) {
             Plugin.log("Patching storage config...");
-            config.set("storage.type", "JSON");
+            config.set("storage.type", "SQLITE");
             config.set("storage.sql.host", "NULL");
             config.set("storage.sql.user", "NULL");
             config.set("storage.sql.database", "NULL");

@@ -4,7 +4,7 @@ server:
   password: 'NULL'
   tickrate: 20
 storage:
-  type: 'JSON'
+  type: 'SQLITE'
   sql:
     host: 'NULL'
     database: 'NULL'

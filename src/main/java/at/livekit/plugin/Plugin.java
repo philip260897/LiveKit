@@ -1,23 +1,20 @@
 package at.livekit.plugin;
 
-import java.io.File;
-import java.io.PrintWriter;
-import java.util.List;
+
 import java.util.logging.Logger;
+
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.server.ServerLoadEvent;
-import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import at.livekit.api.core.ILiveKit;
 import at.livekit.api.core.ILiveKitPlugin;
 import at.livekit.commands.CommandHandler;
 import at.livekit.commands.LiveKitCommandExecutor;
-import at.livekit.livekit.Economy;
 import at.livekit.livekit.LiveKit;
 import at.livekit.modules.PlayerModule;
 import at.livekit.modules.PlayerModule.LPlayer;
@@ -30,7 +27,6 @@ import at.livekit.utils.ConsoleListener;
 import at.livekit.utils.HeadLibraryEvent;
 import at.livekit.utils.HeadLibraryV2;
 import at.livekit.utils.Metrics;
-import at.livekit.utils.VaultEconomyAdapter;
 
 public class Plugin extends JavaPlugin implements ILiveKitPlugin, Listener {
 

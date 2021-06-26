@@ -21,8 +21,8 @@ import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.dao.DaoManager;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.jdbc.JdbcConnectionSource;
-import com.j256.ormlite.logger.Level;
-import com.j256.ormlite.logger.Logger;
+import com.j256.ormlite.logger.LoggerFactory;
+import com.j256.ormlite.logger.NullLogBackend;
 import com.j256.ormlite.stmt.Where;
 
 
@@ -37,7 +37,7 @@ public class SQLStorage extends StorageThreadMarshallAdapter
 
     public SQLStorage(String connection, String username, String password) throws SQLException {
         if(!Plugin.isDebug()) {
-            Logger.setGlobalLogLevel(Level.OFF);
+            LoggerFactory.setLogBackendFactory(new NullLogBackend.NullLogBackendFactory());
         }
         
         if(connectionSource == null) {
