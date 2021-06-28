@@ -186,6 +186,12 @@ public class Renderer
         while((block.getType() == Material.AIR || block.getType() == Material.VOID_AIR || block.getType() == Material.CAVE_AIR ) && block.getY() > 0) {
             block = block.getRelative(BlockFace.DOWN);
         }
+
+        Block up = block.getRelative(BlockFace.UP);
+        if(up != null && (up.getType() == Material.SNOW || up.getType() == Material.SNOW_BLOCK)) {
+            block = up;
+        }
+
         return block;
     }
 
@@ -207,7 +213,7 @@ public class Renderer
         }
         if (isLeave(block)) {
             biome |= 0x04;
-        }
+        }        
 
         byte[] data = new byte[4];
         int dataId = _texturepack.getTexture(block.getType());
