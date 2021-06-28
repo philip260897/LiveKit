@@ -2,13 +2,15 @@ package at.livekit.plugin;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.bukkit.Bukkit;
-import org.bukkit.World;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
+import at.livekit.storage.StorageManager.StorageSettings;
 import at.livekit.utils.Utils;
 
 public class Config 
@@ -57,8 +59,18 @@ public class Config
         return (List<String>) config.getList("permissions.default");
     }
 
-    public static List<String> getLiveMapWorlds() {
-        return (List<String>) config.getList("modules.LiveMapModule.worlds");
+    public static Map<String, String> getLiveMapWorlds() {
+        HashMap<String, String> map = new HashMap<String, String>();
+        int count = 0;
+        for(String world : (List<String>) config.getList("modules.LiveMapModule.worlds")) {
+            if(world.contains(":")) {
+                map.put(world.split(":")[0], count+":"+world.split(":")[1]);
+            } else {
+                map.put(world, count+":"+world);
+            }
+            count++;
+        }
+        return map;
     }
 
     public static boolean moduleEnabled(String name) {
@@ -66,7 +78,7 @@ public class Config
     }
 
     public static String getPassword() {
-        return config.getString("server.password");
+        return getNullableString("server.password");
     }
 
     public static String getConsolePassword() {
@@ -83,6 +95,50 @@ public class Config
 
     public static boolean canTeleportSpawn() {
         return config.getBoolean("modules.POIModule.teleport_spawn");
+    }
+
+    public static StorageSettings getStorageSettings() {
+        return getStorageSettings("storage");
+    }
+
+    public static StorageSettings getMigrateStorage() {
+        return getStorageSettings("migrate");
+    }
+
+    private static StorageSettings getStorageSettings(String base) {
+        if(config.contains(base)) {
+            return new StorageSettings(config.getString(base+".type"), config.getString(base+".sql.host"), config.getString(base+".sql.database"), config.getString(base+".sql.user"), config.getString(base+".sql.password"));
+        }
+        return null;
+    }
+
+    public static void resetMigration() {
+        try{
+            config.set("migrate", null);
+            config.save(configFile);
+        }catch(Exception ex){ex.printStackTrace();}
+    }
+    /*public static String getStorageType() {
+        return config.getString("storage.type");
+    }
+
+    public static String getStorageUser() {
+        return getNullableString("storage.user");
+    }
+
+    public static String getStoragePassword() {
+        return getNullableString("storage.password");
+    }
+
+    public static String getStorageHost() {
+        return getNullableString("storage.host");
+    }*/
+
+    public static String getNullableString(String path) {
+        String string = config.getString(path);
+        if(string == null) return null;
+        if(string.equalsIgnoreCase("null")) return null;
+        return string;
     }
     
     /*public static String getModuleString(String name, String setting) {
@@ -172,6 +228,21 @@ public class Config
         if(config.get("modules.InventoryModule") == null) {
             Plugin.log("Patching config with new Inventory module...");
             config.set("modules.InventoryModule.enabled", true);
+
+            save = true;
+        }
+
+        if(config.get("storage.type") == null) {
+            Plugin.log("Patching storage config...");
+            config.set("storage.type", "SQLITE");
+            config.set("storage.sql.host", "NULL");
+            config.set("storage.sql.user", "NULL");
+            config.set("storage.sql.database", "NULL");
+            config.set("storage.sql.password", "NULL");
+
+            if(getPassword() == null) {
+                config.set("server.password", "NULL");
+            }
 
             save = true;
         }

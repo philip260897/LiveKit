@@ -1,50 +1,52 @@
 package at.livekit.authentication;
 
+import java.util.UUID;
+
+import com.j256.ormlite.field.DatabaseField;
+import com.j256.ormlite.table.DatabaseTable;
+
 import at.livekit.utils.Utils;
 
+@DatabaseTable(tableName = "livekit_sessions")
 public class Session {
+
+    @DatabaseField(generatedId = true)
+    private int id;
+    @DatabaseField(index = true)
+    private UUID uuid;
+    @DatabaseField
+    private String sessionkey;
+    @DatabaseField
     private long timestamp;
+    @DatabaseField
     private long last;
-    private String sessionKey;
-    private String ip;
-    private String data;
 
     private Session(){}
 
-    public Session(long timestamp, long last, String sessionKey, String ip, String data) {
+    public Session(UUID uuid, long timestamp, long last, String sessionKey, String ip, String data) {
+        this.uuid = uuid;
         this.timestamp = timestamp;
-        this.sessionKey = sessionKey;
-        this.ip = ip;
-        this.data = data;
+        this.sessionkey = sessionKey;
         this.last = last;
     }
 
     public String getAuthentication() {
-        return sessionKey;
+        return sessionkey;
     }
 
     public long getTimestamp() {
         return timestamp;
     }
 
-    public String getIP() {
-        return ip;
-    }
-
-    public String getData() {
-        return data;
-    }
-
     public Long getLast() {
         return last;
     }
 
-    public static Session createNew(String ip, String data) {
+    public static Session createNew(UUID uuid, String ip, String data) {
         Session session = new Session();
-        session.sessionKey = Utils.generateRandom(128);
+        session.uuid = uuid;
+        session.sessionkey = Utils.generateRandom(128);
         session.timestamp = System.currentTimeMillis();
-        session.ip = ip;
-        session.data = data;
         return session;
     }
 }

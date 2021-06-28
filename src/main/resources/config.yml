@@ -1,8 +1,15 @@
 server:
   port: 4123
-  name: My Minecraft Server
-  password: null
+  name: 'My Minecraft Server'
+  password: 'NULL'
   tickrate: 20
+storage:
+  type: 'SQLITE'
+  sql:
+    host: 'NULL'
+    database: 'NULL'
+    user: 'NULL'
+    password: 'NULL'
 anonymous:
   allow: true
   permissions:

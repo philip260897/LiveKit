@@ -1,10 +1,12 @@
 package at.livekit.map;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.HashMap;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
+import org.bukkit.HeightMap;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -13,24 +15,22 @@ import org.bukkit.block.BlockFace;
 import at.livekit.map.RenderWorld.RenderTask;
 import at.livekit.packets.BlockPacket;
 import at.livekit.packets.ChunkPacket;
+import at.livekit.plugin.Texturepack;
 
 public class Renderer 
 {
-    private static HashMap<String, Integer> _idMap = null;
+    private static Texturepack _texturepack;
 
-    private static void initialize() {
-        if(_idMap == null) {
-            _idMap = new HashMap<String, Integer>(Material.values().length);
-            for (int i = 0; i < Material.values().length; i++) {
-                _idMap.put(Material.values()[i].toString(), i);
-            }
+    private static void initialize(ClassLoader loader) throws Exception {
+        if(_texturepack == null) {
+            _texturepack = Texturepack.getInstance();
         }
     }
 
     private static byte[] DEFAULT_BLOCK = new byte[]{(byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff};
     public static boolean render(String world, RenderTask task, long cpuTime, long frameStart, RenderBounds bounds) throws Exception {
         long start = System.currentTimeMillis();
-        initialize();
+        initialize(task.getClass().getClassLoader());
 
         if (task != null) {
             if(task.region == null || task.region.isDead()) throw new Exception("RenderTask region is dead!");
@@ -55,8 +55,10 @@ public class Renderer
 
                 if(task.isChunk()) {
                     task.unload = !bWorld.isChunkLoaded(task.getChunkOrBlock().x, task.getChunkOrBlock().z);
-                    //if(task.unload) bWorld.loadChunk(task.getChunkOrBlock().x, task.getChunkOrBlock().z);
+                    
+                    
                     task.rchunk = bWorld.getChunkAt(task.getChunkOrBlock().x, task.getChunkOrBlock().z);
+                    if(/*task.unload &&*/ !task.isChunkLoadEvent()) task.rchunk.load();
                 }
             }
 
@@ -80,18 +82,23 @@ public class Renderer
                 for (int z = task.renderingZ; z < 16; z++) {
                     for (int x = task.renderingX; x < 16; x++) {
                         long bstart = System.nanoTime();
+                        long getblock = 0;
 
                         Block block = null;
                         blockX = c.getX() * 16 + x;
                         blockZ = c.getZ() * 16 + z;
                         //get block data only if in bounds
                         if(bounds.blockInBounds(blockX, blockZ)) { 
-                            block = c.getWorld().getHighestBlockAt(blockX, blockZ);
-                            //block = c.getWorld().getBlockAt(blockX, 127, blockZ);
+                            //task.rchunk = bWorld.getChunkAt(task.getChunkOrBlock().x, task.getChunkOrBlock().z);
+                            block = bWorld.getHighestBlockAt(blockX, blockZ);
                             block = getBlockForRendering(block);
-                        }
 
-                        long getblock = System.nanoTime();
+                            getblock = System.currentTimeMillis();
+                            //if(getblock-bstart != 0) System.out.println("["+block.getX()+", "+block.getY()+", "+block.getZ()+"] Took "+(getblock-start)+"ms world "+(wstart-bstart)+"ms");
+                        }
+                        
+
+                        
                         
                         int localX = blockX % 512;
                         if (localX < 0)
@@ -111,6 +118,9 @@ public class Renderer
 
                         long write = System.nanoTime();
 
+                        //System.out.println(((System.nanoTime()-bstart)/1000)+"us write: "+((write - render)/1000)+"us render: "+((render - getblock)/1000)+" block: "+((getblock - bstart)/1000)+" block update "+block.getType()+" y: "+block.getY()+" "+Thread.currentThread().getName());
+                         
+
                         if(System.currentTimeMillis() - frameStart > cpuTime) {
                             task.renderingZ = z;
                             task.renderingX = x+1;
@@ -121,12 +131,12 @@ public class Renderer
                                 return false;
                             }
                         }
-
-                       // System.out.println(((System.nanoTime()-bstart)/1000)+"us write: "+((write - render)/1000)+"us render: "+((render - getblock)/1000)+" block: "+((getblock - bstart)/1000)+" block update "+block.getType()+" y: "+block.getY());
+                               
+                        
                     }
                     task.renderingX = 0;
                 }
-                if(task.unload) Bukkit.getWorld(world).unloadChunk(task.getChunkOrBlock().x, task.getChunkOrBlock().z, false);
+                if(task.unload) { Bukkit.getWorld(world).unloadChunk(task.getChunkOrBlock().x, task.getChunkOrBlock().z, false);  }
             } else {
                 Block block = Bukkit.getWorld(world).getHighestBlockAt(task.getChunkOrBlock().x, task.getChunkOrBlock().z);
 
@@ -168,10 +178,12 @@ public class Renderer
             while(block.getY() > 0 && air == false) {
                block = block.getRelative(BlockFace.DOWN,!air ? 3 : 1);
                if(block.getType() == Material.AIR) air = true;
+               if(block.getType() == Material.VOID_AIR) air = true;
+               if(block.getType() == Material.CAVE_AIR) air = true;
             }
         }
 
-        while(block.getType() == Material.AIR && block.getY() > 0) {
+        while((block.getType() == Material.AIR || block.getType() == Material.VOID_AIR || block.getType() == Material.CAVE_AIR ) && block.getY() > 0) {
             block = block.getRelative(BlockFace.DOWN);
         }
         return block;
@@ -179,13 +191,6 @@ public class Renderer
 
     private static byte[] getBlockData(Block block) {
         Integer height = null;
-        //Block _original = block;
-
-        //long millis = System.currentTimeMillis();
-
-
-
-        //if(System.currentTimeMillis()-millis != 0) System.out.println(System.currentTimeMillis()-millis + " for block finding");
 
         byte biome = 0x00;
         if (block.getType() == Material.WATER) {
@@ -205,7 +210,7 @@ public class Renderer
         }
 
         byte[] data = new byte[4];
-        int dataId = getMaterialId(block.getType());
+        int dataId = _texturepack.getTexture(block.getType());
         data[1] = (byte) dataId;
         data[0] = (byte) (dataId >> 8);
 
@@ -219,27 +224,5 @@ public class Renderer
         return /* mat == Material.LEGACY_LEAVES || mat == Material.LEGACY_LEAVES_2 || */
         mat == Material.ACACIA_LEAVES || mat == Material.BIRCH_LEAVES || mat == Material.OAK_LEAVES
                 || mat == Material.DARK_OAK_LEAVES || mat == Material.SPRUCE_LEAVES || mat == Material.JUNGLE_LEAVES;
-    }
-
-   /* private static int getMaterialId(Material material) {
-        long start = System.nanoTime();
-        for (int i = 0; i < Material.values().length; i++) {
-            if (material == Material.values()[i]) {
-                System.out.println((System.nanoTime() - start)/1000+"us");
-                return i;
-            }
-        }
-        
-        return 0;
-    }*/
-
-    private static int getMaterialId(Material material) {
-        //long start = System.nanoTime();
-        
-        Integer id = _idMap.get(material.toString());
-
-        //System.out.println((System.nanoTime() - start)/1000+"us");
-        
-        return id != null ? id.intValue() : 0;
     }
 }

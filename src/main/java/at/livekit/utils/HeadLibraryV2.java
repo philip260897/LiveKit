@@ -11,6 +11,11 @@ import java.util.List;
 import java.util.UUID;
 
 import javax.imageio.ImageIO;
+
+import com.j256.ormlite.field.DataType;
+import com.j256.ormlite.field.DatabaseField;
+import com.j256.ormlite.table.DatabaseTable;
+
 import org.bukkit.OfflinePlayer;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -94,14 +99,21 @@ public class HeadLibraryV2 implements Runnable
         return returnValue;
     }
     
-
+    @DatabaseTable(tableName = "livekit_heads")
     public static class HeadInfo{
         //private String uuid;
+        @DatabaseField(id = true)
         private String name;
+        @DatabaseField(dataType = DataType.LONG_STRING)
         private String head = null;
+        @DatabaseField
         private boolean first = true;
+        @DatabaseField
         private boolean failed = false;
+        @DatabaseField
         private long timestamp = 0;
+
+        HeadInfo(){}
 
         public HeadInfo(String name) {
             this.name = name;
@@ -152,7 +164,7 @@ public class HeadLibraryV2 implements Runnable
     @Override
     public void run() {
         try{
-            List<HeadInfo> heads = Plugin.getStorage().loadPlayerHeads();
+            List<HeadInfo> heads = Plugin.getStorage().loadAll(HeadInfo.class);
             synchronized(_cache) {
                 for(HeadInfo head : heads) {
                     _cache.put(head.getName(), head);
@@ -181,7 +193,7 @@ public class HeadLibraryV2 implements Runnable
 
                 if(info == null) {
                     try{
-                        info = Plugin.getStorage().loadPlayerHead(name);
+                        info = Plugin.getStorage().loadSingle(HeadInfo.class, "name", name);
                     }catch(Exception ex){ex.printStackTrace();}
                 }
 
@@ -207,7 +219,7 @@ public class HeadLibraryV2 implements Runnable
                             _cache.put(name, info);
                         }
                         try{
-                            Plugin.getStorage().savePlayerHead(name, info);
+                            Plugin.getStorage().createOrUpdate(info);
                         }catch(Exception ex){ex.printStackTrace();}
 
                         if(HeadLibraryV2.listener != null) HeadLibraryV2.listener.onHeadResolved(info.name, info.head);
@@ -221,7 +233,7 @@ public class HeadLibraryV2 implements Runnable
                             _cache.put(name, info);
                         }
                         try{
-                            Plugin.getStorage().savePlayerHead(name, info);
+                            Plugin.getStorage().createOrUpdate(info);
                         }catch(Exception ex){ex.printStackTrace();}
 
                         if(rateLimit != 0) {

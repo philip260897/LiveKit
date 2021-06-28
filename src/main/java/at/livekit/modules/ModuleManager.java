@@ -53,8 +53,8 @@ public class ModuleManager
         this.registerModule(new SettingsModule(listener));
         this.registerModule(new PlayerModule(listener));
 
-        for(String world : Config.getLiveMapWorlds()) {
-            this.registerModule(new LiveMapModule(world, listener));
+        for(String world : Config.getLiveMapWorlds().keySet()) {
+            this.registerModule(new LiveMapModule(world, listener, Config.getLiveMapWorlds()));
             this.registerModule(new WeatherTimeModule(world, listener));
         }
 
@@ -62,6 +62,7 @@ public class ModuleManager
         this.registerModule(new ChatModule(listener));
         this.registerModule(new POIModule(listener));
         this.registerModule(new InventoryModule(listener));
+        //this.registerModule(new EconomyModule(listener));
         
         //if(Config.getConsolePassword() != null) {
         if(Config.getConsolePassword() == null) Plugin.warning("Enabling Console access without password. UNSAFE!");
@@ -146,6 +147,7 @@ public class ModuleManager
                 if(_modules.containsKey(moduleType)) {
                     BaseModule module = _modules.get(moduleType);
                     if(module.isEnabled()) {
+                        Plugin.debug("Disabling "+module.getType());
                         module.onDisable(signatures);
                 
 
@@ -177,6 +179,7 @@ public class ModuleManager
                 if(_modules.containsKey(moduleType)) {
                     BaseModule module = _modules.get(moduleType);
                     if(!module.isEnabled()) {
+                        Plugin.debug("Enabling "+module.getType());
                         module.onEnable(signatures);
 
                         //handle subscription update && update identity subscriptions if some got disabled!

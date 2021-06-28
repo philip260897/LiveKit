@@ -39,6 +39,7 @@ import at.livekit.api.core.Color;
 import at.livekit.api.core.Privacy;
 import at.livekit.api.map.AsyncPlayerInfoProvider;
 import at.livekit.api.map.InfoEntry;
+import at.livekit.api.map.PersonalPin;
 import at.livekit.api.map.PlayerInfoProvider;
 import at.livekit.api.map.Waypoint;
 import at.livekit.livekit.Identity;
@@ -486,7 +487,7 @@ public class PlayerModule extends BaseModule implements Listener
         response.put("potions", potions);
 
         List<InfoEntry> _infos = new ArrayList<>();
-        List<Waypoint> _waypoints = new ArrayList<>();
+        List<PersonalPin> _waypoints = new ArrayList<>();
 
         try{
         
@@ -672,7 +673,7 @@ public class PlayerModule extends BaseModule implements Listener
         public List<PlayerAction> actions = new ArrayList<PlayerAction>();
 
         //used for caching player specific waypoints
-        protected List<Waypoint> _cachedWaypoints = new ArrayList<Waypoint>();
+        protected List<PersonalPin> _cachedWaypoints = new ArrayList<PersonalPin>();
 
        // public long lastOnline = 0;
        // public long firstPlayed = 0;
@@ -833,7 +834,7 @@ public class PlayerModule extends BaseModule implements Listener
 
         private static LPlayer fromOfflinePlayer(OfflinePlayer player) {
             LPlayer p = new LPlayer(player.getUniqueId().toString());
-            p.name = player.getName();
+            p.name = player.getName() != null ? player.getName() : "Unknown";
             p.online = player.isOnline();
             /*if(!HeadLibrary.has(player.getName())) { 
                 HeadLibrary.resolveAsync(player.getName());

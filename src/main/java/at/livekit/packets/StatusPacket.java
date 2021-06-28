@@ -7,6 +7,7 @@ public class StatusPacket extends RequestPacket {
 
     private int status;
     private String message;
+    private JSONObject data;
 
     public StatusPacket(int status) {
         this.status = status;
@@ -16,6 +17,11 @@ public class StatusPacket extends RequestPacket {
         this.status = status;
         this.message = message;
     }
+
+    public StatusPacket(int status, JSONObject data) {
+        this.status = status;
+        this.data = data;
+    }
     
     @Override
     public JSONObject toJson() {
@@ -23,6 +29,7 @@ public class StatusPacket extends RequestPacket {
         json.put("status", status);
         json.put("message", message);
         json.put("packet_id", PACKETID);
+        if(data != null) json.put("data", data);
         return json;
     }
 }

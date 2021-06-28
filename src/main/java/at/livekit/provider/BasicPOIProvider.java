@@ -24,7 +24,7 @@ public class BasicPOIProvider extends AsyncPOIInfoProvider {
 
     }
 
-    public static BukkitTask listPOIAsync(FutureSyncCallback<List<POI>> onResult, FutureSyncCallback<Exception> onError) {
+    /*public static BukkitTask listPOIAsync(FutureSyncCallback<List<POI>> onResult, FutureSyncCallback<Exception> onError) {
         return Utils.executeAsyncForSyncResult(new Callable<List<POI>>(){
             @Override
             public List<POI> call() throws Exception {
@@ -32,9 +32,9 @@ public class BasicPOIProvider extends AsyncPOIInfoProvider {
             }
 
         }, onResult, onError);
-    }
+    }*/
 
-    public static BukkitTask setPOIAsync(POI poi, FutureSyncCallback<Void> onResult, FutureSyncCallback<Exception> onError) {
+    /*public static BukkitTask setPOIAsync(POI poi, FutureSyncCallback<Void> onResult, FutureSyncCallback<Exception> onError) {
         return Utils.executeAsyncForSyncResult(new Callable<Void>(){
             @Override
             public Void call() throws Exception {
@@ -43,9 +43,9 @@ public class BasicPOIProvider extends AsyncPOIInfoProvider {
             }
 
         }, onResult, onError);
-    }
+    }*/
 
-    public static BukkitTask removePOIAsync(POI poi, FutureSyncCallback<Void> onResult, FutureSyncCallback<Exception> onError) {
+    /*public static BukkitTask removePOIAsync(POI poi, FutureSyncCallback<Void> onResult, FutureSyncCallback<Exception> onError) {
         return Utils.executeAsyncForSyncResult(new Callable<Void>(){
             @Override
             public Void call() throws Exception {
@@ -54,7 +54,7 @@ public class BasicPOIProvider extends AsyncPOIInfoProvider {
             }
 
         }, onResult, onError);
-    }
+    }*/
 
     @Override
     public void onResolvePOIInfo(POI poi, List<InfoEntry> arg1) {
