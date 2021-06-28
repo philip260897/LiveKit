@@ -197,7 +197,7 @@ public class Renderer
 
     private static byte[] getBlockData(Block block) {
         Integer height = null;
-
+        
         byte biome = 0x00;
         if(block.getType() == Material.WATER) {
             biome |= 0x08;
