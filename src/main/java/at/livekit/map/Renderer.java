@@ -199,7 +199,7 @@ public class Renderer
         Integer height = null;
 
         byte biome = 0x00;
-        if (block.getType() == Material.WATER) {
+        if(block.getType() == Material.WATER) {
             biome |= 0x08;
             Block b = block.getRelative(BlockFace.DOWN);
             for (int i = 0; i < 100; i++) {
@@ -211,17 +211,20 @@ public class Renderer
                 b = b.getRelative(BlockFace.DOWN);
             }
         }
+
         if (isLeave(block)) {
             biome |= 0x04;
         }        
 
         byte[] data = new byte[4];
         int dataId = _texturepack.getTexture(block.getType());
+        byte biomeId = (byte) _texturepack.getBiome(block.getBiome());
+
         data[1] = (byte) dataId;
-        data[0] = (byte) (dataId >> 8);
+        data[0] = (byte) ((byte)(dataId >> 8) | (biomeId & 0xF0));
 
         data[2] = height != null ? (byte) height.intValue() : (byte) block.getY();
-        data[3] = biome;
+        data[3] = (byte)(biome | (biomeId << 4));
         return data;
     }
 

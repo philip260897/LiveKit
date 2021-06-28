@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.bukkit.Material;
+import org.bukkit.block.Biome;
 import org.json.JSONObject;
 
 
@@ -25,10 +26,12 @@ public class Texturepack {
     }
     
     private Map<String, Integer> _textures = new HashMap<String, Integer>();
+    private Map<String, Integer> _biomes = new HashMap<String, Integer>();
 
     public Texturepack() throws Exception{
         int nextId = 0;
 
+        //load Textures
         String json = "";
         InputStream in = this.getClass().getClassLoader().getResourceAsStream("texturepack.json");
         BufferedReader reader = new BufferedReader(new InputStreamReader(in));
@@ -56,10 +59,47 @@ public class Texturepack {
             }
         }
         Plugin.debug("Patched "+additionalTextures+" textures");
+
+        //load Biomes
+        nextId = 1;
+        json = "";
+
+        in = this.getClass().getClassLoader().getResourceAsStream("biomes.json");
+        reader = new BufferedReader(new InputStreamReader(in));
+
+        line = null;
+        while((line = reader.readLine()) != null) {
+            json += line;
+        }
+        reader.close();
+
+        root = new JSONObject(json);
+        for(String key : root.keySet()) {
+            Integer intKey = Integer.parseInt(key.split(":")[0]);
+            _biomes.put(key.split(":")[1], intKey);
+
+            if(intKey.intValue() >= nextId) nextId = intKey.intValue()+1;
+        }
+
+        additionalTextures = 0;
+        for(Biome mat : Biome.values()) {
+            if(!_biomes.containsKey(mat.toString())) {
+                _biomes.put(mat.toString(), nextId++);
+                Plugin.debug("Patching biome "+(nextId-1)+":"+mat.toString());
+                additionalTextures++;
+            }
+        }
+        Plugin.debug("Patched "+additionalTextures+" biomes");
     }
 
     public int getTexture(Material material) {
         Integer id = _textures.get(material.toString());
+        if(id == null) return 0;
+        return id.intValue();
+    }
+
+    public int getBiome(Biome biome) {
+        Integer id = _biomes.get(biome.toString());
         if(id == null) return 0;
         return id.intValue();
     }
@@ -84,4 +124,23 @@ public class Texturepack {
         }
     }
 
+    public static void generateBiomes() {
+        try {
+            Texturepack texturepack = Texturepack.getInstance();
+            JSONObject root = new JSONObject();
+            for(Biome biome : Biome.values()) {
+                root.put(texturepack.getBiome(biome)+":"+biome.toString(), "#00000000");
+            }
+
+            File file = new File( System.getProperty("user.dir") + "/plugins/LiveKit/biomes.json" );
+            if(!file.exists()) file.createNewFile();
+
+            PrintWriter writer = new PrintWriter(file);
+            writer.write(root.toString());
+            writer.flush();
+            writer.close();
+        }catch(Exception ex){
+            ex.printStackTrace();
+        }
+    }
 }
