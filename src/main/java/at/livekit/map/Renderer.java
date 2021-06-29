@@ -219,6 +219,7 @@ public class Renderer
         byte[] data = new byte[4];
         int dataId = _texturepack.getTexture(block.getType());
         byte biomeId = (byte) _texturepack.getBiome(block.getBiome());
+        //byte biomeId = 0x01;
 
         data[1] = (byte) dataId;
         data[0] = (byte) ((byte)(dataId >> 8) | (biomeId & 0xF0));
