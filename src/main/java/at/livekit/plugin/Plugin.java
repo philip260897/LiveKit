@@ -142,6 +142,10 @@ public class Plugin extends JavaPlugin implements ILiveKitPlugin, Listener {
 		LiveKitCommandExecutor base = new LiveKitCommandExecutor();
 		getCommand("livekit").setExecutor(base);
 		getCommand("livekit").setTabCompleter(base);
+
+		if(Bukkit.getPluginManager().getPlugin("DiscordSRV") == null) {
+			
+		}
     }
     
 	@EventHandler
