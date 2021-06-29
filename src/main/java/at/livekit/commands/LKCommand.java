@@ -1,7 +1,6 @@
 package at.livekit.commands;
 
 import org.bukkit.command.CommandSender;
-import org.junit.runner.Describable;
 
 import at.livekit.commands.resolvers.ArgumentResolver;
 

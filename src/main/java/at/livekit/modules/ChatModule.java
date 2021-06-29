@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -22,10 +23,13 @@ import at.livekit.packets.ActionPacket;
 import at.livekit.packets.IPacket;
 import at.livekit.packets.StatusPacket;
 import at.livekit.plugin.Plugin;
+import at.livekit.supported.DiscordSRVPlugin;
+import at.livekit.supported.DiscordSRVPlugin.DiscordSRVEvent;
 
-public class ChatModule extends BaseModule implements Listener {
+public class ChatModule extends BaseModule implements Listener, DiscordSRVEvent {
 
     private static int CHAT_LOG_SIZE = 50;
+    private DiscordSRVPlugin discrodPlugin;
 
     private List<ChatMessage> _updates = new ArrayList<ChatMessage>();
     private List<ChatMessage> _backlog = new ArrayList<ChatMessage>(CHAT_LOG_SIZE);
@@ -41,13 +45,17 @@ public class ChatModule extends BaseModule implements Listener {
     @Override
     public void onEnable(Map<String, ActionMethod> signature) {
         Bukkit.getServer().getPluginManager().registerEvents(this, Plugin.getInstance());
-        
+        discrodPlugin = new DiscordSRVPlugin();
+        discrodPlugin.onEnable(this);
+
         super.onEnable(signature);
     }
 
     @Override
     public void onDisable(Map<String, ActionMethod> signature) {
         HandlerList.unregisterAll(this);
+
+        discrodPlugin.onDisable();
 
         _backlog.clear();
         _updates.clear();
@@ -62,6 +70,20 @@ public class ChatModule extends BaseModule implements Listener {
         ChatMessage message = new ChatMessage(event.getPlayer().getUniqueId().toString(), "", event.getMessage());
         synchronized (_updates) {
             _updates.add(message);
+        }
+
+        notifyChange();
+    }
+    @Override
+    public void onDiscordChat(String id, String name, String message) {
+        if(!isEnabled())
+            return;
+
+        Plugin.debug("DiscordSRV: "+id+" "+name+" "+message);
+
+        ChatMessage m = new ChatMessage(id, "", message, name, ChatColor.DARK_PURPLE+"DiscordSRV");
+        synchronized(_updates) {
+            _updates.add(m);
         }
 
         notifyChange();
@@ -129,14 +151,22 @@ public class ChatModule extends BaseModule implements Listener {
 
     public static class ChatMessage implements Serializable {
         private String sender;
+        private String altName;
+        private String source;
         private String format;
         private String message;
         private Long timestamp;
 
         public ChatMessage(String sender, String format, String message) {
+            this(sender, format, message, null, null);
+        }
+
+        public ChatMessage(String sender, String format, String message, String altName, String source) {
             this.sender = sender;
             this.format = format;
             this.message = message;
+            this.altName = altName;
+            this.source = source;
             this.timestamp = System.currentTimeMillis();
         }
 
@@ -155,4 +185,7 @@ public class ChatModule extends BaseModule implements Listener {
             return "ChatMessage[sender="+sender+"; format="+format+"; message="+message+"; json="+toJson().toString()+"]";
         }
     }
+
+
+
 }

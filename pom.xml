@@ -63,18 +63,22 @@
 </build>
 
     <repositories>
-        <repository>
-            <id>spigot-repo</id>
-            <url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
-        </repository>
-		<repository>
-			<id>jitpack.io</id>
-			<url>https://jitpack.io</url>
-		</repository>
       <repository>
-          <id>snapshots</id>
-          <url>http://localhost:8081/repository/maven-snapshots/</url>
+        <id>spigot-repo</id>
+        <url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
       </repository>
+      <repository>
+        <id>jitpack.io</id>
+        <url>https://jitpack.io</url>
+      </repository>
+      <repository>
+        <id>snapshots</id>
+        <url>http://localhost:8081/repository/maven-snapshots/</url>
+      </repository>
+      <repository>
+        <id>Scarsz-Nexus</id>
+        <url>https://nexus.scarsz.me/content/groups/public/</url>
+      </repository>  
     </repositories>
 
   <dependencies>
@@ -125,6 +129,12 @@
         <groupId>org.jsoup</groupId>
         <artifactId>jsoup</artifactId>
         <version>1.12.1</version>
+    </dependency>
+    <dependency>
+        <groupId>com.discordsrv</groupId>
+        <artifactId>discordsrv</artifactId>
+        <version>1.22.0</version>
+        <scope>provided</scope>
     </dependency>
   
     <!--Spigot API-->
