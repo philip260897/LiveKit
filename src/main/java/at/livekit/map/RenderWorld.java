@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
+import org.bukkit.ChunkSnapshot;
 import org.bukkit.block.Block;
 import org.bukkit.scheduler.BukkitTask;
 import org.json.JSONArray;
@@ -569,7 +570,7 @@ public class RenderWorld
         public int renderingX=0;
         public int renderingZ=0;
         public boolean unload = false;
-        public Chunk rchunk;
+        public ChunkSnapshot rchunk;
 
         public byte[] buffer;
         public IPacket result;
