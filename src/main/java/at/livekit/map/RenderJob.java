@@ -33,6 +33,11 @@ public class RenderJob {
     }
 
     public Offset next() {
+        int xx = x;
+        int zz = z;
+
+        
+
         if(x >= right) {
             x = left;
             z++;
