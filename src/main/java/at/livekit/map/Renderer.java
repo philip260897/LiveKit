@@ -48,6 +48,8 @@ public class Renderer
                 }
             }
 
+            World bWorld = Bukkit.getWorld(world);
+
             if(task.rendering == false) {
                 task.rendering = true;
                 task.renderingX = 0;
@@ -57,20 +59,20 @@ public class Renderer
                 Arrays.fill(task.buffer, (byte)0xFF);
 
                 if(task.isChunk()) {
-                    World bWorld = Bukkit.getWorld(world);
+                    
                     long chunkLoad = System.currentTimeMillis();
 
                     task.unload = !bWorld.isChunkLoaded(task.getChunkOrBlock().x, task.getChunkOrBlock().z);
 
                     Chunk c = bWorld.getChunkAt(task.getChunkOrBlock().x, task.getChunkOrBlock().z);
-                    /*if(task.unload)*/ c.load();
+                    if(task.unload && !task.isChunkLoadEvent()) c.load();
 
                     long snap = System.currentTimeMillis();
-                    task.rchunk = c.getChunkSnapshot(true, true, false);
+                    //task.rchunk = c.getChunkSnapshot(true, true, false);
 
                     //task.rchunk = bWorld.getChunkAt(task.getChunkOrBlock().x, task.getChunkOrBlock().z).getChunkSnapshot(true, true, false);
 
-                    System.out.println("Snapshot Load: "+(System.currentTimeMillis()-snap)+"ms Chunk Load: "+(snap - chunkLoad)+"ms");
+                    //System.out.println("Snapshot Load: "+(System.currentTimeMillis()-snap)+"ms Chunk Load: "+(snap - chunkLoad)+"ms");
                     //if(/*task.unload &&*/ !task.isChunkLoadEvent()) task.rchunk.load();
                 }
             }
@@ -84,10 +86,11 @@ public class Renderer
                 //if(task.unload) Bukkit.getWorld(world).loadChunk(task.getChunkOrBlock().x, task.getChunkOrBlock().z);
 
                 //Chunk c = Bukkit.getWorld(world).getChunkAt(task.getChunkOrBlock().x, task.getChunkOrBlock().z);
-                ChunkSnapshot c = task.rchunk;
+                //ChunkSnapshot c = task.rchunk;
                 
                 
                 chunk = System.currentTimeMillis();
+                Chunk c = bWorld.getChunkAt(task.getChunkOrBlock().x, task.getChunkOrBlock().z);
 
                 int blockX = 0;
                 int blockZ = 0;
@@ -97,21 +100,22 @@ public class Renderer
                         long bstart = System.currentTimeMillis();
                         long getblock = 0;
 
-                        BlockData block = null;
+                        Block block = null;
                         blockX = c.getX() * 16 + x;
                         blockZ = c.getZ() * 16 + z;
+                        
                         //get block data only if in bounds
                         if(bounds.blockInBounds(blockX, blockZ)) {
                             //long hstart = System.currentTimeMillis(); 
                             //task.rchunk = bWorld.getChunkAt(task.getChunkOrBlock().x, task.getChunkOrBlock().z);
-                            //block = bWorld.getHighestBlockAt(blockX, blockZ);
-                            int y = c.getHighestBlockYAt(x, z)-1;
+                            block = bWorld.getHighestBlockAt(blockX, blockZ);
+                            //int y = c.getHighestBlockYAt(x, z)-1;
                             getblock = System.currentTimeMillis();
 
-                            if(y < 0) y = 0;
-                            if(y > 255) y = 255;
-                            block = c.getBlockData(x, y, z); 
-                            //block = getBlockForRendering(block);
+                            //if(y < 0) y = 0;
+                            //if(y > 255) y = 255;
+                            //block = c.getBlockData(x, y, z); 
+                            block = getBlockForRendering(block);
 
                             
                             if(getblock-bstart != 0) System.out.println("["+blockX+", y, "+blockZ+"] Took "+(getblock-bstart));
@@ -128,7 +132,7 @@ public class Renderer
                         if (localZ < 0)
                             localZ += 512;
 
-                        byte[] blockData = (block != null ? getBlockData(block, c.getBiome(x, z), c.getHighestBlockYAt(x, z)) : DEFAULT_BLOCK);
+                        byte[] blockData = (block != null ? getBlockData(block/*, c.getBiome(x, z), c.getHighestBlockYAt(x, z)*/) : DEFAULT_BLOCK);
                         long render = System.nanoTime();
 
                         for (int i = 0; i < blockData.length; i++) {
@@ -156,9 +160,9 @@ public class Renderer
                     }
                     task.renderingX = 0;
                 }
-                //if(task.unload) { Bukkit.getWorld(world).unloadChunk(task.getChunkOrBlock().x, task.getChunkOrBlock().z, false);  }
+                if(task.unload) { bWorld.unloadChunk(task.getChunkOrBlock().x, task.getChunkOrBlock().z, false);  }
             } else {
-                Block block = Bukkit.getWorld(world).getHighestBlockAt(task.getChunkOrBlock().x, task.getChunkOrBlock().z);
+                Block block = bWorld.getHighestBlockAt(task.getChunkOrBlock().x, task.getChunkOrBlock().z);
 
                 int localX = block.getX() % 512;
                 if (localX < 0)
