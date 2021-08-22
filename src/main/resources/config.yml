@@ -17,8 +17,6 @@ anonymous:
   - livekit.module.map
   - livekit.module.players
   - livekit.players.other
-  - livekit.chat.write
-  - livekit.chat.write_offline
 permissions:
   useVault: false
   default:
