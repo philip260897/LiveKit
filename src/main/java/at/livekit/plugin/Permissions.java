@@ -4,8 +4,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Color;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.plugin.RegisteredServiceProvider;
+
+import net.milkbowl.vault.chat.Chat;
 import net.milkbowl.vault.permission.Permission;
 
 public class Permissions 
@@ -13,6 +16,8 @@ public class Permissions
     public static List<String> permissions = new ArrayList<String>();
 
     private static Permission perms;
+    private static Chat chat;
+
     private static List<String> defaultPermissions = new ArrayList<String>();
     private static boolean use = true;
 
@@ -31,6 +36,7 @@ public class Permissions
         permissions.add("livekit.module.economy");
         
         permissions.add("livekit.chat.write");
+        permissions.add("livekit.chat.write_offline");
         permissions.add("livekit.poi.personalpins");
         permissions.add("livekit.poi.edit");
         permissions.add("livekit.players.other");
@@ -51,6 +57,12 @@ public class Permissions
                 return false;
             }
             Plugin.log("Found Vault! Using permissions ["+perms.getName()+"]");
+
+            RegisteredServiceProvider<Chat> rspChat = Bukkit.getServer().getServicesManager().getRegistration(Chat.class);
+            if(rspChat != null)
+            {
+                chat = rspChat.getProvider();
+            }
         }
         else
         {
@@ -68,6 +80,24 @@ public class Permissions
         } else {
             return defaultPermissions.contains(permission);
         }
+    }
+
+    public static String getPrefix(OfflinePlayer player) {
+        if(use && chat != null)
+        {
+            return chat.getPlayerPrefix(null , player);
+        }
+        
+        return "";
+    }
+
+    public static String getSuffix(OfflinePlayer player) {
+        if(use && chat != null)
+        {
+            return chat.getPlayerSuffix(null , player);
+        }
+        
+        return "";
     }
 
     public static void registerPermission(String permission) {

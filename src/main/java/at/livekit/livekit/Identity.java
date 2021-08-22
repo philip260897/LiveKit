@@ -19,6 +19,9 @@ public class Identity
     private boolean anonymous = false;
     private boolean op = false;
 
+    private String prefix;
+    private String suffix;
+
     private boolean identified = false;
 
     private List<String> permissions = new ArrayList<String>();
@@ -110,6 +113,14 @@ public class Identity
         return anonymous;
     }
 
+    public String getPrefix() {
+        return prefix;
+    }
+
+    public String getSuffix() {
+        return suffix;
+    }
+
     public boolean hasPermission(String permission) {
         if(!isIdentified()) return false;
         if(uuid == null && anonymous == false) return false;
@@ -140,6 +151,9 @@ public class Identity
                         }
                     }
                 }
+
+                prefix = Permissions.getPrefix(player);
+                suffix = Permissions.getSuffix(player);
             }catch(Exception ex){};
         } else {
             op = false;

@@ -112,6 +112,8 @@ public class Renderer
                             //int y = c.getHighestBlockYAt(x, z)-1;
                             getblock = System.currentTimeMillis();
 
+                            
+
                             //if(y < 0) y = 0;
                             //if(y > 255) y = 255;
                             //block = c.getBlockData(x, y, z); 
@@ -243,13 +245,14 @@ public class Renderer
         byte[] data = new byte[4];
         int dataId = _texturepack.getTexture(block.getType());
         byte biomeId = (byte) _texturepack.getBiome(block.getBiome());
+        int h = height != null ? height.intValue() : block.getY();
         //byte biomeId = 0x01;
 
         data[1] = (byte) dataId;
         data[0] = (byte) ((byte)(dataId >> 8) | (biomeId & 0xF0));
 
-        data[2] = height != null ? (byte) height.intValue() : (byte) block.getY();
-        data[3] = (byte)(biome | (biomeId << 4));
+        data[2] = (byte) h;
+        data[3] = (byte)(biome | (biomeId << 4) | ((h & 0x100) != 0x00 ? ((byte)0x01) : ((byte)0x00)));
         return data;
     }
 

@@ -23,6 +23,8 @@ import at.livekit.livekit.Identity;
 import at.livekit.packets.ActionPacket;
 import at.livekit.packets.IPacket;
 import at.livekit.packets.StatusPacket;
+import at.livekit.plugin.Config;
+import at.livekit.plugin.Permissions;
 import at.livekit.plugin.Plugin;
 
 public class ChatModule extends BaseModule implements Listener {
@@ -32,6 +34,8 @@ public class ChatModule extends BaseModule implements Listener {
 
     private List<ChatMessage> _updates = new ArrayList<ChatMessage>();
     private List<ChatMessage> _backlog = new ArrayList<ChatMessage>(CHAT_LOG_SIZE);
+
+    private String offlineFormat = null;
 
     public ChatModule(ModuleListener listener) {
         super(1, "Chat", "livekit.module.chat", UpdateRate.NEVER, listener);
@@ -55,6 +59,7 @@ public class ChatModule extends BaseModule implements Listener {
     public void onEnable(Map<String, ActionMethod> signature) {
         Bukkit.getServer().getPluginManager().registerEvents(this, Plugin.getInstance());
 
+        this.offlineFormat = Config.getChatOfflineFormat();
 
         super.onEnable(signature);
     }
@@ -103,7 +108,7 @@ public class ChatModule extends BaseModule implements Listener {
     public IPacket sendMessage(Identity identity, ActionPacket packet) {
         JSONObject data = packet.getData();
 
-        if(!identity.hasPermission("livekit.chat.write") || !identity.hasPermission("livekit.chat.write_offline")) return new StatusPacket(0, "Permission denied!");
+        if(!identity.hasPermission("livekit.chat.write") && !identity.hasPermission("livekit.chat.write_offline")) return new StatusPacket(0, "Permission denied!");
         if(identity.isAnonymous()) return new StatusPacket(0, "Permission denied!");
 
         OfflinePlayer op = Bukkit.getOfflinePlayer(UUID.fromString(identity.getUuid()));
@@ -115,12 +120,21 @@ public class ChatModule extends BaseModule implements Listener {
             Player player = op.getPlayer();
             if(data.has("message") && !data.isNull("message")) player.chat(data.getString("message"));
         } else {
+            if(!identity.hasPermission("livekit.chat.write_offline")) return new StatusPacket(0, "Permission denied!");
+
             if(data.has("message") && !data.isNull("message")/* && data.has("displayName") && !data.isNull("displayName")*/) {
+                String chat = offlineFormat;
+                chat = chat.replace("{prefix}", identity.getPrefix());
+                chat = chat.replace("{suffix}", identity.getSuffix());
+                chat = chat.replace("{name}", op.getName());
+                chat = chat.replace("{message}", data.getString("message"));
+                
                 String message = data.getString("message");
                 //String displayName = data.getString("displayName");
                 for(Player player : Bukkit.getOnlinePlayers()) {
-                    player.sendMessage(ChatColor.GREEN+"["+op.getName()+"] "+ChatColor.RESET+message);
+                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', chat));
                 }
+                Plugin.log(ChatColor.stripColor(ChatColor.translateAlternateColorCodes('&', chat)));
 
                 ChatMessage m = new ChatMessage(op, message);
                 m.setPrefix("LiveKit");
