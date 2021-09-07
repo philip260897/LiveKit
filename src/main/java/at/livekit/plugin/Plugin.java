@@ -23,6 +23,7 @@ import at.livekit.provider.BasicPlayerPinProvider;
 import at.livekit.provider.POISpawnProvider;
 import at.livekit.storage.IStorageAdapterGeneric;
 import at.livekit.storage.StorageManager;
+import at.livekit.supported.DiscordSRVPlugin;
 import at.livekit.utils.ConsoleListener;
 import at.livekit.utils.HeadLibraryEvent;
 import at.livekit.utils.HeadLibraryV2;
@@ -42,6 +43,7 @@ public class Plugin extends JavaPlugin implements ILiveKitPlugin, Listener {
 
 	private static IStorageAdapterGeneric storage;
 
+	private static DiscordSRVPlugin discordPlugin;
 
 	@Override
 	public void onEnable() {
@@ -142,6 +144,9 @@ public class Plugin extends JavaPlugin implements ILiveKitPlugin, Listener {
 		LiveKitCommandExecutor base = new LiveKitCommandExecutor();
 		getCommand("livekit").setExecutor(base);
 		getCommand("livekit").setTabCompleter(base);
+
+		discordPlugin = new DiscordSRVPlugin();
+        discordPlugin.onEnable();
     }
     
 	@EventHandler
@@ -174,6 +179,10 @@ public class Plugin extends JavaPlugin implements ILiveKitPlugin, Listener {
     public void onDisable() {
 		//unregister before livekit gets disabled
 		ConsoleListener.unregisterListener();
+
+		try{
+			discordPlugin.onDisable();
+		}catch(Exception ex){ex.printStackTrace();}
 
 		try{
 			LiveKit.getInstance().onDisable();

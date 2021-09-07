@@ -582,7 +582,7 @@ public class LiveKitCommandExecutor implements CommandExecutor, TabCompleter {
     private void cmdTexturepack(CommandSender sender, LKCommand cmd) {
         try{
             Texturepack.generateTexturePack();
-   
+            Texturepack.generateBiomes();
 
             JSONArray array = new JSONArray();
             for(int i = 0; i < EntityType.values().length; i++) {
@@ -596,6 +596,7 @@ public class LiveKitCommandExecutor implements CommandExecutor, TabCompleter {
             writer.write(array.toString());
             writer.flush();
             writer.close();
+
         }catch(Exception ex){ex.printStackTrace();}
     }
     

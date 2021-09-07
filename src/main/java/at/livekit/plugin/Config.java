@@ -112,6 +112,10 @@ public class Config
         return null;
     }
 
+    public static String getChatOfflineFormat() {
+        return config.getString("modules.ChatModule.offlineFormat");
+    }
+
     public static void resetMigration() {
         try{
             config.set("migrate", null);
@@ -243,6 +247,14 @@ public class Config
             if(getPassword() == null) {
                 config.set("server.password", "NULL");
             }
+
+            save = true;
+        }
+
+        if(config.get("modules.ChatModule.offlineFormat") == null)
+        {
+            Plugin.log("Patching config with new entries");
+            config.set("modules.ChatModule.offlineFormat", "&7[Offline]&r <{prefix}&r{name}&r{suffix}&r> {message}");
 
             save = true;
         }

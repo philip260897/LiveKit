@@ -6,11 +6,14 @@ import java.util.HashMap;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
+import org.bukkit.ChunkSnapshot;
 import org.bukkit.HeightMap;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.block.Biome;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.block.data.BlockData;
 
 import at.livekit.map.RenderWorld.RenderTask;
 import at.livekit.packets.BlockPacket;
@@ -35,7 +38,7 @@ public class Renderer
         if (task != null) {
             if(task.region == null || task.region.isDead()) throw new Exception("RenderTask region is dead!");
 
-            World bWorld = Bukkit.getWorld(world);
+            
 
             boolean isChunk = task.isChunk();
             
@@ -44,6 +47,8 @@ public class Renderer
                     return true;
                 }
             }
+
+            World bWorld = Bukkit.getWorld(world);
 
             if(task.rendering == false) {
                 task.rendering = true;
@@ -54,11 +59,21 @@ public class Renderer
                 Arrays.fill(task.buffer, (byte)0xFF);
 
                 if(task.isChunk()) {
+                    
+                    long chunkLoad = System.currentTimeMillis();
+
                     task.unload = !bWorld.isChunkLoaded(task.getChunkOrBlock().x, task.getChunkOrBlock().z);
-                    
-                    
-                    task.rchunk = bWorld.getChunkAt(task.getChunkOrBlock().x, task.getChunkOrBlock().z);
-                    if(/*task.unload &&*/ !task.isChunkLoadEvent()) task.rchunk.load();
+
+                    Chunk c = bWorld.getChunkAt(task.getChunkOrBlock().x, task.getChunkOrBlock().z);
+                    if(task.unload && !task.isChunkLoadEvent()) c.load();
+
+                    long snap = System.currentTimeMillis();
+                    //task.rchunk = c.getChunkSnapshot(true, true, false);
+
+                    //task.rchunk = bWorld.getChunkAt(task.getChunkOrBlock().x, task.getChunkOrBlock().z).getChunkSnapshot(true, true, false);
+
+                    //System.out.println("Snapshot Load: "+(System.currentTimeMillis()-snap)+"ms Chunk Load: "+(snap - chunkLoad)+"ms");
+                    //if(/*task.unload &&*/ !task.isChunkLoadEvent()) task.rchunk.load();
                 }
             }
 
@@ -71,30 +86,41 @@ public class Renderer
                 //if(task.unload) Bukkit.getWorld(world).loadChunk(task.getChunkOrBlock().x, task.getChunkOrBlock().z);
 
                 //Chunk c = Bukkit.getWorld(world).getChunkAt(task.getChunkOrBlock().x, task.getChunkOrBlock().z);
-                Chunk c = task.rchunk;
-               
+                //ChunkSnapshot c = task.rchunk;
+                
                 
                 chunk = System.currentTimeMillis();
+                Chunk c = bWorld.getChunkAt(task.getChunkOrBlock().x, task.getChunkOrBlock().z);
 
                 int blockX = 0;
                 int blockZ = 0;
 
                 for (int z = task.renderingZ; z < 16; z++) {
                     for (int x = task.renderingX; x < 16; x++) {
-                        long bstart = System.nanoTime();
+                        long bstart = System.currentTimeMillis();
                         long getblock = 0;
 
                         Block block = null;
                         blockX = c.getX() * 16 + x;
                         blockZ = c.getZ() * 16 + z;
+                        
                         //get block data only if in bounds
-                        if(bounds.blockInBounds(blockX, blockZ)) { 
+                        if(bounds.blockInBounds(blockX, blockZ)) {
+                            //long hstart = System.currentTimeMillis(); 
                             //task.rchunk = bWorld.getChunkAt(task.getChunkOrBlock().x, task.getChunkOrBlock().z);
                             block = bWorld.getHighestBlockAt(blockX, blockZ);
+                            //int y = c.getHighestBlockYAt(x, z)-1;
+                            getblock = System.currentTimeMillis();
+
+                            
+
+                            //if(y < 0) y = 0;
+                            //if(y > 255) y = 255;
+                            //block = c.getBlockData(x, y, z); 
                             block = getBlockForRendering(block);
 
-                            getblock = System.currentTimeMillis();
-                            //if(getblock-bstart != 0) System.out.println("["+block.getX()+", "+block.getY()+", "+block.getZ()+"] Took "+(getblock-start)+"ms world "+(wstart-bstart)+"ms");
+                            
+                            //if(getblock-bstart != 0) System.out.println("["+blockX+", y, "+blockZ+"] Took "+(getblock-bstart));
                         }
                         
 
@@ -108,7 +134,7 @@ public class Renderer
                         if (localZ < 0)
                             localZ += 512;
 
-                        byte[] blockData = (block != null ? getBlockData(block) : DEFAULT_BLOCK);
+                        byte[] blockData = (block != null ? getBlockData(block/*, c.getBiome(x, z), c.getHighestBlockYAt(x, z)*/) : DEFAULT_BLOCK);
                         long render = System.nanoTime();
 
                         for (int i = 0; i < blockData.length; i++) {
@@ -136,9 +162,9 @@ public class Renderer
                     }
                     task.renderingX = 0;
                 }
-                if(task.unload) { Bukkit.getWorld(world).unloadChunk(task.getChunkOrBlock().x, task.getChunkOrBlock().z, false);  }
+                if(task.unload) { bWorld.unloadChunk(task.getChunkOrBlock().x, task.getChunkOrBlock().z, false);  }
             } else {
-                Block block = Bukkit.getWorld(world).getHighestBlockAt(task.getChunkOrBlock().x, task.getChunkOrBlock().z);
+                Block block = bWorld.getHighestBlockAt(task.getChunkOrBlock().x, task.getChunkOrBlock().z);
 
                 int localX = block.getX() % 512;
                 if (localX < 0)
@@ -186,14 +212,20 @@ public class Renderer
         while((block.getType() == Material.AIR || block.getType() == Material.VOID_AIR || block.getType() == Material.CAVE_AIR ) && block.getY() > 0) {
             block = block.getRelative(BlockFace.DOWN);
         }
+
+        Block up = block.getRelative(BlockFace.UP);
+        if(up != null && (up.getType() == Material.SNOW || up.getType() == Material.SNOW_BLOCK)) {
+            block = up;
+        }
+
         return block;
     }
 
     private static byte[] getBlockData(Block block) {
         Integer height = null;
-
+        
         byte biome = 0x00;
-        if (block.getType() == Material.WATER) {
+        if(block.getType() == Material.WATER) {
             biome |= 0x08;
             Block b = block.getRelative(BlockFace.DOWN);
             for (int i = 0; i < 100; i++) {
@@ -205,17 +237,56 @@ public class Renderer
                 b = b.getRelative(BlockFace.DOWN);
             }
         }
+
         if (isLeave(block)) {
             biome |= 0x04;
-        }
+        }    
 
         byte[] data = new byte[4];
         int dataId = _texturepack.getTexture(block.getType());
-        data[1] = (byte) dataId;
-        data[0] = (byte) (dataId >> 8);
+        byte biomeId = (byte) _texturepack.getBiome(block.getBiome());
+        int h = height != null ? height.intValue() : block.getY();
+        //byte biomeId = 0x01;
 
-        data[2] = height != null ? (byte) height.intValue() : (byte) block.getY();
-        data[3] = biome;
+        data[1] = (byte) dataId;
+        data[0] = (byte) ((byte)(dataId >> 8) | (biomeId & 0xF0));
+
+        data[2] = (byte) h;
+        data[3] = (byte)(biome | (biomeId << 4) | ((h & 0x100) != 0x00 ? ((byte)0x01) : ((byte)0x00)));
+        return data;
+    }
+
+    private static byte[] getBlockData(BlockData block, Biome b, int y) {
+        Integer height = null;
+        
+        byte biome = 0x00;
+        /*if(block.getType() == Material.WATER) {
+            biome |= 0x08;
+            Block b = block.getRelative(BlockFace.DOWN);
+            for (int i = 0; i < 100; i++) {
+                if (b.getType() != Material.WATER) {
+                    block = b;
+                    height = ++i;
+                    break;
+                }
+                b = b.getRelative(BlockFace.DOWN);
+            }
+        }
+
+        if (isLeave(block)) {
+            biome |= 0x04;
+        }   */     
+
+        byte[] data = new byte[4];
+        int dataId = _texturepack.getTexture(block.getMaterial());
+        byte biomeId = (byte) _texturepack.getBiome(b);
+        //byte biomeId = 0x01;
+
+        data[1] = (byte) dataId;
+        data[0] = (byte) ((byte)(dataId >> 8) | (biomeId & 0xF0));
+
+        data[2] = height != null ? (byte) height.intValue() : (byte) /*block.getY()*/y;
+        data[3] = (byte)(biome | (biomeId << 4));
         return data;
     }
 

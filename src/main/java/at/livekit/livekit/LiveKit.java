@@ -19,6 +19,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
+import at.livekit.api.chat.ChatMessage;
 import at.livekit.api.core.ILiveKit;
 import at.livekit.api.economy.IEconomyAdapter;
 import at.livekit.api.map.POI;
@@ -27,6 +28,7 @@ import at.livekit.api.map.PlayerInfoProvider;
 import at.livekit.authentication.Pin;
 import at.livekit.authentication.Session;
 import at.livekit.modules.BaseModule;
+import at.livekit.modules.ChatModule;
 import at.livekit.modules.EconomyModule;
 import at.livekit.modules.ModuleManager;
 import at.livekit.modules.POIModule;
@@ -948,6 +950,14 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
             if(!module.isEnabled() && Config.moduleEnabled(module.getType())) {
                 enableModule("EconomyModule");
             }
+        }
+    }
+
+    @Override
+    public void sendChatMessage(ChatMessage message) {
+        ChatModule module = (ChatModule)_modules.getModule("ChatModule");
+        if(module != null && module.isEnabled()) {
+            module.sendChatMessage(message);
         }
     }
 

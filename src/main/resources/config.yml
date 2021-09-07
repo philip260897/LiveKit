@@ -13,6 +13,7 @@ storage:
 anonymous:
   allow: true
   permissions:
+  - livekit.module.chat
   - livekit.module.map
   - livekit.module.players
   - livekit.players.other
@@ -39,6 +40,7 @@ modules:
     enabled: true
   ChatModule:
     enabled: true
+    offlineFormat: '&7[Offline]&r <{prefix}&r{name}&r{suffix}&r> {message}'
   POIModule:
     enabled: true
     personalpins: 5

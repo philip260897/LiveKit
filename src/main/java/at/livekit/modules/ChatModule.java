@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -17,18 +18,24 @@ import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import at.livekit.api.chat.ChatMessage;
 import at.livekit.livekit.Identity;
 import at.livekit.packets.ActionPacket;
 import at.livekit.packets.IPacket;
 import at.livekit.packets.StatusPacket;
+import at.livekit.plugin.Config;
+import at.livekit.plugin.Permissions;
 import at.livekit.plugin.Plugin;
 
 public class ChatModule extends BaseModule implements Listener {
 
     private static int CHAT_LOG_SIZE = 50;
+    //private DiscordSRVPlugin discrodPlugin;
 
     private List<ChatMessage> _updates = new ArrayList<ChatMessage>();
     private List<ChatMessage> _backlog = new ArrayList<ChatMessage>(CHAT_LOG_SIZE);
+
+    private String offlineFormat = null;
 
     public ChatModule(ModuleListener listener) {
         super(1, "Chat", "livekit.module.chat", UpdateRate.NEVER, listener);
@@ -38,16 +45,29 @@ public class ChatModule extends BaseModule implements Listener {
         super.update();
     }
 
+    public void sendChatMessage(ChatMessage message) {
+        if(!isEnabled()) return;
+
+        synchronized(_updates) {
+            _updates.add(message);
+        }
+
+        notifyChange();
+    }
+
     @Override
     public void onEnable(Map<String, ActionMethod> signature) {
         Bukkit.getServer().getPluginManager().registerEvents(this, Plugin.getInstance());
-        
+
+        this.offlineFormat = Config.getChatOfflineFormat();
+
         super.onEnable(signature);
     }
 
     @Override
     public void onDisable(Map<String, ActionMethod> signature) {
         HandlerList.unregisterAll(this);
+
 
         _backlog.clear();
         _updates.clear();
@@ -59,25 +79,68 @@ public class ChatModule extends BaseModule implements Listener {
         if (!isEnabled())
             return;
 
-        ChatMessage message = new ChatMessage(event.getPlayer().getUniqueId().toString(), "", event.getMessage());
+        ChatMessage message = new ChatMessage(event.getPlayer(), event.getMessage());
+        message.setPrefix(null);
+
         synchronized (_updates) {
             _updates.add(message);
         }
 
         notifyChange();
     }
+    
+    /*@Override
+    public void onDiscordChat(String id, String name, String message) {
+        if(!isEnabled())
+            return;
+
+        Plugin.debug("DiscordSRV: "+id+" "+name+" "+message);
+
+        ChatMessage m = new ChatMessage(name, message, ChatColor.DARK_PURPLE+"DiscordSRV");
+        synchronized(_updates) {
+            _updates.add(m);
+        }
+
+        notifyChange();
+    }*/
 
     @Action(name = "Message")
     public IPacket sendMessage(Identity identity, ActionPacket packet) {
         JSONObject data = packet.getData();
 
-        if(!identity.hasPermission("livekit.chat.write") || identity.isAnonymous()) return new StatusPacket(0, "Permission denied!");
+        if(!identity.hasPermission("livekit.chat.write") && !identity.hasPermission("livekit.chat.write_offline")) return new StatusPacket(0, "Permission denied!");
+        if(identity.isAnonymous()) return new StatusPacket(0, "Permission denied!");
 
         OfflinePlayer op = Bukkit.getOfflinePlayer(UUID.fromString(identity.getUuid()));
-        if(op == null || !op.isOnline()) return new StatusPacket(0, "Player not found");
+        if(op == null) return new StatusPacket(0, "Player not found");
 
-        Player player = op.getPlayer();
-        if(data.has("message") && !data.isNull("message")) player.chat(data.getString("message"));
+        if(!op.isOnline() && !identity.hasPermission("livekit.chat.write_offline")) return new StatusPacket(0, "Can't chat while offline");
+
+        if(op.isOnline()) {
+            Player player = op.getPlayer();
+            if(data.has("message") && !data.isNull("message")) player.chat(data.getString("message"));
+        } else {
+            if(!identity.hasPermission("livekit.chat.write_offline")) return new StatusPacket(0, "Permission denied!");
+
+            if(data.has("message") && !data.isNull("message")/* && data.has("displayName") && !data.isNull("displayName")*/) {
+                String chat = offlineFormat;
+                chat = chat.replace("{prefix}", identity.getPrefix());
+                chat = chat.replace("{suffix}", identity.getSuffix());
+                chat = chat.replace("{name}", op.getName());
+                chat = chat.replace("{message}", data.getString("message"));
+                
+                String message = data.getString("message");
+                //String displayName = data.getString("displayName");
+                for(Player player : Bukkit.getOnlinePlayers()) {
+                    player.sendMessage(ChatColor.translateAlternateColorCodes('&', chat));
+                }
+                Plugin.log(ChatColor.stripColor(ChatColor.translateAlternateColorCodes('&', chat)));
+
+                ChatMessage m = new ChatMessage(op, message);
+                m.setPrefix("LiveKit");
+                sendChatMessage(m);
+            }
+        }
 
         return new StatusPacket(1);
     }
@@ -95,6 +158,7 @@ public class ChatModule extends BaseModule implements Listener {
 
         json.put("messages", messages);
         json.put("write", identity.hasPermission("livekit.chat.write"));
+        json.put("offline", identity.hasPermission("livekit.chat.write_offline"));
 
         return new ModuleUpdatePacket(this, json, true);
     }
@@ -127,16 +191,24 @@ public class ChatModule extends BaseModule implements Listener {
     }
 
 
-    public static class ChatMessage implements Serializable {
+    /*public static class ChatMessage implements Serializable {
         private String sender;
+        private String altName;
+        private String source;
         private String format;
         private String message;
         private Long timestamp;
 
         public ChatMessage(String sender, String format, String message) {
+            this(sender, format, message, null, null);
+        }
+
+        public ChatMessage(String sender, String format, String message, String altName, String source) {
             this.sender = sender;
             this.format = format;
             this.message = message;
+            this.altName = altName;
+            this.source = source;
             this.timestamp = System.currentTimeMillis();
         }
 
@@ -154,5 +226,8 @@ public class ChatModule extends BaseModule implements Listener {
         public String toString() {
             return "ChatMessage[sender="+sender+"; format="+format+"; message="+message+"; json="+toJson().toString()+"]";
         }
-    }
+    }*/
+
+
+
 }
