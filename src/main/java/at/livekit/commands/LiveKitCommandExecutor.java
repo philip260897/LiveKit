@@ -392,7 +392,7 @@ public class LiveKitCommandExecutor implements CommandExecutor, TabCompleter {
      */
     private void cmdWorldRender(CommandSender sender, LKCommand cmd) {
         World w = cmd.get("world");
-        boolean renderMissing = (cmd == WORLD_RENDER_FULL_MISSING);
+        boolean renderMissing = false; //(cmd == WORLD_RENDER_FULL_MISSING);
 
         LiveMapModule map = (LiveMapModule)LiveKit.getInstance().getModuleManager().getModule("LiveMapModule:"+w.getName());
         if(map == null || !map.isEnabled()) { sender.sendMessage(Plugin.getPrefixError()+" LiveMapModule not enabled."); return; }
@@ -415,7 +415,7 @@ public class LiveKitCommandExecutor implements CommandExecutor, TabCompleter {
     private void cmdWorldRenderRadius(CommandSender sender, LKCommand cmd) {
         World w = cmd.get("world");
         int radius = cmd.get("radius");
-        boolean forced = (cmd != WORLD_RENDER_RADIUS_MISSING);
+        boolean forced = true; //(cmd != WORLD_RENDER_RADIUS_MISSING);
 
         LiveMapModule map = (LiveMapModule)LiveKit.getInstance().getModuleManager().getModule("LiveMapModule:"+w.getName());
         if(map == null || !map.isEnabled()) { sender.sendMessage(Plugin.getPrefixError()+" LiveMapModule not enabled."); return; }
