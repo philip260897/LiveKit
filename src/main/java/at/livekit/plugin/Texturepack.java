@@ -41,6 +41,7 @@ public class Texturepack {
             json += line;
         }
         reader.close();
+        in.close();
 
         JSONObject root = new JSONObject(json);
         for(String key : root.keySet()) {
@@ -72,6 +73,7 @@ public class Texturepack {
             json += line;
         }
         reader.close();
+        in.close();
 
         root = new JSONObject(json);
         for(String key : root.keySet()) {

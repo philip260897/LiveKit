@@ -253,7 +253,7 @@ public class Config
 
         if(config.get("modules.ChatModule.offlineFormat") == null)
         {
-            Plugin.log("Pathing config with new entries");
+            Plugin.log("Patching config with new entries");
             config.set("modules.ChatModule.offlineFormat", "&7[Offline]&r <{prefix}&r{name}&r{suffix}&r> {message}");
 
             save = true;
