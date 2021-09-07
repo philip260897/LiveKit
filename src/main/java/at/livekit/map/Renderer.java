@@ -120,7 +120,7 @@ public class Renderer
                             block = getBlockForRendering(block);
 
                             
-                            if(getblock-bstart != 0) System.out.println("["+blockX+", y, "+blockZ+"] Took "+(getblock-bstart));
+                            //if(getblock-bstart != 0) System.out.println("["+blockX+", y, "+blockZ+"] Took "+(getblock-bstart));
                         }
                         
 
