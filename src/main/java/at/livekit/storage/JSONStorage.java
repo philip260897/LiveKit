@@ -22,6 +22,7 @@ import org.bukkit.Bukkit;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import at.livekit.statistics.tables.*;
 import at.livekit.api.map.POI;
 import at.livekit.api.map.PersonalPin;
 import at.livekit.authentication.Pin;
@@ -50,6 +51,12 @@ public class JSONStorage extends StorageThreadMarshallAdapter
         registerClassForStorage(Pin.class);
         registerClassForStorage(POI.class);
         registerClassForStorage(PersonalPin.class);
+
+        registerClassForStorage(LKStatEntry.class);
+        registerClassForStorage(LKStatTotalEntry.class);
+        registerClassForStorage(LKStatCmd.class);
+        registerClassForStorage(LKStatSession.class);
+        registerClassForStorage(LKStatWorld.class);
     }
 
     private <T> void registerClassForStorage(Class<T> clazz) throws Exception {

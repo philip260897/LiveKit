@@ -1,4 +1,4 @@
-package at.livekit.statistics;
+package at.livekit.statistics.tables;
 
 import java.util.UUID;
 
@@ -6,7 +6,7 @@ import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.table.DatabaseTable;
 
 @DatabaseTable(tableName = "livekit_stats_world")
-public class TWorld {
+public class LKStatWorld {
     
     @DatabaseField(id = true)
     public UUID uuid;
@@ -15,9 +15,9 @@ public class TWorld {
     public String world;
 
     @DatabaseField
-    public long timestampEnter = 0;
+    public long timestamp_enter = 0;
 
     @DatabaseField
-    public long timestampLeave = 0;
+    public long timestamp_leave = 0;
 
 }

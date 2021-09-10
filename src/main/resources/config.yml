@@ -51,3 +51,5 @@ modules:
     password: change_me
   InventoryModule:
     enabled: true
+  StatisticsModule:
+    enabled: true

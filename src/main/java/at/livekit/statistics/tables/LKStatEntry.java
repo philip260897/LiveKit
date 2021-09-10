@@ -1,4 +1,4 @@
-package at.livekit.statistics;
+package at.livekit.statistics.tables;
 
 import java.util.UUID;
 
@@ -6,7 +6,7 @@ import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.table.DatabaseTable;
 
 @DatabaseTable(tableName = "livekit_stats_entries")
-public class TStatisticEntry {
+public class LKStatEntry {
     
     public final byte ACTION_PLACE = 0x00;
     public final byte ACTION_BREAK = 0x01;
@@ -21,7 +21,7 @@ public class TStatisticEntry {
     public byte action;
 
     @DatabaseField
-    public int blockId;
+    public int blockid;
 
     @DatabaseField
     public int count;

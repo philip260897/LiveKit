@@ -1,4 +1,4 @@
-package at.livekit.statistics;
+package at.livekit.statistics.tables;
 
 import java.util.UUID;
 
@@ -6,7 +6,7 @@ import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.table.DatabaseTable;
 
 @DatabaseTable(tableName = "livekit_stats_cmds")
-public class TChatCmd {
+public class LKStatCmd {
     
     @DatabaseField(id = true, uniqueCombo = true)
     public UUID uuid;
