@@ -11,8 +11,8 @@ public class LKStatWorld {
     @DatabaseField(generatedId = true)
     public int _id;
     
-    @DatabaseField(uniqueCombo = true)
-    public UUID uuid;
+    @DatabaseField(foreign = true, uniqueCombo = true)
+    public LKUser user;
 
     @DatabaseField(uniqueCombo = true)
     public long enter = 0;

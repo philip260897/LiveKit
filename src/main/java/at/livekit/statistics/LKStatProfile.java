@@ -17,11 +17,14 @@ import at.livekit.statistics.tables.LKStatCmd;
 import at.livekit.statistics.tables.LKStatEntry;
 import at.livekit.statistics.tables.LKStatSession;
 import at.livekit.statistics.tables.LKStatWorld;
+import at.livekit.statistics.tables.LKUser;
 import at.livekit.storage.IStorageAdapterGeneric;
 import at.livekit.utils.Utils;
 
 public class LKStatProfile {
     
+    private LKUser user;
+
     private UUID uuid;
     private OfflinePlayer player;
 
@@ -41,6 +44,9 @@ public class LKStatProfile {
     {
         this.uuid = player.getUniqueId();
         this.player = player;
+
+        this.user = new LKUser();
+        this.user._id = 1;
     }
 
     public void startSession()

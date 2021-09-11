@@ -11,8 +11,8 @@ public class LKStatSession {
     @DatabaseField(generatedId = true)
     private int _id;
 
-    @DatabaseField(uniqueCombo = true, canBeNull = false)
-    public UUID uuid;
+    @DatabaseField(foreign = true, uniqueCombo = true, canBeNull = false)
+    public LKUser user;
 
     @DatabaseField(uniqueCombo = true)
     public long start = 0;

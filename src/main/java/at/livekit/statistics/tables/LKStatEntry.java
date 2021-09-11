@@ -14,8 +14,8 @@ public class LKStatEntry {
     @DatabaseField(generatedId = true)
     private int _id;
 
-    @DatabaseField(uniqueCombo = true)
-    public UUID uuid;
+    @DatabaseField(foreign = true)
+    public LKUser user;
 
     @DatabaseField(uniqueCombo = true)
     public byte action;

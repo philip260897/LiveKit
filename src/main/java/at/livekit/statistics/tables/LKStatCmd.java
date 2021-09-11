@@ -8,8 +8,8 @@ import com.j256.ormlite.table.DatabaseTable;
 @DatabaseTable(tableName = "livekit_stats_cmds")
 public class LKStatCmd {
     
-    @DatabaseField(uniqueCombo = true)
-    public UUID uuid;
+    @DatabaseField(foreign = true, uniqueCombo = true)
+    public LKUser user;
 
     @DatabaseField(uniqueCombo = true)
     public long timestamp;

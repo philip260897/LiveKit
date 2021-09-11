@@ -8,10 +8,7 @@ import at.livekit.api.map.PersonalPin;
 import at.livekit.authentication.Pin;
 import at.livekit.authentication.Session;
 import at.livekit.plugin.Plugin;
-import at.livekit.statistics.tables.LKStatCmd;
-import at.livekit.statistics.tables.LKStatEntry;
-import at.livekit.statistics.tables.LKStatSession;
-import at.livekit.statistics.tables.LKStatWorld;
+import at.livekit.statistics.tables.*;
 import at.livekit.utils.HeadLibraryV2.HeadInfo;
 
 import java.lang.reflect.Field;
@@ -69,6 +66,7 @@ public class SQLStorage extends StorageThreadMarshallAdapter
         registerStorageClass(LKStatCmd.class);
         registerStorageClass(LKStatSession.class);
         registerStorageClass(LKStatWorld.class);
+        registerStorageClass(LKUser.class);
     }
 
     @Override
