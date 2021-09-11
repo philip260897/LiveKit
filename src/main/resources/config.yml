@@ -51,3 +51,6 @@ modules:
     password: change_me
   InventoryModule:
     enabled: true
+plugins:
+  DiscordSRV:
+    enabled: false
