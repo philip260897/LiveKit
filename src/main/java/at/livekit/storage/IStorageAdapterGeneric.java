@@ -12,6 +12,7 @@ public interface IStorageAdapterGeneric
 
     public <T> T loadSingle(Class<T> clazz, String key, Object value) throws Exception;
 
+    public <T> T loadSingle(Class<T> clazz, String[] keys, Object[] values) throws Exception;
     //public <T> List<T> load(Class<T> clazz, String id) throws Exception;
 
     public <T> List<T> load(Class<T> clazz, String key, Object value) throws Exception;

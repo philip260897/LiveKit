@@ -11,7 +11,6 @@ import at.livekit.plugin.Plugin;
 import at.livekit.statistics.tables.LKStatCmd;
 import at.livekit.statistics.tables.LKStatEntry;
 import at.livekit.statistics.tables.LKStatSession;
-import at.livekit.statistics.tables.LKStatTotalEntry;
 import at.livekit.statistics.tables.LKStatWorld;
 import at.livekit.utils.HeadLibraryV2.HeadInfo;
 
@@ -64,10 +63,9 @@ public class SQLStorage extends StorageThreadMarshallAdapter
         registerStorageClass(Pin.class);
         registerStorageClass(HeadInfo.class);
         registerStorageClass(POI.class);
-        
         registerStorageClass(PersonalPin.class);
+
         registerStorageClass(LKStatEntry.class);
-        registerStorageClass(LKStatTotalEntry.class);
         registerStorageClass(LKStatCmd.class);
         registerStorageClass(LKStatSession.class);
         registerStorageClass(LKStatWorld.class);
@@ -116,6 +114,25 @@ public class SQLStorage extends StorageThreadMarshallAdapter
         Dao<T, String> dao = getDao(clazz);
         Where<T, String> where = dao.queryBuilder().where();
         where.eq(key, value);
+        return dao.queryForFirst(where.prepare());
+    }
+
+    @Override
+    public <T> T loadSingle(Class<T> clazz, String[] keys, Object[] values) throws Exception {
+        if(keys.length != values.length) throw new Exception("Key Value lengths missmatch!");
+        
+        super.loadSingle(clazz, keys, values);
+        
+        Dao<T, String> dao = getDao(clazz);
+        Where<T, String> where = dao.queryBuilder().where();
+        
+        for(int i = 0; i < keys.length; i++){
+            if(i!=0) {
+               where.and(); 
+            }
+            where.eq(keys[i], values[i]);
+        }
+        
         return dao.queryForFirst(where.prepare());
     }
 

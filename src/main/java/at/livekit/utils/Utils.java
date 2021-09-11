@@ -3,6 +3,10 @@ package at.livekit.utils;
 import java.io.File;
 import java.nio.file.Files;
 import java.security.SecureRandom;
+import java.time.LocalDateTime;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
+import java.util.TimeZone;
 import java.util.concurrent.Callable;
 
 import org.bukkit.Bukkit;
@@ -18,6 +22,16 @@ import at.livekit.plugin.Plugin;
 
 public class Utils 
 {
+    private static Integer timezoneOffset = null;
+    public static int getTimezoneOffset() {
+        if(timezoneOffset == null) {
+            TimeZone tz = TimeZone.getDefault();  
+            Calendar cal = GregorianCalendar.getInstance(tz);
+            timezoneOffset = tz.getOffset(cal.getTimeInMillis());
+        }
+        return ((timezoneOffset.intValue()/1000)/60)*1000*60;
+    }
+
     public static FutureSyncCallback<Exception> errorHandler(CommandSender sender) {
         return new FutureSyncCallback<Exception>(){
             @Override

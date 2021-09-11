@@ -8,7 +8,7 @@ import com.j256.ormlite.table.DatabaseTable;
 @DatabaseTable(tableName = "livekit_stats_cmds")
 public class LKStatCmd {
     
-    @DatabaseField(id = true, uniqueCombo = true)
+    @DatabaseField(uniqueCombo = true)
     public UUID uuid;
 
     @DatabaseField(uniqueCombo = true)

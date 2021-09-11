@@ -8,16 +8,19 @@ import com.j256.ormlite.table.DatabaseTable;
 @DatabaseTable(tableName = "livekit_stats_world")
 public class LKStatWorld {
     
-    @DatabaseField(id = true)
+    @DatabaseField(generatedId = true)
+    public int _id;
+    
+    @DatabaseField(uniqueCombo = true)
     public UUID uuid;
 
-    @DatabaseField(width = 32)
+    @DatabaseField(uniqueCombo = true)
+    public long enter = 0;
+
+    @DatabaseField
+    public long leave = 0;
+
+    @DatabaseField(width = 32, index = true)
     public String world;
-
-    @DatabaseField
-    public long timestamp_enter = 0;
-
-    @DatabaseField
-    public long timestamp_leave = 0;
 
 }

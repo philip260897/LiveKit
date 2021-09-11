@@ -19,6 +19,12 @@ public abstract class StorageThreadMarshallAdapter implements IStorageAdapterGen
     }
 
     @Override
+    public <T> T loadSingle(Class<T> clazz, String[] keys, Object[] values) throws Exception {
+        checkThread("loadSingle", clazz, keys, values);
+        return null;
+    }
+
+    @Override
     public <T> List<T> load(Class<T> clazz, String key, Object value) throws Exception {
         checkThread("load", clazz, key, value);
         return null;

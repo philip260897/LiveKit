@@ -9,14 +9,14 @@ import com.j256.ormlite.table.DatabaseTable;
 public class LKStatSession {
     
     @DatabaseField(generatedId = true)
-    public long id;
+    private int _id;
 
     @DatabaseField(uniqueCombo = true, canBeNull = false)
     public UUID uuid;
 
     @DatabaseField(uniqueCombo = true)
-    public long timestamp_login = 0;
+    public long start = 0;
 
     @DatabaseField
-    public long timestamp_logout = 0;
+    public long end = 0;
 }

@@ -12,6 +12,8 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.scheduler.BukkitTask;
 
 import at.livekit.plugin.Plugin;
@@ -61,7 +63,7 @@ public class StatisticsModule extends BaseModule implements Listener
 
         for(LKStatProfile profile : profiles)
         {
-            profile.persistCacheAsync();
+            profile.save();
         }
 
         for(LKStatProfile profile : profiles)
@@ -90,7 +92,8 @@ public class StatisticsModule extends BaseModule implements Listener
         for(Player player : Bukkit.getServer().getOnlinePlayers())
         {
             Plugin.debug("[STAT] ONLINE PLAYERS "+player.getName());
-            createProfile(player);
+            LKStatProfile profile = createProfile(player);
+            profile.startSession();
         }
 
         Bukkit.getServer().getPluginManager().registerEvents(this, Plugin.getInstance());
@@ -109,6 +112,13 @@ public class StatisticsModule extends BaseModule implements Listener
         if(storageTask != null && !storageTask.isCancelled())
         {
             storageTask.cancel();
+        }
+
+        synchronized(profiles) {
+            for(LKStatProfile profile : profiles)
+            {
+                profile.endSession();
+            }
         }
 
         commitCacheToStorageAsync();
@@ -135,6 +145,30 @@ public class StatisticsModule extends BaseModule implements Listener
         if(profile != null)
         {
             profile.endSession();
+        }
+    }
+
+    @EventHandler
+    public void onPlayerBlockBreak(BlockBreakEvent event)
+    {
+        if(!isEnabled()) return;
+
+        LKStatProfile profile = getStatisticProfile(event.getPlayer());
+        if(profile != null)
+        {
+            profile.addBlockBreakStat(event.getBlock());
+        }
+    }
+
+    @EventHandler
+    public void onPlayerBlockPlace(BlockPlaceEvent event)
+    {
+        if(!isEnabled()) return;
+
+        LKStatProfile profile = getStatisticProfile(event.getPlayer());
+        if(profile != null)
+        {
+            profile.addBlockBuildStat(event.getBlock());
         }
     }
 }

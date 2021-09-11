@@ -17,8 +17,6 @@ import com.google.gson.Gson;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.table.DatabaseTable;
 
-import org.apache.commons.lang.NotImplementedException;
-import org.bukkit.Bukkit;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -53,7 +51,6 @@ public class JSONStorage extends StorageThreadMarshallAdapter
         registerClassForStorage(PersonalPin.class);
 
         registerClassForStorage(LKStatEntry.class);
-        registerClassForStorage(LKStatTotalEntry.class);
         registerClassForStorage(LKStatCmd.class);
         registerClassForStorage(LKStatSession.class);
         registerClassForStorage(LKStatWorld.class);
@@ -182,6 +179,11 @@ public class JSONStorage extends StorageThreadMarshallAdapter
                 }        
             }).findFirst().orElse(null);
         }
+    }
+
+    @Override
+    public <T> T loadSingle(Class<T> clazz, String[] keys, Object[] values) throws Exception {
+        throw new Exception("Multi Column search for JSON Storage not implemented!");
     }
 
     /*@Override
