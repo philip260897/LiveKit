@@ -54,3 +54,5 @@ modules:
 plugins:
   DiscordSRV:
     enabled: false
+    channelIDs:
+    - all
