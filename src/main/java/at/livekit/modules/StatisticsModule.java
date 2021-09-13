@@ -27,6 +27,7 @@ import org.bukkit.scheduler.BukkitTask;
 
 import at.livekit.plugin.Plugin;
 import at.livekit.statistics.LKStatProfile;
+import at.livekit.utils.Utils;
 
 public class StatisticsModule extends BaseModule implements Listener
 {
@@ -65,6 +66,7 @@ public class StatisticsModule extends BaseModule implements Listener
 
     private void commitCacheToStorageAsync() 
     {
+        Utils.performance();
         LKStatProfile[] profiles = null;
         synchronized(this.profiles) {
             profiles = this.profiles.toArray(new LKStatProfile[this.profiles.size()]);

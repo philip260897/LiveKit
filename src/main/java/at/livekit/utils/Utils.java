@@ -1,6 +1,9 @@
 package at.livekit.utils;
 
 import java.io.File;
+import java.lang.management.ManagementFactory;
+import java.lang.management.RuntimeMXBean;
+import java.lang.management.ThreadMXBean;
 import java.nio.file.Files;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
@@ -156,5 +159,39 @@ public class Utils
                 }
             }
         });
+    }
+
+    public static void performance()
+    {
+        com.sun.management.OperatingSystemMXBean operatingSystemMXBean = (com.sun.management.OperatingSystemMXBean)ManagementFactory.getOperatingSystemMXBean();
+        RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
+        int availableProcessors = operatingSystemMXBean.getAvailableProcessors();
+        long prevUpTime = runtimeMXBean.getUptime();
+        long prevProcessCpuTime = operatingSystemMXBean.getProcessCpuTime();
+        
+        ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
+        
+        
+
+        /*double cpuUsage;
+        try 
+        {
+            Thread.sleep(500);
+        } 
+        catch (Exception ignored) { }
+
+        operatingSystemMXBean = (com.sun.management.OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
+        long upTime = runtimeMXBean.getUptime();
+        long processCpuTime = operatingSystemMXBean.getProcessCpuTime();
+        long elapsedCpu = processCpuTime - prevProcessCpuTime;
+        long elapsedTime = upTime - prevUpTime;
+
+        
+
+        cpuUsage = Math.min(99F, elapsedCpu / (elapsedTime * 10000F * availableProcessors));*/
+        System.out.println("Load: "+(operatingSystemMXBean.getProcessCpuLoad()*100)+"%");
+        System.out.println("Processors: "+availableProcessors);
+        //System.out.println("Java CPU: " + cpuUsage);
+        System.out.println("Memory: "+(ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getUsed()/1024/1024));
     }
 }
