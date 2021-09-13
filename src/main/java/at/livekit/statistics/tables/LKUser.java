@@ -14,9 +14,12 @@ public class LKUser {
     @DatabaseField(unique = true)
     public UUID uuid;
 
+    @DatabaseField
     public long first;
 
+    @DatabaseField
     public long last;
 
+    @DatabaseField
     public boolean livekit;
 }

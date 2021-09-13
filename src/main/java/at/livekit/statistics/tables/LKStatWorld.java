@@ -1,7 +1,5 @@
 package at.livekit.statistics.tables;
 
-import java.util.UUID;
-
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.table.DatabaseTable;
 
@@ -11,13 +9,13 @@ public class LKStatWorld {
     @DatabaseField(generatedId = true)
     public int _id;
     
-    @DatabaseField(foreign = true, uniqueCombo = true)
+    @DatabaseField(foreign = true, uniqueCombo = true, indexName = "index_uid_leave")
     public LKUser user;
 
     @DatabaseField(uniqueCombo = true)
     public long enter = 0;
 
-    @DatabaseField
+    @DatabaseField(indexName = "index_uid_leave")
     public long leave = 0;
 
     @DatabaseField(width = 32, index = true)

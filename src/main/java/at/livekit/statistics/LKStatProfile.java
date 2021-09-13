@@ -26,7 +26,7 @@ public class LKStatProfile {
     private LKUser user;
 
     private UUID uuid;
-    private OfflinePlayer player;
+    //private OfflinePlayer player;
 
     private LKStatSession currentSession;
     private LKStatWorld currentWorld;
@@ -37,23 +37,36 @@ public class LKStatProfile {
     private List<LKStatEntry> entriesList = new ArrayList<LKStatEntry>();
     //private List<LKStatTotalEntry> totalEntriesList = new ArrayList<LKStatTotalEntry>();
     
-    private boolean initialized = false;
+    //private boolean initialized = false;
     private boolean canClanUp = false;
 
-    public LKStatProfile(OfflinePlayer player)
+    public LKStatProfile(UUID uuid)
     {
-        this.uuid = player.getUniqueId();
-        this.player = player;
-
+        this.uuid = uuid;
         this.user = new LKUser();
         this.user._id = 1;
+    }
+
+    public void loadUserAsync() throws Exception
+    {
+        user = Plugin.getStorage().loadSingle(LKUser.class, "uuid", uuid);
+        if(user == null)
+        {
+            user = new LKUser();
+            user.uuid = uuid;
+            user.first = System.currentTimeMillis();
+            user.livekit = false;
+            Plugin.getStorage().create(user);
+        }
+        user.last = System.currentTimeMillis();
+        Plugin.getStorage().update(user);
     }
 
     public void startSession()
     {
         this.canClanUp = false;
         this.currentSession = new LKStatSession();
-        this.currentSession.uuid = uuid;
+        this.currentSession.user = user;
         this.currentSession.start = System.currentTimeMillis();
         
         synchronized(sessionList) {
@@ -71,19 +84,42 @@ public class LKStatProfile {
                 sessionList.add(currentSession);
             }
         }
+
+        if(currentWorld != null)
+        {
+            currentWorld.leave = System.currentTimeMillis();
+            synchronized(worldList) {
+                worldList.add(currentWorld);
+            }
+        }
         this.canClanUp = true;
     }
 
-    public void addCommandStat(String cmd, String[] args) 
+    public void enterWorld(String world) 
     {
-        String argsLine = "";
-        for(String s : args) argsLine += s+" ";
-        if(argsLine.length() > 0) argsLine = argsLine.substring(0, argsLine.length()-1);
+        if(currentWorld != null) {
+            currentWorld.leave = System.currentTimeMillis();
+            synchronized(worldList){
+                worldList.add(currentWorld);
+            }
+        }
+        currentWorld = new LKStatWorld();
+        currentWorld.user = user;
+        currentWorld.enter = System.currentTimeMillis();
+        currentWorld.world = world;
 
+        synchronized(worldList) {
+            worldList.add(currentWorld);
+        }
+    }
+
+    public void addCommandStat(String cmd, String args) 
+    {
         LKStatCmd entry = new LKStatCmd();
-        entry.uuid = uuid;
+        entry.user = user;
         entry.cmd = cmd;
-        entry.args = argsLine;
+        entry.args = args;
+        entry.timestamp = System.currentTimeMillis();
 
         synchronized(commandsList) {
             commandsList.add(entry);
@@ -111,7 +147,7 @@ public class LKStatProfile {
     private void addBlockStat(int blockId, long timestamp, byte type)
     {
         LKStatEntry entry = new LKStatEntry();
-        entry.uuid = uuid;
+        entry.user = user;
         entry.action = type;
         entry.blockid = blockId;
         entry.count = 1;
@@ -137,7 +173,7 @@ public class LKStatProfile {
         for(LKStatSession session : sessions)
         {
             try{
-                LKStatSession existing = storage.loadSingle(LKStatSession.class, new String[]{"uuid", "start"}, new Object[]{session.uuid, session.start});
+                LKStatSession existing = storage.loadSingle(LKStatSession.class, new String[]{"user_id", "start"}, new Object[]{session.user, session.start});
                 if(existing != null) {
                     existing.end = session.end;
                     storage.update(existing);
@@ -157,7 +193,7 @@ public class LKStatProfile {
         for(LKStatEntry entry : entries)
         {
             try {
-                LKStatEntry existing = storage.loadSingle(LKStatEntry.class, new String[]{"uuid", "timestamp", "blockid", "action"}, new Object[]{entry.uuid, entry.timestamp, entry.blockid, entry.action});
+                LKStatEntry existing = storage.loadSingle(LKStatEntry.class, new String[]{"user_id", "timestamp", "blockid", "action"}, new Object[]{entry.user, entry.timestamp, entry.blockid, entry.action});
                 if(existing != null) {
                     existing.count += entry.count;
                     storage.update(existing);
@@ -166,59 +202,38 @@ public class LKStatProfile {
                 }
             }catch(Exception ex){ex.printStackTrace();}
         }
+
+        //copy data for new thread
+        List<LKStatCmd> commands;
+        synchronized(commandsList) {
+            commands = new ArrayList<LKStatCmd>(commandsList);
+            commandsList.clear();
+        }
+
+        for(LKStatCmd entry : commands)
+        {
+            try {
+                storage.create(entry);
+            }catch(Exception ex){ex.printStackTrace();}
+        }
+
+        //copy data for new thread
+        List<LKStatWorld> worlds;
+        synchronized(worldList) {
+            worlds = new ArrayList<LKStatWorld>(worldList);
+            worldList.clear();
+        }
+        
+        for(LKStatWorld entry : worlds)
+        {
+            try {
+                storage.createOrUpdate(entry);
+            }catch(Exception ex){ex.printStackTrace();}
+        }
     }
 
-    /*private void commitToCache(Object object)
-    {
-        synchronized(cache)
-        {
-            List<Object> cacheList = null;
-            if(cache.containsKey(object.getClass()))
-            {
-                cacheList = cache.get(object.getClass());
-            }
-            else
-            {
-                cacheList = new ArrayList<>();
-                cache.put(object.getClass(), cacheList);
-            }
-
-            if(!cacheList.contains(object))
-            {
-                cacheList.add(object);
-            }
-        }
-    }
-
-    public void persistCacheAsync()
-    {
-        if(this.cache.size() == 0) return;
-
-        Plugin.debug("[STAT] Commiting cache for "+getPlayer().getName());
-
-        Map<Class<?>, List<Object>> local = this.cache;
-        synchronized(cache) {
-            this.cache = new HashMap<Class<?>, List<Object>>();
-        }
-
-        for(Entry<Class<?>, List<Object>> entry : local.entrySet())
-        {
-            for(Object e : entry.getValue())
-            {
-                Plugin.debug("[STAT] Commiting "+e.toString());
-                try{
-                    Plugin.getStorage().createOrUpdate(e);
-                }
-                catch(Exception ex)
-                {
-                    ex.printStackTrace();
-                }
-            }
-        }
-    }*/
-
-    public OfflinePlayer getPlayer() {
-        return player;
+    public UUID getUUID() {
+        return uuid;
     }
 
     public boolean canCleanUp() {

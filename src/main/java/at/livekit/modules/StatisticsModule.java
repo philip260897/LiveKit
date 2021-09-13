@@ -3,15 +3,24 @@ package at.livekit.modules;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.AsyncPlayerChatEvent;
+import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
+import org.bukkit.event.player.PlayerChangedWorldEvent;
+import org.bukkit.event.player.PlayerCommandPreprocessEvent;
+import org.bukkit.event.player.PlayerCommandSendEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.AsyncPlayerPreLoginEvent.Result;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.scheduler.BukkitTask;
@@ -28,11 +37,11 @@ public class StatisticsModule extends BaseModule implements Listener
         super(1, "Statistics", "livekit.module.statistics", UpdateRate.NEVER, listener);
     } 
 
-    private LKStatProfile createProfile(OfflinePlayer player)
+    private LKStatProfile createProfile(UUID uuid)
     {
-        LKStatProfile profile = getStatisticProfile(player);
+        LKStatProfile profile = getStatisticProfile(uuid);
         if(profile == null) {
-            profile = new LKStatProfile(player);
+            profile = new LKStatProfile(uuid);
             synchronized(profiles) {
                 profiles.add(profile);
             }
@@ -40,13 +49,13 @@ public class StatisticsModule extends BaseModule implements Listener
         return profile;
     }
 
-    private LKStatProfile getStatisticProfile(OfflinePlayer player)
+    private LKStatProfile getStatisticProfile(UUID uuid)
     {
         synchronized(profiles)
         {
             for(LKStatProfile profile : profiles)
             {
-                if(profile.getPlayer() == player) {
+                if(profile.getUUID() == uuid) {
                     return profile;
                 }
             }
@@ -69,12 +78,12 @@ public class StatisticsModule extends BaseModule implements Listener
         for(LKStatProfile profile : profiles)
         {
             if(profile.canCleanUp()) {
-                LKStatProfile current = getStatisticProfile(profile.getPlayer());
+                LKStatProfile current = getStatisticProfile(profile.getUUID());
                 if(current.canCleanUp())
                 {
                     synchronized(this.profiles)
                     {
-                        Plugin.debug("[STAT] Deleted Profile for "+profile.getPlayer().getName());
+                        Plugin.debug("[STAT] Deleted Profile for "+profile.getUUID());
                         this.profiles.remove(current);
                     }
                 }
@@ -92,8 +101,9 @@ public class StatisticsModule extends BaseModule implements Listener
         for(Player player : Bukkit.getServer().getOnlinePlayers())
         {
             Plugin.debug("[STAT] ONLINE PLAYERS "+player.getName());
-            LKStatProfile profile = createProfile(player);
+            LKStatProfile profile = createProfile(player.getUniqueId());
             profile.startSession();
+            profile.enterWorld(player.getLocation().getWorld().getName());
         }
 
         Bukkit.getServer().getPluginManager().registerEvents(this, Plugin.getInstance());
@@ -127,13 +137,31 @@ public class StatisticsModule extends BaseModule implements Listener
     }
 
 
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onAsyncPlayerPreLogin(AsyncPlayerPreLoginEvent event)
+    {
+        if(event.getLoginResult() == Result.ALLOWED)
+        {
+            LKStatProfile profile = createProfile(event.getUniqueId());
+            if(profile != null) {
+                try{
+                    profile.loadUserAsync();
+                }catch(Exception ex){ex.printStackTrace();}
+            }
+        }
+    }
+
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event)
     {
         if(!isEnabled()) return;
 
-        LKStatProfile profile = createProfile(event.getPlayer());
-        profile.startSession();
+        LKStatProfile profile = createProfile(event.getPlayer().getUniqueId());
+        if(profile != null) {
+            profile.startSession();
+            profile.enterWorld(event.getPlayer().getLocation().getWorld().getName());
+        }
+        
     }
 
     @EventHandler
@@ -141,7 +169,7 @@ public class StatisticsModule extends BaseModule implements Listener
 	{
         if(!isEnabled()) return;
 
-        LKStatProfile profile = getStatisticProfile(event.getPlayer());
+        LKStatProfile profile = getStatisticProfile(event.getPlayer().getUniqueId());
         if(profile != null)
         {
             profile.endSession();
@@ -153,7 +181,7 @@ public class StatisticsModule extends BaseModule implements Listener
     {
         if(!isEnabled()) return;
 
-        LKStatProfile profile = getStatisticProfile(event.getPlayer());
+        LKStatProfile profile = getStatisticProfile(event.getPlayer().getUniqueId());
         if(profile != null)
         {
             profile.addBlockBreakStat(event.getBlock());
@@ -165,10 +193,43 @@ public class StatisticsModule extends BaseModule implements Listener
     {
         if(!isEnabled()) return;
 
-        LKStatProfile profile = getStatisticProfile(event.getPlayer());
+        LKStatProfile profile = getStatisticProfile(event.getPlayer().getUniqueId());
         if(profile != null)
         {
             profile.addBlockBuildStat(event.getBlock());
+        }
+    }
+
+    @EventHandler
+    public void onPlayerChangedWorld(PlayerChangedWorldEvent event)
+    {
+        if(!isEnabled()) return;
+
+        LKStatProfile profile = getStatisticProfile(event.getPlayer().getUniqueId());
+        if(profile != null)
+        {
+            profile.enterWorld(event.getPlayer().getWorld().getName());
+        }
+    }
+
+    @EventHandler
+    public void onPlayerCommandPreprocessEvent(PlayerCommandPreprocessEvent event)
+    {
+        if(!isEnabled() || event.getMessage().length() < 2) return;
+
+        LKStatProfile profile = getStatisticProfile(event.getPlayer().getUniqueId());
+        if(profile != null)
+        {
+            String[] args = event.getMessage().split(" ");
+            String sargs = "";
+            if(args.length > 0) {
+                for(int i = 1; i < args.length; i++) {
+                    if(i != 1) sargs += " ";
+                    sargs += args[i];
+                }
+            }
+
+            profile.addCommandStat(args[0].replace("/", ""), sargs);
         }
     }
 }
