@@ -150,6 +150,7 @@ public class LKStatProfile {
             pvp.user = user;
             pvp.timestamp = Utils.getRoundedDayTimestamp();
             pvp.type = Texturepack.getInstance().getEntity(type);
+            pvp.count = 1;
 
             synchronized(pveList) {
                 pveList.add(pvp);
@@ -299,6 +300,10 @@ public class LKStatProfile {
 
     public UUID getUUID() {
         return uuid;
+    }
+
+    public LKUser getUser() {
+        return user;
     }
 
     public boolean canCleanUp() {

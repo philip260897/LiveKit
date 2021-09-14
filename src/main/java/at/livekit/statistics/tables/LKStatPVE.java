@@ -15,7 +15,7 @@ public class LKStatPVE
     @DatabaseField(uniqueCombo = true)
     public long timestamp;
 
-    @DatabaseField(index = true)
+    @DatabaseField(uniqueCombo = true, index = true)
     public int type;
 
     @DatabaseField

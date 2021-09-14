@@ -22,6 +22,8 @@ import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.AsyncPlayerPreLoginEvent.Result;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.scheduler.BukkitTask;
 
@@ -153,7 +155,7 @@ public class StatisticsModule extends BaseModule implements Listener
         }
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerJoin(PlayerJoinEvent event)
     {
         if(!isEnabled()) return;
@@ -166,7 +168,7 @@ public class StatisticsModule extends BaseModule implements Listener
         
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.MONITOR)
 	public void onPlayerQuit(PlayerQuitEvent event) 
 	{
         if(!isEnabled()) return;
@@ -178,7 +180,7 @@ public class StatisticsModule extends BaseModule implements Listener
         }
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerBlockBreak(BlockBreakEvent event)
     {
         if(!isEnabled()) return;
@@ -190,7 +192,7 @@ public class StatisticsModule extends BaseModule implements Listener
         }
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerBlockPlace(BlockPlaceEvent event)
     {
         if(!isEnabled()) return;
@@ -202,7 +204,7 @@ public class StatisticsModule extends BaseModule implements Listener
         }
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerChangedWorld(PlayerChangedWorldEvent event)
     {
         if(!isEnabled()) return;
@@ -214,7 +216,26 @@ public class StatisticsModule extends BaseModule implements Listener
         }
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onEntityDeathEvent(EntityDeathEvent event)
+    {
+        if(!isEnabled()) return;
+
+        if(event.getEntity().getKiller() != null)
+        {
+            LKStatProfile profile = getStatisticProfile(event.getEntity().getKiller().getUniqueId());
+            if(profile != null)
+            {
+                if(event.getEntity() instanceof Player) {
+                    profile.addPVP(getStatisticProfile(event.getEntity().getUniqueId()).getUser());
+                } else {
+                    profile.addPVE(event.getEntityType());
+                }
+            }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerCommandPreprocessEvent(PlayerCommandPreprocessEvent event)
     {
         if(!isEnabled() || event.getMessage().length() < 2) return;
