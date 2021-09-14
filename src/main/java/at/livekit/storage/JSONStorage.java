@@ -54,6 +54,9 @@ public class JSONStorage extends StorageThreadMarshallAdapter
         registerClassForStorage(LKStatCmd.class);
         registerClassForStorage(LKStatSession.class);
         registerClassForStorage(LKStatWorld.class);
+        registerClassForStorage(LKStatPVP.class);
+        registerClassForStorage(LKStatPVE.class);
+        registerClassForStorage(LKUser.class);
     }
 
     private <T> void registerClassForStorage(Class<T> clazz) throws Exception {

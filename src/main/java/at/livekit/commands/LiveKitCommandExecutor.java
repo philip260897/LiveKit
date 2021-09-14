@@ -583,8 +583,9 @@ public class LiveKitCommandExecutor implements CommandExecutor, TabCompleter {
         try{
             Texturepack.generateTexturePack();
             Texturepack.generateBiomes();
+            Texturepack.generateEntities();
 
-            JSONArray array = new JSONArray();
+            /*JSONArray array = new JSONArray();
             for(int i = 0; i < EntityType.values().length; i++) {
                 array.put(EntityType.values()[i].name());
             }
@@ -595,7 +596,7 @@ public class LiveKitCommandExecutor implements CommandExecutor, TabCompleter {
             PrintWriter writer = new PrintWriter(file);
             writer.write(array.toString());
             writer.flush();
-            writer.close();
+            writer.close();*/
 
         }catch(Exception ex){ex.printStackTrace();}
     }

@@ -9,17 +9,21 @@ import java.util.Map.Entry;
 
 import org.bukkit.OfflinePlayer;
 import org.bukkit.block.Block;
+import org.bukkit.entity.EntityType;
 
 import at.livekit.livekit.LiveKit;
 import at.livekit.plugin.Plugin;
 import at.livekit.plugin.Texturepack;
 import at.livekit.statistics.tables.LKStatCmd;
 import at.livekit.statistics.tables.LKStatEntry;
+import at.livekit.statistics.tables.LKStatPVE;
+import at.livekit.statistics.tables.LKStatPVP;
 import at.livekit.statistics.tables.LKStatSession;
 import at.livekit.statistics.tables.LKStatWorld;
 import at.livekit.statistics.tables.LKUser;
 import at.livekit.storage.IStorageAdapterGeneric;
 import at.livekit.utils.Utils;
+import dev.vankka.mcdiscordreserializer.text.Text;
 
 public class LKStatProfile {
     
@@ -35,6 +39,9 @@ public class LKStatProfile {
     private List<LKStatWorld> worldList = new ArrayList<LKStatWorld>();
     private List<LKStatCmd> commandsList = new ArrayList<LKStatCmd>();
     private List<LKStatEntry> entriesList = new ArrayList<LKStatEntry>();
+
+    private List<LKStatPVP> pvpList = new ArrayList<LKStatPVP>();
+    private List<LKStatPVE> pveList = new ArrayList<LKStatPVE>();
     //private List<LKStatTotalEntry> totalEntriesList = new ArrayList<LKStatTotalEntry>();
     
     //private boolean initialized = false;
@@ -126,10 +133,34 @@ public class LKStatProfile {
         }
     }
 
+    public void addPVP(LKUser target) {
+        LKStatPVP pvp = new LKStatPVP();
+        pvp.user = user;
+        pvp.timestamp = System.currentTimeMillis();
+        pvp.target = target;
+
+        synchronized(pvpList) {
+            pvpList.add(pvp);
+        }
+    }
+
+    public void addPVE(EntityType type) {
+        try{
+            LKStatPVE pvp = new LKStatPVE();
+            pvp.user = user;
+            pvp.timestamp = Utils.getRoundedDayTimestamp();
+            pvp.type = Texturepack.getInstance().getEntity(type);
+
+            synchronized(pveList) {
+                pveList.add(pvp);
+            }
+        }catch(Exception ex){ex.printStackTrace();}
+    }
+
     public void addBlockBuildStat(Block block)
     {
         try{
-            addBlockStat(Texturepack.getInstance().getTexture(block.getType()), System.currentTimeMillis(), LKStatEntry.ACTION_PLACE);
+            addBlockStat(Texturepack.getInstance().getTexture(block.getType()), LKStatEntry.ACTION_PLACE);
         }catch(Exception ex){
             ex.printStackTrace();
         }
@@ -138,20 +169,20 @@ public class LKStatProfile {
     public void addBlockBreakStat(Block block)
     {
         try{
-            addBlockStat(Texturepack.getInstance().getTexture(block.getType()), System.currentTimeMillis(), LKStatEntry.ACTION_BREAK);
+            addBlockStat(Texturepack.getInstance().getTexture(block.getType()), LKStatEntry.ACTION_BREAK);
         }catch(Exception ex){
             ex.printStackTrace();
         }
     }
 
-    private void addBlockStat(int blockId, long timestamp, byte type)
+    private void addBlockStat(int blockId, byte type)
     {
         LKStatEntry entry = new LKStatEntry();
         entry.user = user;
         entry.action = type;
         entry.blockid = blockId;
         entry.count = 1;
-        entry.timestamp = ((((timestamp/1000)/60)/60)/24) * 1000 * 60 * 60 * 24 + Utils.getTimezoneOffset();
+        entry.timestamp = Utils.getRoundedDayTimestamp();
 
         synchronized(entriesList)
         {
@@ -228,6 +259,40 @@ public class LKStatProfile {
         {
             try {
                 storage.createOrUpdate(entry);
+            }catch(Exception ex){ex.printStackTrace();}
+        }
+
+        //copy data for new thread
+        List<LKStatPVP> pvp;
+        synchronized(pvpList) {
+            pvp = new ArrayList<LKStatPVP>(pvpList);
+            pvpList.clear();
+        }
+        
+        for(LKStatPVP entry : pvp)
+        {
+            try {
+                storage.create(entry);
+            }catch(Exception ex){ex.printStackTrace();}
+        }
+
+        //copy sessions to this thread, clear cached entries
+        List<LKStatPVE> pve;
+        synchronized(pveList) {
+            pve = new ArrayList<LKStatPVE>(pveList);
+            pveList.clear();
+        }
+
+        for(LKStatPVE entry : pve)
+        {
+            try {
+                LKStatPVE existing = storage.loadSingle(LKStatPVE.class, new String[]{"user_id", "timestamp", "type"}, new Object[]{entry.user, entry.timestamp, entry.type});
+                if(existing != null) {
+                    existing.count += entry.count;
+                    storage.update(existing);
+                } else {
+                    storage.create(entry);
+                }
             }catch(Exception ex){ex.printStackTrace();}
         }
     }

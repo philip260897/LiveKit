@@ -35,6 +35,10 @@ public class Utils
         return ((timezoneOffset.intValue()/1000)/60)*1000*60;
     }
 
+    public static long getRoundedDayTimestamp() {
+        return ((((System.currentTimeMillis()/1000)/60)/60)/24) * 1000 * 60 * 60 * 24 + Utils.getTimezoneOffset();
+    }
+
     public static FutureSyncCallback<Exception> errorHandler(CommandSender sender) {
         return new FutureSyncCallback<Exception>(){
             @Override

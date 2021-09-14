@@ -22,6 +22,7 @@
 	<include>config.yml</include>
   <include>texturepack.json</include>
   <include>biomes.json</include>
+  <include>entities.json</include>
 	</includes>
 	</resource>
 	</resources>
