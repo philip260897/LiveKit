@@ -4,36 +4,34 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 
 import org.bukkit.Bukkit;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
-import org.bukkit.event.player.PlayerCommandSendEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.AsyncPlayerPreLoginEvent.Result;
 import org.bukkit.event.block.BlockPlaceEvent;
-import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.scheduler.BukkitTask;
 
 import at.livekit.plugin.Plugin;
 import at.livekit.statistics.LKStatProfile;
+import at.livekit.statistics.tables.LKStatServerSession;
+import at.livekit.storage.StorageThreadMarshallAdapter;
 import at.livekit.utils.Utils;
 
 public class StatisticsModule extends BaseModule implements Listener
 {
     private BukkitTask storageTask;
+    private boolean saveServerSession = false;
+    private LKStatServerSession serverSession;
     private List<LKStatProfile> profiles = new ArrayList<LKStatProfile>();
 
     public StatisticsModule(ModuleListener listener) {
@@ -79,6 +77,14 @@ public class StatisticsModule extends BaseModule implements Listener
             profile.save();
         }
 
+        if(saveServerSession)
+        {
+            try{
+                Plugin.getStorage().createOrUpdate(serverSession);
+            }catch(Exception ex){ex.printStackTrace();}
+            saveServerSession = false;
+        }
+
         for(LKStatProfile profile : profiles)
         {
             if(profile.canCleanUp()) {
@@ -112,6 +118,10 @@ public class StatisticsModule extends BaseModule implements Listener
 
         Bukkit.getServer().getPluginManager().registerEvents(this, Plugin.getInstance());
 
+        serverSession = new LKStatServerSession();
+        serverSession.start = System.currentTimeMillis();
+        saveServerSession = true;
+
         storageTask = Bukkit.getScheduler().runTaskTimerAsynchronously(Plugin.getInstance(), new Runnable(){
             @Override
             public void run() {
@@ -135,7 +145,12 @@ public class StatisticsModule extends BaseModule implements Listener
             }
         }
 
+        serverSession.end = System.currentTimeMillis();
+        saveServerSession = true;
+
+        StorageThreadMarshallAdapter.DISABLE = true;
         commitCacheToStorageAsync();
+        StorageThreadMarshallAdapter.DISABLE = false;
 
         super.onDisable(signature);
     }
@@ -231,6 +246,13 @@ public class StatisticsModule extends BaseModule implements Listener
                 } else {
                     profile.addPVE(event.getEntityType());
                 }
+            }
+        }
+
+        if(event.getEntity() instanceof Player) {
+            LKStatProfile profile = getStatisticProfile(event.getEntity().getUniqueId());
+            if(profile != null) {
+                profile.addDeath();
             }
         }
     }

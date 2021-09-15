@@ -15,6 +15,7 @@ import at.livekit.livekit.LiveKit;
 import at.livekit.plugin.Plugin;
 import at.livekit.plugin.Texturepack;
 import at.livekit.statistics.tables.LKStatCmd;
+import at.livekit.statistics.tables.LKStatDeath;
 import at.livekit.statistics.tables.LKStatEntry;
 import at.livekit.statistics.tables.LKStatPVE;
 import at.livekit.statistics.tables.LKStatPVP;
@@ -42,6 +43,9 @@ public class LKStatProfile {
 
     private List<LKStatPVP> pvpList = new ArrayList<LKStatPVP>();
     private List<LKStatPVE> pveList = new ArrayList<LKStatPVE>();
+    
+    private Object deathLock = new Object();
+    private LKStatDeath currentDeaths;
     //private List<LKStatTotalEntry> totalEntriesList = new ArrayList<LKStatTotalEntry>();
     
     //private boolean initialized = false;
@@ -146,16 +150,44 @@ public class LKStatProfile {
 
     public void addPVE(EntityType type) {
         try{
-            LKStatPVE pvp = new LKStatPVE();
-            pvp.user = user;
-            pvp.timestamp = Utils.getRoundedDayTimestamp();
-            pvp.type = Texturepack.getInstance().getEntity(type);
-            pvp.count = 1;
+            synchronized(pveList)
+            {
+                LKStatPVE pve = null;
+                long day = Utils.getRoundedDayTimestamp();
+                int entityType = Texturepack.getInstance().getEntity(type);
 
-            synchronized(pveList) {
-                pveList.add(pvp);
+                for(LKStatPVE entry : pveList) {
+                    if(entry.timestamp == day && entry.type == entityType) {
+                        pve = entry;
+                        break;
+                    }
+                }
+
+                if(pve == null) {
+                    pve = new LKStatPVE();
+                    pve.user = user;
+                    pve.timestamp = Utils.getRoundedDayTimestamp();
+                    pve.type = Texturepack.getInstance().getEntity(type);
+                    pve.count = 0;
+                    pveList.add(pve);
+                }
+
+                pve.count++;
             }
+
         }catch(Exception ex){ex.printStackTrace();}
+    }
+
+    public void addDeath() {
+        synchronized(deathLock) {
+            if(currentDeaths == null) {
+                currentDeaths = new LKStatDeath();
+                currentDeaths.user = user;
+                currentDeaths.timestamp = Utils.getRoundedDayTimestamp();
+                currentDeaths.count = 0;
+            }
+            currentDeaths.count++;
+        }
     }
 
     public void addBlockBuildStat(Block block)
@@ -178,16 +210,31 @@ public class LKStatProfile {
 
     private void addBlockStat(int blockId, byte type)
     {
-        LKStatEntry entry = new LKStatEntry();
-        entry.user = user;
-        entry.action = type;
-        entry.blockid = blockId;
-        entry.count = 1;
-        entry.timestamp = Utils.getRoundedDayTimestamp();
-
         synchronized(entriesList)
         {
-            entriesList.add(entry);
+            LKStatEntry entry = null;
+
+            long day = Utils.getRoundedDayTimestamp();
+            for(LKStatEntry e : entriesList)
+            {
+                if(e.blockid == blockId && e.action == type && e.timestamp == day)
+                {
+                    entry = e;
+                    break;
+                }
+            }
+
+            if(entry == null) {
+                entry = new LKStatEntry();
+                entry.user = user;
+                entry.action = type;
+                entry.blockid = blockId;
+                entry.timestamp = day;
+                entry.count = 0;
+                entriesList.add(entry);
+            }
+
+            entry.count++;
         }
     }
 
@@ -293,6 +340,25 @@ public class LKStatProfile {
                     storage.update(existing);
                 } else {
                     storage.create(entry);
+                }
+            }catch(Exception ex){ex.printStackTrace();}
+        }
+
+        //copy deaths stat for local stuffy
+        if(currentDeaths != null) {
+            LKStatDeath death;
+            synchronized(deathLock) {
+                death = currentDeaths;
+                currentDeaths = null;
+            }
+
+            try {
+                LKStatDeath existing = storage.loadSingle(LKStatDeath.class, new String[]{"user_id", "timestamp"}, new Object[]{death.user, death.timestamp});
+                if(existing != null) {
+                    existing.count += death.count;
+                    storage.update(existing);
+                } else {
+                    storage.create(death);
                 }
             }catch(Exception ex){ex.printStackTrace();}
         }
