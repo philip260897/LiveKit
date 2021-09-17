@@ -63,6 +63,7 @@ public class ModuleManager
         this.registerModule(new POIModule(listener));
         this.registerModule(new InventoryModule(listener));
         this.registerModule(new StatisticsModule(listener));
+        this.registerModule(new PerformanceModule(listener));
         //this.registerModule(new EconomyModule(listener));
         
         //if(Config.getConsolePassword() != null) {

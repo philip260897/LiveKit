@@ -53,3 +53,5 @@ modules:
     enabled: true
   StatisticsModule:
     enabled: true
+  PerformanceModule:
+    enabled: true

@@ -176,26 +176,21 @@ public class Utils
         ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
         
         
-
-        /*double cpuUsage;
-        try 
-        {
-            Thread.sleep(500);
-        } 
-        catch (Exception ignored) { }
-
-        operatingSystemMXBean = (com.sun.management.OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
-        long upTime = runtimeMXBean.getUptime();
-        long processCpuTime = operatingSystemMXBean.getProcessCpuTime();
-        long elapsedCpu = processCpuTime - prevProcessCpuTime;
-        long elapsedTime = upTime - prevUpTime;
-
-        
-
-        cpuUsage = Math.min(99F, elapsedCpu / (elapsedTime * 10000F * availableProcessors));*/
         System.out.println("Load: "+(operatingSystemMXBean.getProcessCpuLoad()*100)+"%");
         System.out.println("Processors: "+availableProcessors);
         //System.out.println("Java CPU: " + cpuUsage);
         System.out.println("Memory: "+(ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getUsed()/1024/1024));
+    }
+
+    public static long getMaxMemory() {
+        return Runtime.getRuntime().maxMemory()/1024/1024;
+    }
+
+    public static long getMemoryUsage() {
+        return (ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getUsed()/1024/1024);
+    }
+
+    public static float getCPUUsage() {
+        return (float) ((com.sun.management.OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean()).getProcessCpuLoad()*100;
     }
 }
