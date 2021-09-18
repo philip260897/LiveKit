@@ -88,7 +88,7 @@ public class PerformanceModule extends BaseModule
             _chunks.put(ts, chunks);
         }
 
-        Plugin.debug("Performance: ram="+(_ramBacklog.size()+_ram.size()) + " cpu=" + (_cpuBacklog.size()+_cpu.size())+ " chunks=" + (_chunksBacklog.size()+_chunks.size())+ " ticks=" + (_tickBacklog.size()+_tick.size())+" took: "+(System.currentTimeMillis()-ts)+"ms");
+        //Plugin.debug("Performance: ram="+(_ramBacklog.size()+_ram.size()) + " cpu=" + (_cpuBacklog.size()+_cpu.size())+ " chunks=" + (_chunksBacklog.size()+_chunks.size())+ " ticks=" + (_tickBacklog.size()+_tick.size())+" took: "+(System.currentTimeMillis()-ts)+"ms");
 
         notifyChange();
     }

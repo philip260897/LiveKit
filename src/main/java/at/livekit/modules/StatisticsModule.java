@@ -66,7 +66,7 @@ public class StatisticsModule extends BaseModule implements Listener
 
     private void commitCacheToStorageAsync() 
     {
-        Utils.performance();
+        //Utils.performance();
         LKStatProfile[] profiles = null;
         synchronized(this.profiles) {
             profiles = this.profiles.toArray(new LKStatProfile[this.profiles.size()]);
@@ -125,7 +125,7 @@ public class StatisticsModule extends BaseModule implements Listener
         storageTask = Bukkit.getScheduler().runTaskTimerAsynchronously(Plugin.getInstance(), new Runnable(){
             @Override
             public void run() {
-                Plugin.debug("[STAT] Storage task awaking");
+                //Plugin.debug("[STAT] Storage task awaking");
                 commitCacheToStorageAsync();
             }
         }, 20*5, 5*20);
