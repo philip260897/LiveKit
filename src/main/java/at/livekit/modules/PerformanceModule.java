@@ -26,11 +26,15 @@ public class PerformanceModule extends BaseModule
     private HashMap<Long, Float> _cpuBacklog = new HashMap<Long, Float>();
     private HashMap<Long, Integer> _chunksBacklog = new HashMap<Long, Integer>();
     private HashMap<Long, Integer> _tickBacklog = new HashMap<Long, Integer>();
+    private HashMap<Long, Integer> _entitiesBacklog = new HashMap<Long, Integer>();
+    private HashMap<Long, Integer> _playersBacklog = new HashMap<Long, Integer>();
     
     private HashMap<Long, Long> _ram = new HashMap<Long, Long>();
     private HashMap<Long, Float> _cpu = new HashMap<Long, Float>();
     private HashMap<Long, Integer> _chunks = new HashMap<Long, Integer>();
     private HashMap<Long, Integer> _tick = new HashMap<Long, Integer>();
+    private HashMap<Long, Integer> _entities = new HashMap<Long, Integer>();
+    private HashMap<Long, Integer> _players = new HashMap<Long, Integer>();
 
     long currentTickTS = 0;
     int currentTick = 0;
@@ -80,12 +84,16 @@ public class PerformanceModule extends BaseModule
         synchronized(backlog) {
             _ram.put(ts, Utils.getMemoryUsage());
             _cpu.put(ts, Utils.getCPUUsage());
-        
+            _players.put(ts, Bukkit.getServer().getOnlinePlayers().size());
+            
+            int entities = 0;
             int chunks = 0;
             for(World world : Bukkit.getWorlds()) {
                 chunks += world.getLoadedChunks().length;
+                entities += world.getEntities().size();
             }
             _chunks.put(ts, chunks);
+            _entities.put(ts, entities);
         }
 
         //Plugin.debug("Performance: ram="+(_ramBacklog.size()+_ram.size()) + " cpu=" + (_cpuBacklog.size()+_cpu.size())+ " chunks=" + (_chunksBacklog.size()+_chunks.size())+ " ticks=" + (_tickBacklog.size()+_tick.size())+" took: "+(System.currentTimeMillis()-ts)+"ms");
@@ -105,6 +113,8 @@ public class PerformanceModule extends BaseModule
             json.put("ram", _ramBacklog);
             json.put("chunks", _chunksBacklog);
             json.put("tick", _tickBacklog);
+            json.put("entities", _entitiesBacklog);
+            json.put("players", _playersBacklog);
         }
 
         json.put("ram_max", Utils.getMaxMemory());
@@ -127,6 +137,8 @@ public class PerformanceModule extends BaseModule
             json.put("ram", _ram);
             json.put("chunks", _chunks);
             json.put("tick", _tick);
+            json.put("entities", _entities);
+            json.put("players", _players);
         }
 
         IPacket response =  new ModuleUpdatePacket(this, json, false);
@@ -139,16 +151,22 @@ public class PerformanceModule extends BaseModule
             _cpuBacklog.putAll(_cpu);
             _chunksBacklog.putAll(_chunks);
             _tickBacklog.putAll(_tick);
+            _entitiesBacklog.putAll(_entities);
+            _playersBacklog.putAll(_players);
 
             _ramBacklog.entrySet().removeIf(e -> e.getKey() < ts - SECONDS*1000);
             _cpuBacklog.entrySet().removeIf(e -> e.getKey() < ts - SECONDS*1000);
             _chunksBacklog.entrySet().removeIf(e -> e.getKey() < ts - SECONDS*1000);
             _tickBacklog.entrySet().removeIf(e -> e.getKey() < ts - SECONDS*1000);
+            _entitiesBacklog.entrySet().removeIf(e -> e.getKey() < ts - SECONDS*1000);
+            _playersBacklog.entrySet().removeIf(e -> e.getKey() < ts - SECONDS*1000);
 
             _ram.clear();
             _cpu.clear();
             _chunks.clear();
             _tick.clear();
+            _entities.clear();
+            _players.clear();
         }
 
         return responses;
