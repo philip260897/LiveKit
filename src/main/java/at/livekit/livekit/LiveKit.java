@@ -1,6 +1,7 @@
 package at.livekit.livekit;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
 import org.json.JSONObject;
 import java.lang.reflect.Method;
@@ -27,6 +28,7 @@ import at.livekit.api.map.POIInfoProvider;
 import at.livekit.api.map.PlayerInfoProvider;
 import at.livekit.authentication.Pin;
 import at.livekit.authentication.Session;
+import at.livekit.livekit.LiveCloudAPI.SessionResponse;
 import at.livekit.modules.BaseModule;
 import at.livekit.modules.ChatModule;
 import at.livekit.modules.EconomyModule;
@@ -155,9 +157,22 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
             }
         }*/
 
-        _server = new NIOServer<Identity>(_modules.getSettings().liveKitPort);
-        _server.setServerListener(this);
-        _server.start();
+
+
+        /*Bukkit.getScheduler().runTaskAsynchronously(Plugin.getInstance(), new Runnable()
+        {
+            @Override
+            public void run() {
+                // TODO Auto-generated method stub
+
+            }
+        });*/
+
+        abort = false;
+        _thread = new Thread(this);
+        _thread.start();
+
+
         /*_server.setServerListener(new NIOServerEvent<Identity>() {
 
             @Override
@@ -188,9 +203,7 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
         });*/
         //_server.open();
 
-        abort = false;
-        _thread = new Thread(this);
-        _thread.start();
+
     }
 
     private boolean abort;
@@ -204,6 +217,16 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
 
     @Override
     public void run() {
+
+        try{
+
+            SessionResponse session = LiveCloudAPI.updateSession();
+
+            _server = new NIOServer<Identity>(_modules.getSettings().liveKitPort);
+            _server.setServerListener(LiveKit.this);
+            _server.start();
+        }catch(Exception ex){ex.printStackTrace();}
+
         while(!abort) {
             int tickTime = 1000/(_modules.getSettings().liveMapTickRate);
             long start = System.currentTimeMillis();
