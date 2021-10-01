@@ -676,7 +676,10 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
             }
         }
 
+        
         if(!anonymous) {
+            Session currentSession = null;
+
             if(pin != null) {
                 //identity = PlayerAuth.validateClaim(pin);
 
@@ -705,13 +708,15 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
                 identity = uuid;
                 
                 boolean success = false;
+                
 
                 try{
                     List<Session> sessions = Plugin.getStorage().load(Session.class, "uuid", UUID.fromString(identity));
                     for(Session session : sessions) {
                         
                         if(session.getAuthentication().equals(authorization)) {
-                            Plugin.getStorage().delete(session);
+                            //Plugin.getStorage().delete(session);
+                            currentSession = session;
                             success = true;
                         }
                     }
@@ -743,10 +748,13 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
                     _server.send(client.getIdentifier(), _modules.onJoinAsync(client.getIdentifier()));
                 }catch(Exception ex){ex.printStackTrace();}
 
-                Session session = Session.createNew(UUID.fromString(identity), null, null);
-                try{
-                    Plugin.getStorage().create(session);
-                }catch(Exception ex){ex.printStackTrace();}
+                Session session = currentSession; 
+                if(session == null) {
+                    try{
+                        session = Session.createNew(UUID.fromString(identity), null, null);
+                        Plugin.getStorage().create(session);
+                    }catch(Exception ex){ex.printStackTrace();}
+                }
             
                 return new IdentityPacket(identity, client.getIdentifier().getName(), HeadLibraryV2.get(client.getIdentifier().getName(), true), session.getAuthentication());
             }
