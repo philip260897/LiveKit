@@ -25,6 +25,8 @@ import com.j256.ormlite.jdbc.JdbcPooledConnectionSource;
 import com.j256.ormlite.logger.LogBackendType;
 import com.j256.ormlite.logger.LoggerFactory;
 import com.j256.ormlite.logger.NullLogBackend;
+import com.j256.ormlite.stmt.ArgumentHolder;
+import com.j256.ormlite.stmt.QueryBuilder;
 import com.j256.ormlite.stmt.Where;
 
 
@@ -160,6 +162,14 @@ public class SQLStorage extends StorageThreadMarshallAdapter
     }
 
     @Override
+    public <T> List<T> loadWhere(Class<T> clazz, String query, ArgumentHolder[] args) throws Exception {
+        super.loadWhere(clazz, query, args);
+
+        Dao<T, String> dao = getDao(clazz);
+        return dao.queryBuilder().where().raw(query, args).query();
+    }
+
+    @Override
     public <T> void create(T entry) throws Exception {
         super.create(entry);
 
@@ -220,5 +230,25 @@ public class SQLStorage extends StorageThreadMarshallAdapter
             }
         }catch(Exception ex){ex.printStackTrace(); return false; }
         return true;
+    }
+
+    //statistics queries
+
+    public List<LKStatSession> getSessionsFromTo(long from, long to) throws Exception
+    {
+        Dao<LKStatSession, String> dao = getDao(LKStatSession.class);
+        Where<LKStatSession, String> where = dao.queryBuilder().where();
+        where.and(where.le("start", to), where.or(where.ge("end", from), where.eq("end", 0)));
+
+        return where.query();
+    }
+
+    public List<LKStatServerSession> getServerSessionFromTo(long from, long to) throws Exception
+    {
+        Dao<LKStatServerSession, String> dao = getDao(LKStatServerSession.class);
+        Where<LKStatServerSession, String> where = dao.queryBuilder().where();
+        where.and(where.le("start", to), where.or(where.ge("end", from), where.eq("end", 0)));
+
+        return where.query();
     }
 }

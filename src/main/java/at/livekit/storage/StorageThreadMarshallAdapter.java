@@ -2,6 +2,8 @@ package at.livekit.storage;
 
 import java.util.List;
 
+import com.j256.ormlite.stmt.ArgumentHolder;
+
 public abstract class StorageThreadMarshallAdapter implements IStorageAdapterGeneric{
 
     public static boolean DISABLE = false;
@@ -9,6 +11,13 @@ public abstract class StorageThreadMarshallAdapter implements IStorageAdapterGen
     @Override
     public <T> T loadSingle(Class<T> clazz, String id) throws Exception {
         checkThread("loadSingle", clazz, id);
+        return null;
+    }
+
+    @Override
+    public <T> List<T> loadWhere(Class<T> clazz, String query, ArgumentHolder[] args) throws Exception {
+        checkThread("loadWhere", clazz, query, args);
+        
         return null;
     }
 

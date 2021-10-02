@@ -2,6 +2,8 @@ package at.livekit.storage;
 
 import java.util.List;
 
+import com.j256.ormlite.stmt.ArgumentHolder;
+
 public interface IStorageAdapterGeneric 
 {
     public void initialize() throws Exception;
@@ -18,6 +20,8 @@ public interface IStorageAdapterGeneric
     public <T> List<T> load(Class<T> clazz, String key, Object value) throws Exception;
 
     public <T> List<T> loadAll(Class<T> clazz) throws Exception;
+
+    public <T> List<T> loadWhere(Class<T> clazz, String where, ArgumentHolder[] args) throws Exception;
 
     public <T> void create(T entry) throws Exception;
 

@@ -4,6 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
+
+import com.j256.ormlite.stmt.ArgumentHolder;
 
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -21,11 +25,19 @@ import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.scheduler.BukkitTask;
 
+import at.livekit.livekit.Identity;
+import at.livekit.packets.ActionPacket;
+import at.livekit.packets.IPacket;
+import at.livekit.packets.StatusPacket;
 import at.livekit.plugin.Plugin;
 import at.livekit.statistics.LKStatProfile;
 import at.livekit.statistics.tables.LKStatServerSession;
+import at.livekit.storage.IStorageAdapterGeneric;
+import at.livekit.storage.SQLStorage;
 import at.livekit.storage.StorageThreadMarshallAdapter;
 import at.livekit.utils.Utils;
+import org.json.JSONObject;
+import org.json.JSONArray;
 
 public class StatisticsModule extends BaseModule implements Listener
 {
@@ -35,7 +47,7 @@ public class StatisticsModule extends BaseModule implements Listener
     private List<LKStatProfile> profiles = new ArrayList<LKStatProfile>();
 
     public StatisticsModule(ModuleListener listener) {
-        super(1, "Statistics", "livekit.module.statistics", UpdateRate.NEVER, listener);
+        super(1, "Statistics", "livekit.module.map", UpdateRate.NEVER, listener);
     } 
 
     private LKStatProfile createProfile(UUID uuid)
@@ -155,6 +167,45 @@ public class StatisticsModule extends BaseModule implements Listener
         super.onDisable(signature);
     }
 
+
+    @Action(name="ListAllSessions", sync = false)
+    protected IPacket listAllSessions(Identity identity, ActionPacket packet) throws Exception
+    {
+        //TODO: Permission handling
+        SQLStorage storage = getSQLStorage();
+
+        long from = packet.getData().getLong("from");
+        long to = packet.getData().getLong("to");
+
+        JSONObject data = new JSONObject();
+        JSONArray result = new JSONArray(storage.getSessionsFromTo(from, to).stream().map(item->item.toJson()).collect(Collectors.toList()));
+        data.put("result", result);
+            
+        return new StatusPacket(1, data);
+    }
+
+    @Action(name="ListAllServerSessions", sync = false)
+    protected IPacket listAllServerSessions(Identity identity, ActionPacket packet) throws Exception
+    {
+        //TODO: Permission handling
+        SQLStorage storage = getSQLStorage();
+
+        long from = packet.getData().getLong("from");
+        long to = packet.getData().getLong("to");
+
+        JSONObject data = new JSONObject();
+        JSONArray result = new JSONArray(storage.getServerSessionFromTo(from, to));
+        data.put("result", result);
+            
+        return packet.response(data);
+    }
+
+    private SQLStorage getSQLStorage() throws Exception {
+        if(Plugin.getStorage() instanceof SQLStorage) {
+            return (SQLStorage) Plugin.getStorage();
+        }
+        throw new Exception("Storage adapter not supported! Make sure to use SQL storage for anlaytics!");
+    }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onAsyncPlayerPreLogin(AsyncPlayerPreLoginEvent event)

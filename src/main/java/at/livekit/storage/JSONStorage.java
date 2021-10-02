@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 
 import com.google.gson.Gson;
 import com.j256.ormlite.field.DatabaseField;
+import com.j256.ormlite.stmt.ArgumentHolder;
 import com.j256.ormlite.table.DatabaseTable;
 
 import org.json.JSONArray;
@@ -189,6 +190,11 @@ public class JSONStorage extends StorageThreadMarshallAdapter
     @Override
     public <T> T loadSingle(Class<T> clazz, String[] keys, Object[] values) throws Exception {
         throw new Exception("Multi Column search for JSON Storage not implemented!");
+    }
+
+    @Override
+    public <T> List<T> loadWhere(Class<T> clazz, String query, ArgumentHolder[] args) throws Exception {
+        throw new Exception("Custom queries search for JSON Storage not implemented!");
     }
 
     /*@Override
