@@ -17,7 +17,7 @@ import at.livekit.plugin.Plugin;
 
 public class LiveCloudAPI {
     
-    protected static String domain = "http://localhost:8080/";
+    protected static String domain = "https://api.livekitapp.com/";
 
     protected static SessionResponse updateSession() 
     {
