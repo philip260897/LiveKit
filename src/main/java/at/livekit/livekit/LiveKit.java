@@ -206,6 +206,7 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
 
     }
 
+    private SessionResponse _session;
     private boolean abort;
     private Object _shutdownLock = new Object();
     private Future<Void> _futureModuleUpdates;
@@ -220,7 +221,7 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
 
         try{
 
-            SessionResponse session = LiveCloudAPI.updateSession();
+            _session = LiveCloudAPI.updateSession();
 
             _server = new NIOServer<Identity>(_modules.getSettings().liveKitPort);
             _server.setServerListener(LiveKit.this);
@@ -771,7 +772,7 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
                     Plugin.getStorage().create(session);
                 }catch(Exception ex){ex.printStackTrace();}
             
-                return new IdentityPacket(identity, client.getIdentifier().getName(), HeadLibraryV2.get(client.getIdentifier().getName(), true), session.getAuthentication());
+                return new IdentityPacket(identity, client.getIdentifier().getName(), HeadLibraryV2.get(client.getIdentifier().getName(), true), session.getAuthentication(), _session != null ? _session.getSessionToken() : null);
             }
         } 
         else
@@ -787,7 +788,7 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
                 _server.send(client.getIdentifier(), _modules.onJoinAsync(client.getIdentifier()));
             }catch(Exception ex){ex.printStackTrace();}
 
-            return new IdentityPacket(null, client.getIdentifier().getName(), null, null);
+            return new IdentityPacket(null, client.getIdentifier().getName(), null, null, null);
         }
 
         return new StatusPacket(0, "Invalid authentication credentials!");
