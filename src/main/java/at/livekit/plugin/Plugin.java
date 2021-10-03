@@ -145,8 +145,10 @@ public class Plugin extends JavaPlugin implements ILiveKitPlugin, Listener {
 		getCommand("livekit").setExecutor(base);
 		getCommand("livekit").setTabCompleter(base);
 
-		discordPlugin = new DiscordSRVPlugin();
-        discordPlugin.onEnable();
+		if(Config.isDiscordEnabled()) {
+			discordPlugin = new DiscordSRVPlugin();
+        	discordPlugin.onEnable();
+		}
     }
     
 	@EventHandler
@@ -181,7 +183,9 @@ public class Plugin extends JavaPlugin implements ILiveKitPlugin, Listener {
 		ConsoleListener.unregisterListener();
 
 		try{
-			discordPlugin.onDisable();
+			if(discordPlugin != null) {
+				discordPlugin.onDisable();
+			}
 		}catch(Exception ex){ex.printStackTrace();}
 
 		try{

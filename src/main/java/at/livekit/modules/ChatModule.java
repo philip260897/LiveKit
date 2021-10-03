@@ -76,7 +76,7 @@ public class ChatModule extends BaseModule implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onAsyncPlayerChatEvent(AsyncPlayerChatEvent event) {
-        if (!isEnabled())
+        if (!isEnabled() || event.isCancelled())
             return;
 
         ChatMessage message = new ChatMessage(event.getPlayer(), event.getMessage());

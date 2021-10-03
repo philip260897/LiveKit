@@ -55,3 +55,8 @@ modules:
     enabled: true
   PerformanceModule:
     enabled: true
+plugins:
+  DiscordSRV:
+    enabled: false
+    channelIDs:
+    - all

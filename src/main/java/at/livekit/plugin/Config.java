@@ -112,6 +112,14 @@ public class Config
         return null;
     }
 
+    public static boolean isDiscordEnabled() {
+        return config.getBoolean("plugins.DiscordSRV.enabled");
+    }
+
+    public static List<String> getDiscordWhitelist() {
+        return (List<String>) config.getList("plugins.DiscordSRV.channelIDs");
+    }
+
     public static String getChatOfflineFormat() {
         return config.getString("modules.ChatModule.offlineFormat");
     }
@@ -255,6 +263,25 @@ public class Config
         {
             Plugin.log("Patching config with new entries");
             config.set("modules.ChatModule.offlineFormat", "&7[Offline]&r <{prefix}&r{name}&r{suffix}&r> {message}");
+
+            save = true;
+        }
+
+        if(config.get("plugins.DiscordSRV.enabled") == null)
+        {
+            Plugin.log("Patching config with new entries");
+            config.set("plugins.DiscordSRV.enabled", false);
+
+            save = true;
+        }
+
+        if(config.get("plugins.DiscordSRV.channelIDs") == null)
+        {
+            List<String> channels = new ArrayList<String>();
+            channels.add("all");
+
+            Plugin.log("Patching config with new entries");
+            config.set("plugins.DiscordSRV.channelIDs", channels);
 
             save = true;
         }
