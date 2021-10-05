@@ -36,7 +36,7 @@ public class Renderer
         initialize(task.getClass().getClassLoader());
 
         if (task != null) {
-            if(task.region == null || task.region.isDead()) throw new Exception("RenderTask region is dead!");
+            if(task.region == null || task.region.isDead()) throw new Exception("RenderTask region is dead! Region("+(task.region!=null)+")");
 
             
 
