@@ -4,7 +4,7 @@ version: 1.4.3d
 author: livekitapp@gmail.com
 description: Connector plugin for LiveKit. Allows LiveKit App to connect to server
 api-version: 1.16
-softdepend: [Vault,DiscordSRV]
+softdepend: [Vault,DiscordSRV,PlaceholderAPI]
 commands:
   livekit:
     description: LiveKit commands

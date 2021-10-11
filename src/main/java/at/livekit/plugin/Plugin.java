@@ -24,6 +24,7 @@ import at.livekit.provider.POISpawnProvider;
 import at.livekit.storage.IStorageAdapterGeneric;
 import at.livekit.storage.StorageManager;
 import at.livekit.supported.DiscordSRVPlugin;
+import at.livekit.supported.PlaceholderAPIPlugin;
 import at.livekit.utils.ConsoleListener;
 import at.livekit.utils.HeadLibraryEvent;
 import at.livekit.utils.HeadLibraryV2;
@@ -44,6 +45,7 @@ public class Plugin extends JavaPlugin implements ILiveKitPlugin, Listener {
 	private static IStorageAdapterGeneric storage;
 
 	private static DiscordSRVPlugin discordPlugin;
+	private static PlaceholderAPIPlugin plapiPlugin;
 
 	@Override
 	public void onEnable() {
@@ -149,6 +151,9 @@ public class Plugin extends JavaPlugin implements ILiveKitPlugin, Listener {
 			discordPlugin = new DiscordSRVPlugin();
         	discordPlugin.onEnable();
 		}
+
+		plapiPlugin = new PlaceholderAPIPlugin();
+		plapiPlugin.onEnable();
     }
     
 	@EventHandler
@@ -181,7 +186,11 @@ public class Plugin extends JavaPlugin implements ILiveKitPlugin, Listener {
     public void onDisable() {
 		//unregister before livekit gets disabled
 		ConsoleListener.unregisterListener();
-
+		try{
+			if(plapiPlugin != null) {
+				plapiPlugin.onDisable();
+			}
+		}catch(Exception ex){ex.printStackTrace();}
 		try{
 			if(discordPlugin != null) {
 				discordPlugin.onDisable();
@@ -203,6 +212,10 @@ public class Plugin extends JavaPlugin implements ILiveKitPlugin, Listener {
 
 	public static Plugin getInstance() {
 		return instance;
+	}
+
+	public static PlaceholderAPIPlugin getPlapi() {
+		return plapiPlugin;
 	}
 
 	public static IStorageAdapterGeneric getStorage() {

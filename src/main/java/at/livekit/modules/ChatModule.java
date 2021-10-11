@@ -123,7 +123,7 @@ public class ChatModule extends BaseModule implements Listener {
             if(!identity.hasPermission("livekit.chat.write_offline")) return new StatusPacket(0, "Permission denied!");
 
             if(data.has("message") && !data.isNull("message")/* && data.has("displayName") && !data.isNull("displayName")*/) {
-                String chat = offlineFormat;
+                String chat = Plugin.getPlapi().replace(op, offlineFormat);
                 chat = chat.replace("{prefix}", identity.getPrefix());
                 chat = chat.replace("{suffix}", identity.getSuffix());
                 chat = chat.replace("{name}", op.getName());
