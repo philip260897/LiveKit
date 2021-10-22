@@ -58,7 +58,7 @@ public class Plugin extends JavaPlugin implements ILiveKitPlugin, Listener {
 
 		try{
 			Texturepack.getInstance();
-		}catch(Exception ex){ex.printStackTrace();}
+		}catch(Exception ex){ ex.printStackTrace(); }
 
 		name = this.getDescription().getName();
 		prefix = color+"["+ChatColor.WHITE+name+color+"] "+ChatColor.WHITE;
@@ -82,6 +82,7 @@ public class Plugin extends JavaPlugin implements ILiveKitPlugin, Listener {
 			return;
 		}
 
+		
 		//System.out.println("System out printlning");
 
 		/*List<String> worlds = Config.getLiveMapWorlds();
