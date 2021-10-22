@@ -4,10 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
-
-import com.j256.ormlite.stmt.ArgumentHolder;
 
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -32,10 +29,8 @@ import at.livekit.packets.StatusPacket;
 import at.livekit.plugin.Plugin;
 import at.livekit.statistics.LKStatProfile;
 import at.livekit.statistics.tables.LKStatServerSession;
-import at.livekit.storage.IStorageAdapterGeneric;
 import at.livekit.storage.SQLStorage;
 import at.livekit.storage.StorageThreadMarshallAdapter;
-import at.livekit.utils.Utils;
 import org.json.JSONObject;
 import org.json.JSONArray;
 
@@ -68,7 +63,8 @@ public class StatisticsModule extends BaseModule implements Listener
         {
             for(LKStatProfile profile : profiles)
             {
-                if(profile.getUUID() == uuid) {
+                System.out.print(profile.getUUID() + " - " + uuid);
+                if(profile.getUUID().equals(uuid)) {
                     return profile;
                 }
             }
@@ -170,15 +166,16 @@ public class StatisticsModule extends BaseModule implements Listener
     @Action(name="PlayerProfile", sync = false)
     protected IPacket getPlayerProfile(Identity identity, ActionPacket packet) throws Exception
     {
-        //TODO: Permission handling
+        if(identity.isAnonymous()) return new StatusPacket(0, "Permission denied!");
+        String playerUid = packet.getData().getString("uuid");
+        Plugin.debug("PlayerUid: "+playerUid+"; parsed: "+UUID.fromString(playerUid));
+        //TODO: Permission handling/check if player is friends if not self uuid
+        
         SQLStorage storage = getSQLStorage();
-
-        long from = packet.getData().getLong("from");
-        long to = packet.getData().getLong("to");
+        LKStatProfile profile = getStatisticProfile(UUID.fromString(playerUid));
         
         JSONObject data = new JSONObject();
-        JSONArray result = new JSONArray(storage.getSessionsFromTo(from, to).stream().map(item->item.toJson()).collect(Collectors.toList()));
-        data.put("result", result);
+        data.put("result", storage.getPlayerProfile(profile.getUser()._id).toJson());
                     
         return new StatusPacket(1, data);
     }

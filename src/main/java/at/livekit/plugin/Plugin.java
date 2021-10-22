@@ -22,6 +22,7 @@ import at.livekit.provider.BasicPlayerInfoProvider;
 import at.livekit.provider.BasicPlayerPinProvider;
 import at.livekit.provider.POISpawnProvider;
 import at.livekit.storage.IStorageAdapterGeneric;
+import at.livekit.storage.SQLStorage;
 import at.livekit.storage.StorageManager;
 import at.livekit.supported.DiscordSRVPlugin;
 import at.livekit.utils.ConsoleListener;
@@ -75,6 +76,13 @@ public class Plugin extends JavaPlugin implements ILiveKitPlugin, Listener {
 
 		try{
 			storage = StorageManager.initialize();
+
+			if(storage instanceof SQLStorage) {
+				Plugin.debug("Testing for profile:");
+				Plugin.debug(((SQLStorage)storage).getPlayerProfile(1).toJson().toString());
+				Plugin.debug(((SQLStorage)storage).getPlayerProfile(2).toJson().toString());
+			}
+
 		} catch(Exception exception) {
 			exception.printStackTrace();
 			logger.severe("Error initializing Storage, shutting down");

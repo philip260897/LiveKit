@@ -8,6 +8,7 @@ import at.livekit.api.map.PersonalPin;
 import at.livekit.authentication.Pin;
 import at.livekit.authentication.Session;
 import at.livekit.plugin.Plugin;
+import at.livekit.statistics.results.ProfileResult;
 import at.livekit.statistics.tables.*;
 import at.livekit.utils.HeadLibraryV2.HeadInfo;
 
@@ -234,15 +235,23 @@ public class SQLStorage extends StorageThreadMarshallAdapter
 
     //statistics queries
 
-    public void getPlayerProfile(LKUser user) throws Exception
+    public ProfileResult getPlayerProfile(int id) throws Exception
     {
         Dao<LKStatSession, String> dao = getDao(LKStatSession.class);
-        Where<LKStatSession, String> where = dao.queryBuilder().where().eq("user", user);
- 
-        //long num
+        List<String[]> rows = dao.queryRaw("CALL Profile("+id+")").getResults();
+        if(rows.size() != 1) throw new Exception("Unexpected result length! "+rows.size());
 
-        List<LKStatSession> sessions = where.query();
+        String[] row = rows.get(0);
 
+        ProfileResult result = new ProfileResult();
+        result.setTotalTimePlayed(row[0] != null ? Long.parseLong(row[0]) : 0);
+        result.setTotalSessions(row[1] != null ? Long.parseLong(row[1]) : 0);
+        result.setLongestSession(row[2] != null ? Long.parseLong(row[2]) : 0);
+        result.setTotalDeaths(row[3] != null ? Long.parseLong(row[3]) : 0);
+        result.setMostDeathsPerDay(row[4] != null ? Long.parseLong(row[4]) : 0);
+        result.setTotalPVPKills(row[5] != null ? Long.parseLong(row[5]) : 0);
+        result.setTotalPVEKills(row[6] != null ? Long.parseLong(row[6]) : 0);
+        return result;
     }
 
     public List<LKStatSession> getSessionsFromTo(long from, long to) throws Exception
@@ -262,4 +271,5 @@ public class SQLStorage extends StorageThreadMarshallAdapter
 
         return where.query();
     }
+
 }
