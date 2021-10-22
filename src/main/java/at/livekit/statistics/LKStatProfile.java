@@ -24,7 +24,6 @@ import at.livekit.statistics.tables.LKStatWorld;
 import at.livekit.statistics.tables.LKUser;
 import at.livekit.storage.IStorageAdapterGeneric;
 import at.livekit.utils.Utils;
-import dev.vankka.mcdiscordreserializer.text.Text;
 
 public class LKStatProfile {
     
@@ -46,9 +45,7 @@ public class LKStatProfile {
     
     private Object deathLock = new Object();
     private LKStatDeath currentDeaths;
-    //private List<LKStatTotalEntry> totalEntriesList = new ArrayList<LKStatTotalEntry>();
-    
-    //private boolean initialized = false;
+
     private boolean canClanUp = false;
 
     public LKStatProfile(UUID uuid)

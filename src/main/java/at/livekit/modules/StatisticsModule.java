@@ -167,6 +167,22 @@ public class StatisticsModule extends BaseModule implements Listener
         super.onDisable(signature);
     }
 
+    @Action(name="PlayerProfile", sync = false)
+    protected IPacket getPlayerProfile(Identity identity, ActionPacket packet) throws Exception
+    {
+        //TODO: Permission handling
+        SQLStorage storage = getSQLStorage();
+
+        long from = packet.getData().getLong("from");
+        long to = packet.getData().getLong("to");
+        
+        JSONObject data = new JSONObject();
+        JSONArray result = new JSONArray(storage.getSessionsFromTo(from, to).stream().map(item->item.toJson()).collect(Collectors.toList()));
+        data.put("result", result);
+                    
+        return new StatusPacket(1, data);
+    }
+
 
     @Action(name="ListAllSessions", sync = false)
     protected IPacket listAllSessions(Identity identity, ActionPacket packet) throws Exception

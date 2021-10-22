@@ -234,6 +234,17 @@ public class SQLStorage extends StorageThreadMarshallAdapter
 
     //statistics queries
 
+    public void getPlayerProfile(LKUser user) throws Exception
+    {
+        Dao<LKStatSession, String> dao = getDao(LKStatSession.class);
+        Where<LKStatSession, String> where = dao.queryBuilder().where().eq("user", user);
+ 
+        //long num
+
+        List<LKStatSession> sessions = where.query();
+
+    }
+
     public List<LKStatSession> getSessionsFromTo(long from, long to) throws Exception
     {
         Dao<LKStatSession, String> dao = getDao(LKStatSession.class);
