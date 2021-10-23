@@ -4,9 +4,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -17,6 +20,7 @@ import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.AsyncPlayerPreLoginEvent.Result;
+import org.bukkit.event.player.PlayerFishEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.block.BlockBreakEvent;
@@ -27,10 +31,13 @@ import at.livekit.packets.ActionPacket;
 import at.livekit.packets.IPacket;
 import at.livekit.packets.StatusPacket;
 import at.livekit.plugin.Plugin;
+import at.livekit.plugin.Texturepack;
 import at.livekit.statistics.LKStatProfile;
+import at.livekit.statistics.results.ProfileResult;
 import at.livekit.statistics.tables.LKStatServerSession;
 import at.livekit.storage.SQLStorage;
 import at.livekit.storage.StorageThreadMarshallAdapter;
+
 import org.json.JSONObject;
 import org.json.JSONArray;
 
@@ -40,6 +47,7 @@ public class StatisticsModule extends BaseModule implements Listener
     private boolean saveServerSession = false;
     private LKStatServerSession serverSession;
     private List<LKStatProfile> profiles = new ArrayList<LKStatProfile>();
+    private Texturepack texturepack;
 
     public StatisticsModule(ModuleListener listener) {
         super(1, "Statistics", "livekit.module.map", UpdateRate.NEVER, listener);
@@ -114,6 +122,9 @@ public class StatisticsModule extends BaseModule implements Listener
         super.onEnable(signature);
 
         Plugin.debug("[STAT] ENABLED");
+        try{
+            texturepack = Texturepack.getInstance();
+        }catch(Exception ex){ex.printStackTrace();}
 
         //create statistic profiles for each online players after a reload!
         for(Player player : Bukkit.getServer().getOnlinePlayers())
@@ -173,9 +184,21 @@ public class StatisticsModule extends BaseModule implements Listener
         
         SQLStorage storage = getSQLStorage();
         LKStatProfile profile = getStatisticProfile(UUID.fromString(playerUid));
+
+        ProfileResult pr = storage.getPlayerProfile(profile.getUser()._id);
+
+        Bukkit.getScheduler().callSyncMethod(Plugin.getInstance(), new Callable<Void>(){
+            @Override
+            public Void call() throws Exception {
+                OfflinePlayer op = Bukkit.getOfflinePlayer(UUID.fromString(playerUid));
+                pr.setLastSeen(op.getLastPlayed());
+                pr.setFirstSeen(op.getFirstPlayed());
+                return null;
+            }}
+        ).get();
         
         JSONObject data = new JSONObject();
-        data.put("result", storage.getPlayerProfile(profile.getUser()._id).toJson());
+        data.put("result", pr.toJson());
                     
         return new StatusPacket(1, data);
     }
@@ -262,24 +285,40 @@ public class StatisticsModule extends BaseModule implements Listener
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerBlockBreak(BlockBreakEvent event)
     {
-        if(!isEnabled()) return;
+        if(!isEnabled() || event.isCancelled()) return;
 
         LKStatProfile profile = getStatisticProfile(event.getPlayer().getUniqueId());
         if(profile != null)
         {
             profile.addBlockBreakStat(event.getBlock());
+
+            Material tool = event.getPlayer().getInventory().getItemInMainHand().getType();
+            if(texturepack.isTool(tool)) {
+                profile.addToolStat(texturepack.getTexture(tool));
+            }
         }
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerBlockPlace(BlockPlaceEvent event)
     {
-        if(!isEnabled()) return;
+        if(!isEnabled() || event.isCancelled()) return;
 
         LKStatProfile profile = getStatisticProfile(event.getPlayer().getUniqueId());
         if(profile != null)
         {
             profile.addBlockBuildStat(event.getBlock());
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerFishEvent(PlayerFishEvent event) {
+        if(!isEnabled() || event.isCancelled() || event.getCaught() == null) return;
+
+        LKStatProfile profile = getStatisticProfile(event.getPlayer().getUniqueId());
+        if(profile != null)
+        {
+            profile.addFishingStat();
         }
     }
 
@@ -302,13 +341,20 @@ public class StatisticsModule extends BaseModule implements Listener
 
         if(event.getEntity().getKiller() != null)
         {
+
             LKStatProfile profile = getStatisticProfile(event.getEntity().getKiller().getUniqueId());
             if(profile != null)
             {
+                Material weapon = event.getEntity().getKiller().getInventory().getItemInMainHand().getType();
+
                 if(event.getEntity() instanceof Player) {
                     profile.addPVP(getStatisticProfile(event.getEntity().getUniqueId()).getUser());
                 } else {
-                    profile.addPVE(event.getEntityType());
+                    profile.addPVE(texturepack.getEntity(event.getEntityType()));
+                }
+
+                if(texturepack.isWeapon(weapon)) {
+                    profile.addWeaponStat(texturepack.getTexture(weapon));
                 }
             }
         }

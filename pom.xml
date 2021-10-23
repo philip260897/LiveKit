@@ -23,6 +23,7 @@
   <include>texturepack.json</include>
   <include>biomes.json</include>
   <include>entities.json</include>
+  <include>resources.json</include>
 	</includes>
 	</resource>
 	</resources>

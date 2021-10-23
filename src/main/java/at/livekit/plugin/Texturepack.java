@@ -5,15 +5,13 @@ import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.nio.file.Files;
-import java.util.HashMap;
-import java.util.Map;
-
-import javax.swing.text.html.parser.Entity;
+import java.util.EnumMap;
+import java.util.EnumSet;
 
 import org.bukkit.Material;
 import org.bukkit.block.Biome;
 import org.bukkit.entity.EntityType;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 
@@ -28,9 +26,12 @@ public class Texturepack {
         return instance;
     }
     
-    private Map<String, Integer> _textures = new HashMap<String, Integer>();
-    private Map<String, Integer> _biomes = new HashMap<String, Integer>();
-    private Map<String, Integer> _entities = new HashMap<String, Integer>();
+    private EnumMap<Material, Integer> _textures =  new EnumMap<Material, Integer>(Material.class);
+    private EnumMap<Biome, Integer> _biomes = new EnumMap<Biome, Integer>(Biome.class);
+    private EnumMap<EntityType, Integer> _entities = new EnumMap<EntityType, Integer>(EntityType.class);
+
+    private EnumSet<Material> _tools = EnumSet.noneOf(Material.class);
+    private EnumSet<Material> _weapons = EnumSet.noneOf(Material.class);
 
     public Texturepack() throws Exception{
         int nextId = 0;
@@ -50,15 +51,15 @@ public class Texturepack {
         JSONObject root = new JSONObject(json);
         for(String key : root.keySet()) {
             Integer intKey = Integer.parseInt(key.split(":")[0]);
-            _textures.put(key.split(":")[1], intKey);
+            _textures.put(Material.getMaterial(key.split(":")[1]), intKey);
 
             if(intKey.intValue() >= nextId) nextId = intKey.intValue()+1;
         }
 
         int additionalTextures = 0;
         for(Material mat : Material.values()) {
-            if(!_textures.containsKey(mat.toString())) {
-                _textures.put(mat.toString(), nextId++);
+            if(!_textures.containsKey(mat)) {
+                _textures.put(mat, nextId++);
                 Plugin.debug("Patching textures "+(nextId-1)+":"+mat.toString());
                 additionalTextures++;
             }
@@ -82,15 +83,15 @@ public class Texturepack {
         root = new JSONObject(json);
         for(String key : root.keySet()) {
             Integer intKey = Integer.parseInt(key.split(":")[0]);
-            _biomes.put(key.split(":")[1], intKey);
+            _biomes.put(Biome.valueOf(key.split(":")[1]), intKey);
 
             if(intKey.intValue() >= nextId) nextId = intKey.intValue()+1;
         }
 
         additionalTextures = 0;
         for(Biome mat : Biome.values()) {
-            if(!_biomes.containsKey(mat.toString())) {
-                _biomes.put(mat.toString(), nextId++);
+            if(!_biomes.containsKey(mat)) {
+                _biomes.put(mat, nextId++);
                 Plugin.debug("Patching biome "+(nextId-1)+":"+mat.toString());
                 additionalTextures++;
             }
@@ -115,36 +116,84 @@ public class Texturepack {
         root = new JSONObject(json);
         for(String key : root.keySet()) {
             Integer intKey = Integer.parseInt(key.split(":")[0]);
-            _entities.put(key.split(":")[1], intKey);
+            _entities.put(EntityType.valueOf(key.split(":")[1]), intKey);
 
             if(intKey.intValue() >= nextId) nextId = intKey.intValue()+1;
         }
 
         additionalTextures = 0;
         for(EntityType mat : EntityType.values()) {
-            if(!_entities.containsKey(mat.toString())) {
-                _entities.put(mat.toString(), nextId++);
+            if(!_entities.containsKey(mat)) {
+                _entities.put(mat, nextId++);
                 Plugin.debug("Patching entity "+(nextId-1)+":"+mat.toString());
                 additionalTextures++;
             }
         }
         Plugin.debug("Patched "+additionalTextures+" entities");
+
+
+        //load resources
+        json = "";
+
+        in = this.getClass().getClassLoader().getResourceAsStream("resources.json");
+        reader = new BufferedReader(new InputStreamReader(in));
+
+        line = null;
+        while((line = reader.readLine()) != null) {
+            json += line;
+        }
+        reader.close();
+        in.close();
+
+        root = new JSONObject(json);
+        JSONArray toolsArray = root.getJSONArray("tools");
+        for(int i = 0; i < toolsArray.length(); i++) {
+            String tool = toolsArray.getString(i);
+            Material material = Material.getMaterial(tool);
+
+            if(material == null) Plugin.debug("MATERIAL NOT FOUND!!! "+tool);
+            else _tools.add(material);
+        }
+
+        JSONArray weaponsArrays = root.getJSONArray("weapons");
+        for(int i = 0; i < weaponsArrays.length(); i++) {
+            String tool = weaponsArrays.getString(i);
+            Material material = Material.getMaterial(tool);
+
+            if(material == null) Plugin.debug("MATERIAL NOT FOUND!!! "+tool);
+            else _weapons.add(material);
+        }
+
+        for(Material tool : _tools) {
+            Plugin.debug("Tool: "+tool.name());
+        }
+        for(Material tool : _weapons) {
+            Plugin.debug("Weapons: "+tool.name());
+        }
+    }
+
+    public boolean isTool(Material material) {
+        return _tools.contains(material);
+    }
+
+    public boolean isWeapon(Material material) {
+        return _weapons.contains(material);
     }
 
     public int getTexture(Material material) {
-        Integer id = _textures.get(material.toString());
+        Integer id = _textures.get(material);
         if(id == null) return 0;
         return id.intValue();
     }
 
     public int getBiome(Biome biome) {
-        Integer id = _biomes.get(biome.toString());
+        Integer id = _biomes.get(biome);
         if(id == null) return 0;
         return id.intValue();
     }
 
     public int getEntity(EntityType type) {
-        Integer id = _entities.get(type.toString());
+        Integer id = _entities.get(type);
         if(id == null) return 0;
         return id.intValue();
     }

@@ -1,0 +1,44 @@
+{
+    "tools":[
+        "WOODEN_HOE",
+        "STONE_HOE",
+        "IRON_HOE",
+        "GOLDEN_HOE",
+        "DIAMOND_HOE",
+        "NETHERITE_HOE",
+
+        "WOODEN_AXE",
+        "STONE_AXE",
+        "IRON_AXE",
+        "GOLDEN_AXE",
+        "DIAMOND_AXE",
+        "NETHERITE_AXE",
+
+        "WOODEN_PICKAXE",
+        "STONE_PICKAXE",
+        "IRON_PICKAXE",
+        "GOLDEN_PICKAXE",
+        "DIAMOND_PICKAXE",
+        "NETHERITE_PICKAXE",
+
+        "WOODEN_SHOVEL",
+        "STONE_SHOVEL",
+        "IRON_SHOVEL",
+        "GOLDEN_SHOVEL",
+        "DIAMOND_SHOVEL",
+        "NETHERITE_SHOVEL"
+    ],
+
+    "weapons":[
+        "WOODEN_SWORD",
+        "STONE_SWORD",
+        "IRON_SWORD",
+        "GOLDEN_SWORD",
+        "DIAMOND_SWORD",
+        "NETHERITE_SWORD",
+
+        "TRIDENT",
+        "BOW",
+        "CROSSBOW"
+    ]
+}

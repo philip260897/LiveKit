@@ -1,6 +1,5 @@
 package at.livekit.storage;
 
-import com.j256.ormlite.support.ConnectionSource;
 import com.j256.ormlite.table.TableUtils;
 
 import at.livekit.api.map.POI;
@@ -10,24 +9,27 @@ import at.livekit.authentication.Session;
 import at.livekit.plugin.Plugin;
 import at.livekit.statistics.results.ProfileResult;
 import at.livekit.statistics.tables.*;
+import at.livekit.statistics.tables.LKStatParameter.LKParam;
 import at.livekit.utils.HeadLibraryV2.HeadInfo;
 
 import java.lang.reflect.Field;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.Map.Entry;
 
 import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.dao.DaoManager;
+import com.j256.ormlite.dao.GenericRawResults;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.jdbc.JdbcPooledConnectionSource;
 import com.j256.ormlite.logger.LogBackendType;
 import com.j256.ormlite.logger.LoggerFactory;
 import com.j256.ormlite.logger.NullLogBackend;
 import com.j256.ormlite.stmt.ArgumentHolder;
-import com.j256.ormlite.stmt.QueryBuilder;
 import com.j256.ormlite.stmt.Where;
 
 
@@ -65,7 +67,7 @@ public class SQLStorage extends StorageThreadMarshallAdapter
         registerStorageClass(POI.class);
         registerStorageClass(PersonalPin.class);
 
-        registerStorageClass(LKStatEntry.class);
+        registerStorageClass(LKStatParameter.class);
         registerStorageClass(LKStatCmd.class);
         registerStorageClass(LKStatSession.class);
         registerStorageClass(LKStatWorld.class);
@@ -235,10 +237,14 @@ public class SQLStorage extends StorageThreadMarshallAdapter
 
     //statistics queries
 
+    //QTP: CALL Profile(1);
     public ProfileResult getPlayerProfile(int id) throws Exception
     {
         Dao<LKStatSession, String> dao = getDao(LKStatSession.class);
-        List<String[]> rows = dao.queryRaw("CALL Profile("+id+")").getResults();
+        GenericRawResults<String[]> rawResults = dao.queryRaw("CALL Profile("+id+")");
+        List<String[]> rows = rawResults.getResults();
+        rawResults.close();
+        
         if(rows.size() != 1) throw new Exception("Unexpected result length! "+rows.size());
 
         String[] row = rows.get(0);
@@ -251,7 +257,86 @@ public class SQLStorage extends StorageThreadMarshallAdapter
         result.setMostDeathsPerDay(row[4] != null ? Long.parseLong(row[4]) : 0);
         result.setTotalPVPKills(row[5] != null ? Long.parseLong(row[5]) : 0);
         result.setTotalPVEKills(row[6] != null ? Long.parseLong(row[6]) : 0);
+        result.setLastKillPVPTarget(row[9] != null ? UUID.fromString(row[9]) : null);
+        result.setLastKillPVPTimestamp(row[8] != null ? Long.parseLong(row[8]) : 0);
+        result.setLastKillPVETarget(row[11] != null ? Long.parseLong(row[11]) : 0);
+        result.setLastKillPVETimestamp(row[12] != null ? Long.parseLong(row[12]) : 0);
+
+        LKStatParameter maxParameter = null;
+        long maxParameterValue = -1;
+        
+        List<LKStatParameter> totalWeapons = getTotalParameters(id, LKParam.WEAPON_KILL);
+        for(LKStatParameter parameter : totalWeapons) {
+            if(parameter.value > maxParameterValue) {
+                maxParameter = parameter;
+                maxParameterValue = parameter.value;
+            }
+        }
+
+        if(maxParameter != null)
+        {
+            result.setMostUsedWeapon(new Long(maxParameter.type));
+            result.setMostUsedWeaponKills(new Long(maxParameter.value));
+        }
+
+        maxParameter = null;
+        maxParameterValue = 0;
+        List<LKStatParameter> totalBlocks = getTotalParameters(id, LKParam.BLOCK_BREAK);
+        for(LKStatParameter parameter : totalBlocks) {
+            if(parameter.value > maxParameterValue) {
+                maxParameter = parameter;
+                maxParameterValue = parameter.value;
+            }
+        }
+
+        if(maxParameter != null)
+        {
+            result.setMostFarmedBlock(new Long(maxParameter.type));
+            result.setMostFarmedBlockValue(new Long(maxParameter.value));
+        }
+
+        maxParameter = null;
+        maxParameterValue = 0;
+        List<LKStatParameter> totalTool = getTotalParameters(id, LKParam.TOOL_USE);
+        for(LKStatParameter parameter : totalTool) {
+            if(parameter.value > maxParameterValue) {
+                maxParameter = parameter;
+                maxParameterValue = parameter.value;
+            }
+        }
+
+        if(maxParameter != null)
+        {
+            result.setMostUsedTool(new Long(maxParameter.type));
+            result.setMostUsedToolValue(new Long(maxParameter.value));
+        }
+
+        
+        
         return result;
+    }
+
+    //QTP: SELECT type, SUM(value) as value FROM LiveKit.livekit_stats_parameters WHERE user_id=1 AND param = 3 GROUP BY type;
+    public List<LKStatParameter> getTotalParameters(int user, LKParam param) throws Exception
+    {
+        Dao<LKStatParameter, String> dao = getDao(LKStatParameter.class);
+        Where<LKStatParameter, String> where = dao.queryBuilder().selectRaw("type", "SUM(value)").groupBy("type").where();
+        where.and(where.eq("user_id", user), where.eq("param", param));
+
+        List<LKStatParameter> parameters = new ArrayList<LKStatParameter>();
+
+        GenericRawResults<String[]> result = where.queryRaw();
+        for(String[] row : result.getResults() ) {
+            LKStatParameter stat = new LKStatParameter();
+            stat.param = param;
+            stat.type = Integer.parseInt(row[0]);
+            stat.value = Integer.parseInt(row[1]);
+            stat.timestamp = 0;
+            parameters.add(stat);
+        }
+        result.close();
+        
+        return parameters;
     }
 
     public List<LKStatSession> getSessionsFromTo(long from, long to) throws Exception

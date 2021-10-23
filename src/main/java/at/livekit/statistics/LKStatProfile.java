@@ -1,27 +1,22 @@
 package at.livekit.statistics;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-import java.util.Map.Entry;
-
-import org.bukkit.OfflinePlayer;
 import org.bukkit.block.Block;
 import org.bukkit.entity.EntityType;
 
-import at.livekit.livekit.LiveKit;
 import at.livekit.plugin.Plugin;
 import at.livekit.plugin.Texturepack;
 import at.livekit.statistics.tables.LKStatCmd;
 import at.livekit.statistics.tables.LKStatDeath;
-import at.livekit.statistics.tables.LKStatEntry;
+import at.livekit.statistics.tables.LKStatParameter;
 import at.livekit.statistics.tables.LKStatPVE;
 import at.livekit.statistics.tables.LKStatPVP;
 import at.livekit.statistics.tables.LKStatSession;
 import at.livekit.statistics.tables.LKStatWorld;
 import at.livekit.statistics.tables.LKUser;
+import at.livekit.statistics.tables.LKStatParameter.LKParam;
 import at.livekit.storage.IStorageAdapterGeneric;
 import at.livekit.utils.Utils;
 
@@ -38,7 +33,7 @@ public class LKStatProfile {
     private List<LKStatSession> sessionList = new ArrayList<LKStatSession>();
     private List<LKStatWorld> worldList = new ArrayList<LKStatWorld>();
     private List<LKStatCmd> commandsList = new ArrayList<LKStatCmd>();
-    private List<LKStatEntry> entriesList = new ArrayList<LKStatEntry>();
+    private List<LKStatParameter> entriesList = new ArrayList<LKStatParameter>();
 
     private List<LKStatPVP> pvpList = new ArrayList<LKStatPVP>();
     private List<LKStatPVE> pveList = new ArrayList<LKStatPVE>();
@@ -145,34 +140,15 @@ public class LKStatProfile {
         }
     }
 
-    public void addPVE(EntityType type) {
-        try{
-            synchronized(pveList)
-            {
-                LKStatPVE pve = null;
-                long day = Utils.getRoundedDayTimestamp();
-                int entityType = Texturepack.getInstance().getEntity(type);
+    public void addPVE(int entity) {
+        LKStatPVE pve = new LKStatPVE();
+        pve.user = user;
+        pve.timestamp = System.currentTimeMillis();
+        pve.entity = entity;
 
-                for(LKStatPVE entry : pveList) {
-                    if(entry.timestamp == day && entry.type == entityType) {
-                        pve = entry;
-                        break;
-                    }
-                }
-
-                if(pve == null) {
-                    pve = new LKStatPVE();
-                    pve.user = user;
-                    pve.timestamp = Utils.getRoundedDayTimestamp();
-                    pve.type = Texturepack.getInstance().getEntity(type);
-                    pve.count = 0;
-                    pveList.add(pve);
-                }
-
-                pve.count++;
-            }
-
-        }catch(Exception ex){ex.printStackTrace();}
+        synchronized(pveList) {
+            pveList.add(pve);
+        }
     }
 
     public void addDeath() {
@@ -190,7 +166,7 @@ public class LKStatProfile {
     public void addBlockBuildStat(Block block)
     {
         try{
-            addBlockStat(Texturepack.getInstance().getTexture(block.getType()), LKStatEntry.ACTION_PLACE);
+            addBlockStat(Texturepack.getInstance().getTexture(block.getType()), LKParam.BLOCK_PLACE);
         }catch(Exception ex){
             ex.printStackTrace();
         }
@@ -199,39 +175,61 @@ public class LKStatProfile {
     public void addBlockBreakStat(Block block)
     {
         try{
-            addBlockStat(Texturepack.getInstance().getTexture(block.getType()), LKStatEntry.ACTION_BREAK);
+            addBlockStat(Texturepack.getInstance().getTexture(block.getType()), LKParam.BLOCK_BREAK);
         }catch(Exception ex){
             ex.printStackTrace();
         }
     }
 
-    private void addBlockStat(int blockId, byte type)
+    private void addBlockStat(int blockId, LKParam param)
+    {
+        incrementParamStat(param, blockId);
+    }
+
+    public void addToolStat(int toolId)
+    {
+        incrementParamStat(LKParam.TOOL_USE, toolId);
+    }
+
+    public void addWeaponStat(int weaponId) {
+        incrementParamStat(LKParam.WEAPON_KILL, weaponId);
+    }
+
+    public void addFishingStat() {
+        incrementParamStat(LKParam.FISHING, 0);
+    }
+
+    private void incrementParamStat(LKParam param, int type) {
+        addParamStat(param, type, 1, true);
+    }
+
+    private void addParamStat(LKParam param, int type, int value, boolean incrementBy)
     {
         synchronized(entriesList)
         {
-            LKStatEntry entry = null;
-
+            LKStatParameter entry = null;
             long day = Utils.getRoundedDayTimestamp();
-            for(LKStatEntry e : entriesList)
+
+            for(LKStatParameter e : entriesList)
             {
-                if(e.blockid == blockId && e.action == type && e.timestamp == day)
-                {
+                if(e.type == type && e.param == param && e.timestamp == day) {
                     entry = e;
                     break;
                 }
             }
 
             if(entry == null) {
-                entry = new LKStatEntry();
+                entry = new LKStatParameter();
                 entry.user = user;
-                entry.action = type;
-                entry.blockid = blockId;
+                entry.param = param;
+                entry.type = type;
                 entry.timestamp = day;
-                entry.count = 0;
+                entry.value = 0;
                 entriesList.add(entry);
             }
 
-            entry.count++;
+            if(incrementBy) entry.value += value;
+            else entry.value = value;
         }
     }
 
@@ -260,18 +258,18 @@ public class LKStatProfile {
         }
 
         //copy sessions to this thread, clear cached entries
-        List<LKStatEntry> entries;
+        List<LKStatParameter> entries;
         synchronized(entriesList) {
-            entries = new ArrayList<LKStatEntry>(entriesList);
+            entries = new ArrayList<LKStatParameter>(entriesList);
             entriesList.clear();
         }
 
-        for(LKStatEntry entry : entries)
+        for(LKStatParameter entry : entries)
         {
             try {
-                LKStatEntry existing = storage.loadSingle(LKStatEntry.class, new String[]{"user_id", "timestamp", "blockid", "action"}, new Object[]{entry.user, entry.timestamp, entry.blockid, entry.action});
+                LKStatParameter existing = storage.loadSingle(LKStatParameter.class, new String[]{"user_id", "timestamp", "type", "param"}, new Object[]{entry.user, entry.timestamp, entry.type, entry.param});
                 if(existing != null) {
-                    existing.count += entry.count;
+                    existing.value += entry.value;
                     storage.update(existing);
                 } else {
                     storage.create(entry);
@@ -331,13 +329,7 @@ public class LKStatProfile {
         for(LKStatPVE entry : pve)
         {
             try {
-                LKStatPVE existing = storage.loadSingle(LKStatPVE.class, new String[]{"user_id", "timestamp", "type"}, new Object[]{entry.user, entry.timestamp, entry.type});
-                if(existing != null) {
-                    existing.count += entry.count;
-                    storage.update(existing);
-                } else {
-                    storage.create(entry);
-                }
+                storage.create(entry);
             }catch(Exception ex){ex.printStackTrace();}
         }
 

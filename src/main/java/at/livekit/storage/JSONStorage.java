@@ -51,7 +51,7 @@ public class JSONStorage extends StorageThreadMarshallAdapter
         registerClassForStorage(POI.class);
         registerClassForStorage(PersonalPin.class);
 
-        registerClassForStorage(LKStatEntry.class);
+        registerClassForStorage(LKStatParameter.class);
         registerClassForStorage(LKStatCmd.class);
         registerClassForStorage(LKStatSession.class);
         registerClassForStorage(LKStatWorld.class);

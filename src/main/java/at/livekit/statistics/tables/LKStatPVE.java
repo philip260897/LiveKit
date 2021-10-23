@@ -6,18 +6,12 @@ import com.j256.ormlite.table.DatabaseTable;
 @DatabaseTable(tableName = "livekit_stats_pve")
 public class LKStatPVE 
 {
-    @DatabaseField(generatedId = true)
-    public int _id;
-
-    @DatabaseField(uniqueCombo = true, foreign = true)
+    @DatabaseField(index = true, foreign = true)
     public LKUser user;
 
-    @DatabaseField(uniqueCombo = true)
+    @DatabaseField(index = true)
+    public int entity;
+
+    @DatabaseField(index = true)
     public long timestamp;
-
-    @DatabaseField(uniqueCombo = true, index = true)
-    public int type;
-
-    @DatabaseField
-    public int count;
 }
