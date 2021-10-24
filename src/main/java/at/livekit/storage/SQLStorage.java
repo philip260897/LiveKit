@@ -2,6 +2,8 @@ package at.livekit.storage;
 
 import com.j256.ormlite.table.TableUtils;
 
+import org.bukkit.OfflinePlayer;
+
 import at.livekit.api.map.POI;
 import at.livekit.api.map.PersonalPin;
 import at.livekit.authentication.Pin;
@@ -236,6 +238,11 @@ public class SQLStorage extends StorageThreadMarshallAdapter
     }
 
     //statistics queries
+
+    public LKUser getLKUser(UUID uuid) throws Exception {
+        Dao<LKUser, String> dao = getDao(LKUser.class);
+        return dao.queryBuilder().where().eq("uuid", uuid.toString()).queryForFirst();
+    }
 
     //QTP: CALL Profile(1);
     public ProfileResult getPlayerProfile(int id) throws Exception

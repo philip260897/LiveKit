@@ -35,6 +35,7 @@ import at.livekit.plugin.Texturepack;
 import at.livekit.statistics.LKStatProfile;
 import at.livekit.statistics.results.ProfileResult;
 import at.livekit.statistics.tables.LKStatServerSession;
+import at.livekit.statistics.tables.LKUser;
 import at.livekit.storage.SQLStorage;
 import at.livekit.storage.StorageThreadMarshallAdapter;
 
@@ -183,9 +184,10 @@ public class StatisticsModule extends BaseModule implements Listener
         //TODO: Permission handling/check if player is friends if not self uuid
         
         SQLStorage storage = getSQLStorage();
-        LKStatProfile profile = getStatisticProfile(UUID.fromString(playerUid));
+        //LKStatProfile profile = getStatisticProfile(UUID.fromString(playerUid));
+        LKUser user = storage.getLKUser(UUID.fromString(playerUid));
 
-        ProfileResult pr = storage.getPlayerProfile(profile.getUser()._id);
+        ProfileResult pr = storage.getPlayerProfile(user._id);
 
         Bukkit.getScheduler().callSyncMethod(Plugin.getInstance(), new Callable<Void>(){
             @Override
