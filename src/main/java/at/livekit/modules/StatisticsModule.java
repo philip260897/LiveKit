@@ -187,7 +187,7 @@ public class StatisticsModule extends BaseModule implements Listener
         //LKStatProfile profile = getStatisticProfile(UUID.fromString(playerUid));
         LKUser user = storage.getLKUser(UUID.fromString(playerUid));
 
-        ProfileResult pr = storage.getPlayerProfile(user._id);
+        ProfileResult pr = storage.getPlayerProfile(user);
 
         Bukkit.getScheduler().callSyncMethod(Plugin.getInstance(), new Callable<Void>(){
             @Override

@@ -78,9 +78,10 @@ public class Plugin extends JavaPlugin implements ILiveKitPlugin, Listener {
 			storage = StorageManager.initialize();
 
 			if(storage instanceof SQLStorage) {
-				Plugin.debug("Testing for profile:");
-				Plugin.debug(((SQLStorage)storage).getPlayerProfile(1).toJson().toString());
-				Plugin.debug(((SQLStorage)storage).getPlayerProfile(2).toJson().toString());
+				//Plugin.debug("Testing for profile:");
+
+				//Plugin.debug(((SQLStorage)storage).getPlayerProfile(1).toJson().toString());
+				//Plugin.debug(((SQLStorage)storage).getPlayerProfile(2).toJson().toString());
 			}
 
 		} catch(Exception exception) {

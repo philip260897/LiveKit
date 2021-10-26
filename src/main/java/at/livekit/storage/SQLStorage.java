@@ -241,14 +241,14 @@ public class SQLStorage extends StorageThreadMarshallAdapter
 
     public LKUser getLKUser(UUID uuid) throws Exception {
         Dao<LKUser, String> dao = getDao(LKUser.class);
-        return dao.queryBuilder().where().eq("uuid", uuid.toString()).queryForFirst();
+        return dao.queryBuilder().where().eq("uuid", uuid).queryForFirst();
     }
 
     //QTP: CALL Profile(1);
-    public ProfileResult getPlayerProfile(int id) throws Exception
+    public ProfileResult getPlayerProfile(LKUser user) throws Exception
     {
         Dao<LKStatSession, String> dao = getDao(LKStatSession.class);
-        GenericRawResults<String[]> rawResults = dao.queryRaw("CALL Profile("+id+")");
+        GenericRawResults<String[]> rawResults = dao.queryRaw("CALL Profile("+user._id+")");
         List<String[]> rows = rawResults.getResults();
         rawResults.close();
         
@@ -272,7 +272,7 @@ public class SQLStorage extends StorageThreadMarshallAdapter
         LKStatParameter maxParameter = null;
         long maxParameterValue = -1;
         
-        List<LKStatParameter> totalWeapons = getTotalParameters(id, LKParam.WEAPON_KILL);
+        List<LKStatParameter> totalWeapons = getTotalParameters(user, LKParam.WEAPON_KILL);
         for(LKStatParameter parameter : totalWeapons) {
             if(parameter.value > maxParameterValue) {
                 maxParameter = parameter;
@@ -288,7 +288,7 @@ public class SQLStorage extends StorageThreadMarshallAdapter
 
         maxParameter = null;
         maxParameterValue = 0;
-        List<LKStatParameter> totalBlocks = getTotalParameters(id, LKParam.BLOCK_BREAK);
+        List<LKStatParameter> totalBlocks = getTotalParameters(user, LKParam.BLOCK_BREAK);
         for(LKStatParameter parameter : totalBlocks) {
             if(parameter.value > maxParameterValue) {
                 maxParameter = parameter;
@@ -304,7 +304,7 @@ public class SQLStorage extends StorageThreadMarshallAdapter
 
         maxParameter = null;
         maxParameterValue = 0;
-        List<LKStatParameter> totalTool = getTotalParameters(id, LKParam.TOOL_USE);
+        List<LKStatParameter> totalTool = getTotalParameters(user, LKParam.TOOL_USE);
         for(LKStatParameter parameter : totalTool) {
             if(parameter.value > maxParameterValue) {
                 maxParameter = parameter;
@@ -324,11 +324,11 @@ public class SQLStorage extends StorageThreadMarshallAdapter
     }
 
     //QTP: SELECT type, SUM(value) as value FROM LiveKit.livekit_stats_parameters WHERE user_id=1 AND param = 3 GROUP BY type;
-    public List<LKStatParameter> getTotalParameters(int user, LKParam param) throws Exception
+    public List<LKStatParameter> getTotalParameters(LKUser user, LKParam param) throws Exception
     {
         Dao<LKStatParameter, String> dao = getDao(LKStatParameter.class);
         Where<LKStatParameter, String> where = dao.queryBuilder().selectRaw("type", "SUM(value)").groupBy("type").where();
-        where.and(where.eq("user_id", user), where.eq("param", param));
+        where.and(where.eq("user_id", user._id), where.eq("param", param));
 
         List<LKStatParameter> parameters = new ArrayList<LKStatParameter>();
 
