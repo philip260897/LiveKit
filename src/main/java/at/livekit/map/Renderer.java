@@ -243,10 +243,16 @@ public class Renderer
         }    
 
         byte[] data = new byte[4];
-        int dataId = _texturepack.getTexture(block.getType());
-        byte biomeId = (byte) _texturepack.getBiome(block.getBiome());
-        int h = height != null ? height.intValue() : block.getY();
-        //byte biomeId = 0x01;
+
+        int dataId = 0;
+        byte biomeId = 2;
+        int h = 64;
+
+        try{
+            dataId = _texturepack.getTexture(block.getType());
+            h = height != null ? height.intValue() : block.getY();
+            biomeId = (byte) _texturepack.getBiome(block.getBiome());
+        }catch(Exception ex){/*ex.printStackTrace();*/}
 
         data[1] = (byte) dataId;
         data[0] = (byte) ((byte)(dataId >> 8) | (biomeId & 0xF0));
