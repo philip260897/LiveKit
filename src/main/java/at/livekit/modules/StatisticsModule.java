@@ -51,7 +51,7 @@ public class StatisticsModule extends BaseModule implements Listener
     private Texturepack texturepack;
 
     public StatisticsModule(ModuleListener listener) {
-        super(1, "Statistics", "livekit.module.map", UpdateRate.NEVER, listener);
+        super(1, "Statistics", "livekit.module.statistics", UpdateRate.NEVER, listener);
     } 
 
     private LKStatProfile createProfile(UUID uuid)

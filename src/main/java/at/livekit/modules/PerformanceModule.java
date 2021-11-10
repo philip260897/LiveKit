@@ -40,7 +40,7 @@ public class PerformanceModule extends BaseModule
     int currentTick = 0;
 
     public PerformanceModule(ModuleListener listener) {
-        super(1, "Performance", "livekit.module.map", UpdateRate.ONCE_PERSEC, listener);
+        super(1, "Performance", "livekit.module.performance", UpdateRate.ONCE_PERSEC, listener);
     }
 
     @Override

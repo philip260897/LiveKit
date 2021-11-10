@@ -34,6 +34,8 @@ public class Permissions
         permissions.add("livekit.module.console");
         permissions.add("livekit.module.inventory");
         permissions.add("livekit.module.economy");
+        permissions.add("livekit.module.performance");
+        permissions.add("livekit.module.statistics");
         
         permissions.add("livekit.chat.write");
         permissions.add("livekit.chat.write_offline");

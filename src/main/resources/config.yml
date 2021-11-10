@@ -26,6 +26,7 @@ permissions:
   - livekit.module.weathertime
   - livekit.module.chat
   - livekit.module.poi
+  - livekit.module.statistics
   - livekit.chat.write
   - livekit.poi.personalpins
   - livekit.players.other

@@ -286,6 +286,19 @@ public class Config
             save = true;
         }
 
+        if(config.get("modules.StatisticsModule.enabled") == null) {
+            config.set("modules.StatisticsModule.enabled", true);
+            config.set("modules.PerformanceModule.enabled", true);
+
+            Plugin.log("Patching config with new entries");
+
+            List<String> perms = getDefaultPermissions();
+            if(!perms.contains("livekit.module.statistics")) perms.add("livekit.module.statistics");
+            config.set("permissions.default", perms);
+
+            save = true;
+        }
+
         try{
             if(save) {
                 //config.options().header(config.options().header());
