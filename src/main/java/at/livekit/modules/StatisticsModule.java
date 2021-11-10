@@ -72,7 +72,7 @@ public class StatisticsModule extends BaseModule implements Listener
         {
             for(LKStatProfile profile : profiles)
             {
-                System.out.print(profile.getUUID() + " - " + uuid);
+                Plugin.debug(profile.getUUID() + " - " + uuid);
                 if(profile.getUUID().equals(uuid)) {
                     return profile;
                 }
