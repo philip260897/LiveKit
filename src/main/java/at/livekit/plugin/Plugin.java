@@ -32,7 +32,7 @@ import at.livekit.utils.Metrics;
 
 public class Plugin extends JavaPlugin implements ILiveKitPlugin, Listener {
 
-	private static boolean DEBUG = true;
+	private static boolean DEBUG = false;
 
 	private static Logger logger;
 	private static Plugin instance;

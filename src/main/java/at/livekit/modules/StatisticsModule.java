@@ -122,19 +122,22 @@ public class StatisticsModule extends BaseModule implements Listener
     public void onEnable(Map<String,ActionMethod> signature) {
         super.onEnable(signature);
 
-        Plugin.debug("[STAT] ENABLED");
         try{
             texturepack = Texturepack.getInstance();
         }catch(Exception ex){ex.printStackTrace();}
 
         //create statistic profiles for each online players after a reload!
+        StorageThreadMarshallAdapter.DISABLE = true;
         for(Player player : Bukkit.getServer().getOnlinePlayers())
         {
-            Plugin.debug("[STAT] ONLINE PLAYERS "+player.getName());
             LKStatProfile profile = createProfile(player.getUniqueId());
+            try{
+                profile.loadUserAsync();
+            }catch(Exception ex){ex.printStackTrace();}
             profile.startSession();
             profile.enterWorld(player.getLocation().getWorld().getName());
         }
+        StorageThreadMarshallAdapter.DISABLE = false;
 
         Bukkit.getServer().getPluginManager().registerEvents(this, Plugin.getInstance());
 

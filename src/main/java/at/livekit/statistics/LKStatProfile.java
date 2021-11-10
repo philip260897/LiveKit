@@ -46,8 +46,8 @@ public class LKStatProfile {
     public LKStatProfile(UUID uuid)
     {
         this.uuid = uuid;
-        this.user = new LKUser();
-        this.user._id = 1;
+        //this.user = new LKUser();
+        //this.user._id = 1;
     }
 
     public void loadUserAsync() throws Exception

@@ -247,8 +247,16 @@ public class SQLStorage extends StorageThreadMarshallAdapter
     //QTP: CALL Profile(1);
     public ProfileResult getPlayerProfile(LKUser user) throws Exception
     {
+        String query = "SELECT * FROM (SELECT SUM(end-start) as time_played, COUNT(_id) as sessions, MAX(end-start) as longest_session FROM livekit_stats_sessions WHERE user_id="+user._id+" AND start<>0 AND end<>0) as s "+
+        "LEFT JOIN (SELECT SUM(count) as total_deaths, MAX(count) as most_deaths_per_day FROM livekit_stats_deaths WHERE user_id="+user._id+") as d  ON 1=1 "+
+        "LEFT JOIN (SELECT COUNT(user_id) as total_pvp FROM livekit_stats_pvp WHERE user_id="+user._id+") as pvp ON 1=1 "+
+        "LEFT JOIN (SELECT COUNT(user_id) as total_pve FROM livekit_stats_pve WHERE user_id="+user._id+") as pve ON 1=1 "+
+        "LEFT JOIN (SELECT * FROM (SELECT a.target_id as last_kill_pvp_target_id, a.timestamp as last_kill_pvp_timestamp FROM livekit_stats_pvp as a INNER JOIN ( SELECT MAX(timestamp) as timestamp FROM livekit_stats_pvp WHERE user_id = "+user._id+") as b ON a.user_id = "+user._id+" AND a.timestamp = b.timestamp) as c "+
+        "LEFT JOIN (SELECT uuid as last_kill_pvp_target_uuid, _id as tid FROM livekit_users) as u ON u.tid=c.last_kill_pvp_target_id) as x ON 1=1 "+
+        "LEFT JOIN (SELECT a.entity as last_kill_pve_entity, a.timestamp as last_kill_pve_timestamp FROM livekit_stats_pve as a INNER JOIN ( SELECT MAX(timestamp) as timestamp FROM livekit_stats_pve WHERE user_id = "+user._id+") as b ON a.user_id = "+user._id+" AND a.timestamp = b.timestamp) as e ON 1=1;";
+
         Dao<LKStatSession, String> dao = getDao(LKStatSession.class);
-        GenericRawResults<String[]> rawResults = dao.queryRaw("CALL Profile("+user._id+")");
+        GenericRawResults<String[]> rawResults = dao.queryRaw(query);
         List<String[]> rows = rawResults.getResults();
         rawResults.close();
         
