@@ -30,8 +30,6 @@ public class LiveCloudAPI {
                     request.name = Config.getServerName();
                     request.serverPort = Bukkit.getPort();
                     request.livekitPort = Config.getServerPort();
-                    //TODO: request.host = Config.getHostName();
-                    //TODO: request.optInSearch = Config.getOptInSearch();
                     request.optInSearch = Config.optInSearch();
                     request.host = Config.getHostName();
                     request.host = null;
