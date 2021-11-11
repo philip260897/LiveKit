@@ -2,6 +2,7 @@ server:
   port: 4123
   name: 'My Minecraft Server'
   password: 'NULL'
+  searchDiscoverable: true
   tickrate: 20
 storage:
   type: 'SQLITE'

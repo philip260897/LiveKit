@@ -32,7 +32,8 @@ public class LiveCloudAPI {
                     request.livekitPort = Config.getServerPort();
                     //TODO: request.host = Config.getHostName();
                     //TODO: request.optInSearch = Config.getOptInSearch();
-                    request.optInSearch = false;
+                    request.optInSearch = Config.optInSearch();
+                    request.host = Config.getHostName();
                     request.host = null;
                     return request;
                 }

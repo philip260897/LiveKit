@@ -36,6 +36,14 @@ public class Config
         return config.getString("server.name");
     }
 
+    public static boolean optInSearch() {
+        return config.getBoolean("server.optInSearch");
+    }
+
+    public static String getHostName() {
+        return "NULL".equals(config.getString("server.host")) ? null : config.getString("server.host");
+    }
+
     public static int getTickRate() {
         int tickrate = config.getInt("server.tickrate");
         if(tickrate <= 0) return 1;
@@ -295,6 +303,13 @@ public class Config
             List<String> perms = getDefaultPermissions();
             if(!perms.contains("livekit.module.statistics")) perms.add("livekit.module.statistics");
             config.set("permissions.default", perms);
+
+            save = true;
+        }
+
+        if(config.get("server.optInSearch") == null) {
+            config.set("server.optInSearch", true);
+            config.set("server.host", "NULL");
 
             save = true;
         }
