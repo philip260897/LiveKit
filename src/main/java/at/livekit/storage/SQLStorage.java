@@ -335,7 +335,7 @@ public class SQLStorage extends StorageThreadMarshallAdapter
     public List<LKStatParameter> getTotalParameters(LKUser user, LKParam param) throws Exception
     {
         Dao<LKStatParameter, String> dao = getDao(LKStatParameter.class);
-        Where<LKStatParameter, String> where = dao.queryBuilder().selectRaw("type", "SUM(value)").groupBy("type").where();
+        Where<LKStatParameter, String> where = dao.queryBuilder().selectRaw("type", "SUM(value) as value").groupBy("type").orderBy("value", false).where();
         where.and(where.eq("user_id", user._id), where.eq("param", param));
 
         List<LKStatParameter> parameters = new ArrayList<LKStatParameter>();

@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import org.bukkit.Bukkit;
@@ -34,8 +35,10 @@ import at.livekit.plugin.Plugin;
 import at.livekit.plugin.Texturepack;
 import at.livekit.statistics.LKStatProfile;
 import at.livekit.statistics.results.ProfileResult;
+import at.livekit.statistics.tables.LKStatParameter;
 import at.livekit.statistics.tables.LKStatServerSession;
 import at.livekit.statistics.tables.LKUser;
+import at.livekit.statistics.tables.LKStatParameter.LKParam;
 import at.livekit.storage.SQLStorage;
 import at.livekit.storage.StorageThreadMarshallAdapter;
 
@@ -208,6 +211,23 @@ public class StatisticsModule extends BaseModule implements Listener
         return new StatusPacket(1, data);
     }
 
+    @Action(name="TotalPlayerParameter", sync = false)
+    protected IPacket totalPlayerParameter(Identity identity, ActionPacket packet) throws Exception
+    {
+        String playerUid = packet.getData().getString("uuid");
+        LKParam parameter = LKParam.valueOf(packet.getData().getString("param"));
+        //TODO: Permission handling/check if player is friends if not self uuid
+
+        SQLStorage storage = getSQLStorage();
+        //LKStatProfile profile = getStatisticProfile(UUID.fromString(playerUid));
+        LKUser user = storage.getLKUser(UUID.fromString(playerUid));
+
+        List<LKStatParameter> values = storage.getTotalParameters(user, parameter);
+        JSONObject result = new JSONObject();
+        result.put("result", values.stream().map(entry->entry.toJson(false)).collect(Collectors.toList()));
+
+        return new StatusPacket(1, result);
+    }
 
     @Action(name="ListAllSessions", sync = false)
     protected IPacket listAllSessions(Identity identity, ActionPacket packet) throws Exception

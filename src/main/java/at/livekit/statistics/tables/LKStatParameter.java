@@ -4,6 +4,8 @@ import com.j256.ormlite.field.DataType;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.table.DatabaseTable;
 
+import org.json.JSONObject;
+
 @DatabaseTable(tableName = "livekit_stats_parameters")
 public class LKStatParameter {
 
@@ -27,5 +29,13 @@ public class LKStatParameter {
 
     public enum LKParam {
         BLOCK_PLACE, BLOCK_BREAK, TOOL_USE, WEAPON_KILL, FISHING/*, PLAYTIME_TOTAL, SESSIONS_TOTAL, PVP_KILLS_TOTAL, PVE_KILLS_TOTAL, DEATHS_TOTAL*/
+    }
+
+    public JSONObject toJson(boolean includeTimestamp) {
+        JSONObject object = new JSONObject();
+        object.put("type", type);
+        if(includeTimestamp) object.put("timestamp", timestamp);
+        object.put("value", value);
+        return object;
     }
 }
