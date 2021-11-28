@@ -1,6 +1,6 @@
 main: at.livekit.plugin.Plugin
 name: LiveKit
-version: 1.4.3e
+version: 1.4.4
 author: livekitapp@gmail.com
 description: Connector plugin for LiveKit. Allows LiveKit App to connect to server
 api-version: 1.16
