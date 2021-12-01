@@ -50,8 +50,16 @@ public class Texturepack {
 
         JSONObject root = new JSONObject(json);
         for(String key : root.keySet()) {
+            //GRASS_PATH is no longer a valid material! was replaced by DIRT_PATH
+            if(key.split(":")[1].equals("GRASS_PATH")) continue;
+
             Integer intKey = Integer.parseInt(key.split(":")[0]);
-            _textures.put(Material.getMaterial(key.split(":")[1]), intKey);
+            Material mat = Material.getMaterial(key.split(":")[1]);
+            if(mat != null) {
+                _textures.put(Material.getMaterial(key.split(":")[1]), intKey);
+            } else {
+                Plugin.log("Material "+key.split(":")[1]+" not found!");
+            } 
 
             if(intKey.intValue() >= nextId) nextId = intKey.intValue()+1;
         }
