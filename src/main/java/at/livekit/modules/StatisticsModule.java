@@ -226,6 +226,8 @@ public class StatisticsModule extends BaseModule implements Listener
         JSONObject result = new JSONObject();
         result.put("result", values.stream().map(entry->entry.toJson(false)).collect(Collectors.toList()));
 
+        
+
         return new StatusPacket(1, result);
     }
 
