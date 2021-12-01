@@ -2,6 +2,7 @@ package at.livekit.modules;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,6 +24,7 @@ import at.livekit.modules.BaseModule.ModulesAvailablePacket;
 import at.livekit.packets.StatusPacket;
 import at.livekit.plugin.Config;
 import at.livekit.plugin.Plugin;
+import javafx.scene.input.MouseButton;
 import at.livekit.packets.IPacket;
 
 public class ModuleManager 
@@ -139,6 +141,11 @@ public class ModuleManager
             }
             if(_values.contains(module.getSubscription())) throw new Exception("Duplicate subscription for module "+module.getType());
             _values.add(module.getSubscription());
+
+            //Order LiveMap & WeatherTime module subscriptions according to config!
+            if(module.getType().startsWith(LiveMapModule.class.getSimpleName()) || module.getType().startsWith(WeatherTimeModule.class.getSimpleName())) {
+                _values.sort(Comparator.comparingInt(Config.getLiveMapWorldsOrdered()::indexOf));
+            }
         }
     }
 
@@ -192,6 +199,11 @@ public class ModuleManager
                                 _subscriptions.put(module.getClass().getSimpleName(), subs);
                             }
                             subs.add(module.getSubscription());
+
+                            //Order LiveMap & WeatherTime module subscriptions according to config!
+                            if(moduleType.startsWith(LiveMapModule.class.getSimpleName()) || moduleType.startsWith(WeatherTimeModule.class.getSimpleName())) {
+                                subs.sort(Comparator.comparingInt(Config.getLiveMapWorldsOrdered()::indexOf));
+                            }
 
                             for(Identity identity : identities) {
                                 if(!identity.hasSubscriptionFor(module.getClass().getSimpleName())) {

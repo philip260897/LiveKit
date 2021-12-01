@@ -39,6 +39,7 @@ public class RenderWorld
     private List<RegionInfo> _regions = new ArrayList<RegionInfo>(); 
     private List<RegionData> _loadedRegions = new ArrayList<RegionData>();
 
+    private Object _taskLock = new Object();
     private RenderTask _task = null;
     
     private RenderBounds _bounds;
@@ -193,8 +194,11 @@ public class RenderWorld
 
     private void updateChunk(int x, int z, boolean chunkLoadEvent) {
         if(!_bounds.chunkInBounds(x, z)) return;
-        if(_task != null && chunkLoadEvent) {
-            if(_task.offset.x == x && _task.offset.z == z) return;
+        
+        synchronized(_taskLock) {
+            if(_task != null && chunkLoadEvent) {
+                if(_task.offset.x == x && _task.offset.z == z) return;
+            }
         }
 
         synchronized(_chunkQueue) {
@@ -205,102 +209,113 @@ public class RenderWorld
     public IPacket update(long frameStart, long cpuTime, boolean tick) {
         IPacket result = null;
         
-        if(_task == null) {
-            synchronized(_blockQueue) {
-                if(_blockQueue.size() != 0) {
-                    Offset block = _blockQueue.remove(0);
-                    _task = new RenderTask(block, false);
-                    if(!tick) _task.tickCount++;
-                }
-            }
+        //long timestamp = System.currentTimeMillis();
+
+        synchronized(_taskLock) {
             if(_task == null) {
-                synchronized(_chunkQueue) {
-                    if(_chunkQueue.size() != 0) {
-                        Offset chunk = _chunkQueue.remove(0);
-                        _task = new RenderTask(chunk, true);
+                synchronized(_blockQueue) {
+                    if(_blockQueue.size() != 0) {
+                        Offset block = _blockQueue.remove(0);
+                        _task = new RenderTask(block, false);
                         if(!tick) _task.tickCount++;
                     }
                 }
-            }
-        }
-
-        if(_task == null) {
-            if(_job != null) {
-                Offset next = _job.next();
-                if(next == null) _job = null;
-                else { _task = new RenderTask(next, true); if(!tick) _task.tickCount++; }
-            }
-        }
-
-        if(_task != null) {
-            if(tick) _task.tickCount++;
-
-            //Filtering out of bounds regions
-            if(!_bounds.regionInBounds(_task.regionX, _task.regionZ)) {
-                _task.state = RenderTaskState.DONE;
-            }
-            
-            if(_task.state == RenderTaskState.IDLE) {
-                _task.state = RenderTaskState.LOADING_REGION;
-                _task.loadingWatchdog = System.currentTimeMillis();
-                if((_task.region = getLoadedRegion(_task.regionX, _task.regionZ)) != null) {
-                    _task.loadingWatchdog = System.currentTimeMillis() - _task.loadingWatchdog;
-                    _task.state = RenderTaskState.RENDERING;
-                } else {
-                    loadRegionAsync(_task.regionX, _task.regionZ);
-                }
-            }
-            if(_task.state == RenderTaskState.LOADING_REGION) {
-                _task.region = getLoadedRegion(_task.regionX, _task.regionZ);
-                if(_task.region != null) {
-                    _task.loadingWatchdog = System.currentTimeMillis() - _task.loadingWatchdog;
-                    _task.state = RenderTaskState.RENDERING;
-                } else {
-                    _needsUpdate = false;
-                    if(System.currentTimeMillis() - _task.loadingWatchdog > TIMEOUT_LOADING) {
-                        Plugin.severe("Region Loading watchdog! Failed to load region in time");
-                        _task.state = RenderTaskState.DONE;
+                if(_task == null) {
+                    synchronized(_chunkQueue) {
+                        if(_chunkQueue.size() != 0) {
+                            Offset chunk = _chunkQueue.remove(0);
+                            _task = new RenderTask(chunk, true);
+                            if(!tick) _task.tickCount++;
+                        }
                     }
                 }
             }
-            if(_task.state == RenderTaskState.RENDERING) {
-                if(_task.renderingWatchdog == 0) _task.renderingWatchdog = System.currentTimeMillis();
-                
-                try{
-                    //long start = System.currentTimeMillis();
+        
 
-                    boolean done = Renderer.render(world, _task, cpuTime, frameStart, _bounds);
+            if(_task == null) {
+                if(_job != null) {
+                    Offset next = _job.next();
+                    if(next == null) _job = null;
+                    else { _task = new RenderTask(next, true); if(!tick) _task.tickCount++; }
+                }
+            }
+        }
 
-                    //System.out.println((System.currentTimeMillis()-start)+" rendereding  ms");
+            if(_task != null) {
+                if(tick) _task.tickCount++;
 
-                    if(done == true) {
-                        result = _task.result;
-                        _task.state = RenderTaskState.DONE;
-                    }
-                }catch(Exception ex){
-                    ex.printStackTrace();
+                //Filtering out of bounds regions
+                if(!_bounds.regionInBounds(_task.regionX, _task.regionZ)) {
                     _task.state = RenderTaskState.DONE;
                 }
-            }
-            if(_task.state == RenderTaskState.DONE) {
-                if(_task.renderingWatchdog != 0) _task.renderingWatchdog = System.currentTimeMillis() - _task.renderingWatchdog;
                 
-                if(_task.region != null) {
-                    /*if(_task.result != null && _task.isChunk()) {
-                        _chunkCount++;
-                    }*/
-
-                    synchronized(_regions) {
-                        RegionInfo info = _regions.stream().filter(i->i.x == _task.regionX && i.z == _task.regionZ).findFirst().orElse(null);
-                        if(info != null) info.timestamp = _task.region.timestamp;
+                if(_task.state == RenderTaskState.IDLE) {
+                    _task.state = RenderTaskState.LOADING_REGION;
+                    _task.loadingWatchdog = System.currentTimeMillis();
+                    if((_task.region = getLoadedRegion(_task.regionX, _task.regionZ)) != null) {
+                        _task.loadingWatchdog = System.currentTimeMillis() - _task.loadingWatchdog;
+                        _task.state = RenderTaskState.RENDERING;
+                    } else {
+                        loadRegionAsync(_task.regionX, _task.regionZ);
                     }
                 }
-                
-                //Plugin.debug(_task.toString());
-                _task = null;
-            }
-        }
+                if(_task.state == RenderTaskState.LOADING_REGION) {
+                    _task.region = getLoadedRegion(_task.regionX, _task.regionZ);
+                    if(_task.region != null) {
+                        _task.loadingWatchdog = System.currentTimeMillis() - _task.loadingWatchdog;
+                        _task.state = RenderTaskState.RENDERING;
+                    } else {
+                        _needsUpdate = false;
+                        if(System.currentTimeMillis() - _task.loadingWatchdog > TIMEOUT_LOADING) {
+                            Plugin.severe("Region Loading watchdog! Failed to load region in time");
+                            _task.state = RenderTaskState.DONE;
+                        }
+                    }
+                }
+                if(_task.state == RenderTaskState.RENDERING) {
+                    if(_task.renderingWatchdog == 0) _task.renderingWatchdog = System.currentTimeMillis();
+                    
+                    try{
+                        //long start = System.currentTimeMillis();
 
+                        boolean done = Renderer.render(world, _task, cpuTime, frameStart, _bounds);
+
+                        //System.out.println((System.currentTimeMillis()-start)+" rendereding  ms");
+
+                        if(done == true) {
+                            result = _task.result;
+                            _task.state = RenderTaskState.DONE;
+                        }
+                    }catch(Exception ex){
+                        ex.printStackTrace();
+                        _task.state = RenderTaskState.DONE;
+                    }
+                }
+                if(_task.state == RenderTaskState.DONE) {
+                    if(_task.renderingWatchdog != 0) _task.renderingWatchdog = System.currentTimeMillis() - _task.renderingWatchdog;
+                    
+                    if(_task.region != null) {
+                        /*if(_task.result != null && _task.isChunk()) {
+                            _chunkCount++;
+                        }*/
+
+                        synchronized(_regions) {
+                            RegionInfo info = _regions.stream().filter(i->i.x == _task.regionX && i.z == _task.regionZ).findFirst().orElse(null);
+                            if(info != null) info.timestamp = _task.region.timestamp;
+                        }
+                    }
+                    
+                    //Plugin.debug(_task.toString());
+                    synchronized(_taskLock) {
+                        _task = null;
+                    }
+                }
+            }
+        
+
+        //long current = System.currentTimeMillis();
+
+        //if(current-timestamp > 0) System.out.println((current-timestamp)+"ms");
         /*if(System.currentTimeMillis() - _startMetric > 60*1000) {
             
         }*/
@@ -423,12 +438,14 @@ public class RenderWorld
         });
     }
 
-    private void unloadRegionAsync(RegionData region) {
+    private void unloadRegionAsync(final RegionData region) {
         Bukkit.getScheduler().runTaskAsynchronously(Plugin.getInstance(), new Runnable(){
             @Override
             public void run() {
-                if(_task != null && _task.region == region) return;
-                region.setDead(true);
+                synchronized(_taskLock) {
+                    if(_task != null && _task.region == region) return;
+                    region.setDead(true);
+                }
 
                 Plugin.debug("Unloading region "+region.getX()+" "+region.getZ());
                 if(SHUTDOWN) return;
@@ -459,14 +476,18 @@ public class RenderWorld
         Bukkit.getScheduler().cancelTasks(Plugin.getInstance());
 
         JSONObject root = new JSONObject();
-        synchronized(_blockQueue) {
-            if(_task != null && !_task.isChunk()) _blockQueue.add(_task.offset);
-            root.put("blocks", _blockQueue.stream().map(b->b.toJson()).collect(Collectors.toList()));
+        synchronized(_taskLock) {
+            synchronized(_blockQueue) {
+                if(_task != null && !_task.isChunk()) _blockQueue.add(_task.offset);
+                root.put("blocks", _blockQueue.stream().map(b->b.toJson()).collect(Collectors.toList()));
+            }
         }
-        synchronized(_chunkQueue) {
-            _chunkQueue.clear();
-            if(_task != null && _task.isChunk()) _chunkQueue.add(_task.offset);
-            root.put("chunks", _chunkQueue.stream().map(c->c.toJson()).collect(Collectors.toList()));
+        synchronized(_taskLock) {
+            synchronized(_chunkQueue) {
+                _chunkQueue.clear();
+                if(_task != null && _task.isChunk()) _chunkQueue.add(_task.offset);
+                root.put("chunks", _chunkQueue.stream().map(c->c.toJson()).collect(Collectors.toList()));
+            }
         }
         if(_job != null) root.put("job", _job.toJson());
         Utils.tryWriteFile(new File(workingDirectory, "cache.json"), root.toString());

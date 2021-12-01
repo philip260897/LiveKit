@@ -81,6 +81,16 @@ public class Config
         return map;
     }
 
+    public static List<String> getLiveMapWorldsOrdered() {
+        List<String> stripped = new ArrayList<String>();
+
+        for(String world : (List<String>) config.getList("modules.LiveMapModule.worlds")) {
+            stripped.add(world.split(":")[0]);
+        }
+
+        return stripped;
+    }
+
     public static boolean moduleEnabled(String name) {
         return config.getBoolean("modules."+name+".enabled");
     }
