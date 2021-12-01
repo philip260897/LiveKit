@@ -3,8 +3,6 @@ package at.livekit.statistics.tables;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.table.DatabaseTable;
 
-import org.bukkit.OfflinePlayer;
-
 @DatabaseTable(tableName = "livekit_stats_pvp")
 public class LKStatPVP {
     
@@ -17,4 +15,6 @@ public class LKStatPVP {
     @DatabaseField(index = true)
     public long timestamp;
 
+    @DatabaseField(canBeNull = false)
+    public int weapon = 0;
 }

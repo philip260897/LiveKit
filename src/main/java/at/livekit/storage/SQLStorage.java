@@ -9,6 +9,7 @@ import at.livekit.api.map.PersonalPin;
 import at.livekit.authentication.Pin;
 import at.livekit.authentication.Session;
 import at.livekit.plugin.Plugin;
+import at.livekit.statistics.results.PVPResult;
 import at.livekit.statistics.results.ProfileResult;
 import at.livekit.statistics.tables.*;
 import at.livekit.statistics.tables.LKStatParameter.LKParam;
@@ -93,7 +94,6 @@ public class SQLStorage extends StorageThreadMarshallAdapter
         _daos.put(clazz, (Dao<T, String>) DaoManager.createDao(connectionSource, clazz));
 
         if(!getDao(clazz).isTableExists()) {
-            
             TableUtils.createTable(connectionSource, clazz);
         }
         
@@ -364,18 +364,39 @@ public class SQLStorage extends StorageThreadMarshallAdapter
         return where.query();
     }
 
+    public List<LKStatCmd> getPlayerCommands(LKUser user, long from, long to) throws Exception
+    {
+        Dao<LKStatCmd, String> dao = getDao(LKStatCmd.class);
+        Where<LKStatCmd, String> where = dao.queryBuilder().where();
+        where.eq("user_id", user);
+        where.and().and(where.ge("timestamp", from), where.le("timestamp", to));
+        
+        return where.query();
+    }
+
     //QTA: SELECT kills.user_id, kills.timestamp, users.uuid FROM (SELECT * FROM livekit_stats_pvp WHERE (user_id = 1) AND timestamp >= 10000000000 AND timestamp <= 9000000000000) as kills LEFT JOIN livekit_users as users on kills.target_id=users._id;
     //QTA: SELECT kills.target_id, kills.timestamp, users.uuid FROM (SELECT * FROM livekit_stats_pvp WHERE (target_id = 1) AND timestamp >= 10000000000 AND timestamp <= 9000000000000) as kills LEFT JOIN livekit_users as users on kills.user_id=users._id;
-    public List<LKStatPVP> getPlayerPVP(LKUser user, long from, long to) throws Exception
+    public List<PVPResult> getPlayerPVP(LKUser user, long from, long to) throws Exception
     {
-        String queryKills = "SELECT kills.user_id, kills.timestamp, users.uuid FROM (SELECT * FROM livekit_stats_pvp WHERE (user_id = "+user._id+") AND timestamp >= "+from+" AND timestamp <= "+to+") as kills LEFT JOIN livekit_users as users on kills.target_id=users._id;";
+        List<PVPResult> result = new ArrayList<PVPResult>();
+        
+        String queryKills = "SELECT kills.timestamp, users.uuid, kills.weapon FROM (SELECT * FROM livekit_stats_pvp WHERE (user_id = "+user._id+") AND timestamp >= "+from+" AND timestamp <= "+to+") as kills LEFT JOIN livekit_users as users on kills.target_id=users._id;";
 
         Dao<LKStatPVP, String> dao = getDao(LKStatPVP.class);
         GenericRawResults<String[]> rawResults = dao.queryRaw(queryKills);
         List<String[]> rows = rawResults.getResults();
         rawResults.close();
 
-        return null;
+        for(String[] columns : rows) result.add(new PVPResult(UUID.fromString(columns[1]), Long.parseLong(columns[0]), Integer.parseInt(columns[2]), true));
+    
+        String queryDeath = "SELECT kills.timestamp, users.uuid, kills.weapon FROM (SELECT * FROM livekit_stats_pvp WHERE (target_id = "+user._id+") AND timestamp >= "+from+" AND timestamp <= "+to+") as kills LEFT JOIN livekit_users as users on kills.user_id=users._id";
+        rawResults = dao.queryRaw(queryDeath);
+        rows = rawResults.getResults();
+        rawResults.close();
+
+        for(String[] columns : rows) result.add(new PVPResult(UUID.fromString(columns[1]), Long.parseLong(columns[0]), Integer.parseInt(columns[2]), false));
+
+        return result;
     }
 
     public List<LKStatSession> getSessionsFromTo(long from, long to) throws Exception

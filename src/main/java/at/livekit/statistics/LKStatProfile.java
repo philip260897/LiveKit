@@ -129,27 +129,30 @@ public class LKStatProfile {
         }
     }
 
-    public void addPVP(LKUser target) {
+    public void addPVP(LKUser target, int weapon) {
         LKStatPVP pvp = new LKStatPVP();
         pvp.user = user;
         pvp.timestamp = System.currentTimeMillis();
         pvp.target = target;
+        pvp.weapon = weapon;
 
         synchronized(pvpList) {
             pvpList.add(pvp);
         }
     }
 
-    public void addPVE(int entity) {
+    /*public void addPVE(int entity, int weapon, boolean kill) {
         LKStatPVE pve = new LKStatPVE();
         pve.user = user;
         pve.timestamp = System.currentTimeMillis();
         pve.entity = entity;
+        pve.weapon = weapon;
+        pve.kill = kill;
 
         synchronized(pveList) {
             pveList.add(pve);
         }
-    }
+    }*/
 
     public void addDeath() {
         synchronized(deathLock) {
@@ -160,6 +163,15 @@ public class LKStatProfile {
                 currentDeaths.count = 0;
             }
             currentDeaths.count++;
+        }
+    }
+
+    public void addEntityKillStat(int entity)
+    {
+        try {
+            incrementParamStat(LKParam.ENTITY_KILLS, entity);
+        }catch(Exception ex) {
+            ex.printStackTrace();
         }
     }
 

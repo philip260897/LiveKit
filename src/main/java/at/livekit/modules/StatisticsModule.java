@@ -11,6 +11,8 @@ import java.util.stream.Collectors;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -34,9 +36,12 @@ import at.livekit.packets.StatusPacket;
 import at.livekit.plugin.Plugin;
 import at.livekit.plugin.Texturepack;
 import at.livekit.statistics.LKStatProfile;
+import at.livekit.statistics.results.PVPResult;
 import at.livekit.statistics.results.ProfileResult;
+import at.livekit.statistics.tables.LKStatCmd;
 import at.livekit.statistics.tables.LKStatParameter;
 import at.livekit.statistics.tables.LKStatServerSession;
+import at.livekit.statistics.tables.LKStatSession;
 import at.livekit.statistics.tables.LKUser;
 import at.livekit.statistics.tables.LKStatParameter.LKParam;
 import at.livekit.storage.SQLStorage;
@@ -226,7 +231,62 @@ public class StatisticsModule extends BaseModule implements Listener
         JSONObject result = new JSONObject();
         result.put("result", values.stream().map(entry->entry.toJson(false)).collect(Collectors.toList()));
 
-        
+        return new StatusPacket(1, result);
+    }
+
+    @Action(name="PlayerPVP", sync = false)
+    protected IPacket playerPVP(Identity identity, ActionPacket packet) throws Exception
+    {
+        String playerUid = packet.getData().getString("uuid");
+        long from = packet.getData().getLong("from");
+        long to = packet.getData().getLong("to");
+        //TODO: Permission handling/check if player is friends if not self uuid
+
+        SQLStorage storage = getSQLStorage();
+        //LKStatProfile profile = getStatisticProfile(UUID.fromString(playerUid));
+        LKUser user = storage.getLKUser(UUID.fromString(playerUid));
+
+        List<PVPResult> values = storage.getPlayerPVP(user, from, to);
+        JSONObject result = new JSONObject();
+        result.put("result", values.stream().map(entry->entry.toJson()).collect(Collectors.toList()));
+
+        return new StatusPacket(1, result);
+    }
+
+    @Action(name="PlayerSessions", sync = false)
+    protected IPacket playerSessions(Identity identity, ActionPacket packet) throws Exception
+    {
+        String playerUid = packet.getData().getString("uuid");
+        long from = packet.getData().getLong("from");
+        long to = packet.getData().getLong("to");
+        //TODO: Permission handling/check if player is friends if not self uuid
+
+        SQLStorage storage = getSQLStorage();
+        //LKStatProfile profile = getStatisticProfile(UUID.fromString(playerUid));
+        LKUser user = storage.getLKUser(UUID.fromString(playerUid));
+
+        List<LKStatSession> values = storage.getPlayerSessions(user, from, to);
+        JSONObject result = new JSONObject();
+        result.put("result", values.stream().map(entry->entry.toJson()).collect(Collectors.toList()));
+
+        return new StatusPacket(1, result);
+    }
+
+    @Action(name="PlayerCommands", sync = false)
+    protected IPacket playerCmds(Identity identity, ActionPacket packet) throws Exception
+    {
+        String playerUid = packet.getData().getString("uuid");
+        long from = packet.getData().getLong("from");
+        long to = packet.getData().getLong("to");
+        //TODO: Permission handling/check if player is friends if not self uuid
+
+        SQLStorage storage = getSQLStorage();
+        //LKStatProfile profile = getStatisticProfile(UUID.fromString(playerUid));
+        LKUser user = storage.getLKUser(UUID.fromString(playerUid));
+
+        List<LKStatCmd> values = storage.getPlayerCommands(user, from, to);
+        JSONObject result = new JSONObject();
+        result.put("result", values.stream().map(entry->entry.toJson()).collect(Collectors.toList()));
 
         return new StatusPacket(1, result);
     }
@@ -368,20 +428,21 @@ public class StatisticsModule extends BaseModule implements Listener
 
         if(event.getEntity().getKiller() != null)
         {
-
             LKStatProfile profile = getStatisticProfile(event.getEntity().getKiller().getUniqueId());
             if(profile != null)
             {
                 Material weapon = event.getEntity().getKiller().getInventory().getItemInMainHand().getType();
+                int weaponId = weapon != null ? texturepack.getTexture(weapon) : 0;
 
                 if(event.getEntity() instanceof Player) {
-                    profile.addPVP(getStatisticProfile(event.getEntity().getUniqueId()).getUser());
+                    profile.addPVP(getStatisticProfile(event.getEntity().getUniqueId()).getUser(), weaponId);
                 } else {
-                    profile.addPVE(texturepack.getEntity(event.getEntityType()));
+                    //profile.addPVE(texturepack.getEntity(event.getEntityType()), weaponId, true);
+                    profile.addEntityKillStat(texturepack.getEntity(event.getEntityType()));
                 }
 
                 if(texturepack.isWeapon(weapon)) {
-                    profile.addWeaponStat(texturepack.getTexture(weapon));
+                    profile.addWeaponStat(weaponId);
                 }
             }
         }

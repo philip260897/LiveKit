@@ -14,4 +14,10 @@ public class LKStatPVE
 
     @DatabaseField(index = true)
     public long timestamp;
+
+    @DatabaseField(canBeNull = false)
+    public int weapon = 0;
+
+    @DatabaseField(canBeNull = false)
+    public boolean kill = true;
 }

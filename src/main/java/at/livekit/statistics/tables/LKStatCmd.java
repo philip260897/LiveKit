@@ -5,6 +5,8 @@ import java.util.UUID;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.table.DatabaseTable;
 
+import org.json.JSONObject;
+
 @DatabaseTable(tableName = "livekit_stats_cmds")
 public class LKStatCmd {
     
@@ -19,4 +21,12 @@ public class LKStatCmd {
 
     @DatabaseField(width = 255)
     public String args;
+
+    public JSONObject toJson() {
+        JSONObject json = new JSONObject();
+        json.put("timestamp", timestamp);
+        json.put("cmd", cmd);
+        json.put("args", args);
+        return json;
+    }
 }

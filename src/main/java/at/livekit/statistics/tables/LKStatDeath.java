@@ -17,5 +17,4 @@ public class LKStatDeath {
 
     @DatabaseField
     public int count;
-
 }
