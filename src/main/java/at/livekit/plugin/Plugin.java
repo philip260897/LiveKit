@@ -58,7 +58,12 @@ public class Plugin extends JavaPlugin implements ILiveKitPlugin, Listener {
 
 		try{
 			Texturepack.getInstance();
-		}catch(Exception ex){ ex.printStackTrace(); }
+		}catch(Exception ex){ 
+			ex.printStackTrace(); 
+			logger.severe("Error initializing Textures, shutting down");
+			getServer().getPluginManager().disablePlugin(this);
+			return;
+		}
 
 		name = this.getDescription().getName();
 		prefix = color+"["+ChatColor.WHITE+name+color+"] "+ChatColor.WHITE;
