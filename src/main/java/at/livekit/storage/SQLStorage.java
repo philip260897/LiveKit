@@ -75,7 +75,6 @@ public class SQLStorage extends StorageThreadMarshallAdapter
         registerStorageClass(LKStatSession.class);
         registerStorageClass(LKStatWorld.class);
         registerStorageClass(LKStatPVP.class);
-        registerStorageClass(LKStatPVE.class);
         registerStorageClass(LKStatDeath.class);
         registerStorageClass(LKStatServerSession.class);
         registerStorageClass(LKUser.class);
