@@ -584,6 +584,7 @@ public class LiveKitCommandExecutor implements CommandExecutor, TabCompleter {
             Texturepack.generateTexturePack();
             Texturepack.generateBiomes();
             Texturepack.generateEntities();
+            Texturepack.generateDamage();
 
             /*JSONArray array = new JSONArray();
             for(int i = 0; i < EntityType.values().length; i++) {

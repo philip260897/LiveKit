@@ -11,6 +11,8 @@ import java.util.EnumSet;
 import org.bukkit.Material;
 import org.bukkit.block.Biome;
 import org.bukkit.entity.EntityType;
+import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -29,6 +31,7 @@ public class Texturepack {
     private EnumMap<Material, Integer> _textures =  new EnumMap<Material, Integer>(Material.class);
     private EnumMap<Biome, Integer> _biomes = new EnumMap<Biome, Integer>(Biome.class);
     private EnumMap<EntityType, Integer> _entities = new EnumMap<EntityType, Integer>(EntityType.class);
+    private EnumMap<DamageCause, Integer> _damage = new EnumMap<DamageCause, Integer>(DamageCause.class);
 
     private EnumSet<Material> _tools = EnumSet.noneOf(Material.class);
     private EnumSet<Material> _weapons = EnumSet.noneOf(Material.class);
@@ -139,6 +142,37 @@ public class Texturepack {
         }
         Plugin.debug("Patched "+additionalTextures+" entities");
 
+        //load entities
+        nextId = 0;
+        json = "";
+        
+        in = this.getClass().getClassLoader().getResourceAsStream("damage.json");
+        reader = new BufferedReader(new InputStreamReader(in));
+        
+        line = null;
+        while((line = reader.readLine()) != null) {
+            json += line;
+        }
+        reader.close();
+        in.close();
+        
+        root = new JSONObject(json);
+        for(String key : root.keySet()) {
+            Integer intKey = Integer.parseInt(key.split(":")[0]);
+            _damage.put(DamageCause.valueOf(key.split(":")[1]), intKey);
+        
+            if(intKey.intValue() >= nextId) nextId = intKey.intValue()+1;
+        }
+        
+        additionalTextures = 0;
+        for(DamageCause mat : DamageCause.values()) {
+            if(!_damage.containsKey(mat)) {
+                _damage.put(mat, nextId++);
+                Plugin.debug("Patching entity "+(nextId-1)+":"+mat.toString());
+                additionalTextures++;
+            }
+        }
+        Plugin.debug("Patched "+additionalTextures+" damage causes");
 
         //load resources
         json = "";
@@ -206,6 +240,12 @@ public class Texturepack {
         return id.intValue();
     }
 
+    public int getDamage(DamageCause cause) {
+        Integer id = _damage.get(cause);
+        if(id == null) return 0;
+        return id.intValue();
+    }
+
     public static void generateTexturePack() {
         try {
             Texturepack texturepack = Texturepack.getInstance();
@@ -256,6 +296,27 @@ public class Texturepack {
             }
 
             File file = new File( System.getProperty("user.dir") + "/plugins/LiveKit/entities.json" );
+            if(!file.exists()) file.createNewFile();
+
+            PrintWriter writer = new PrintWriter(file);
+            writer.write(root.toString());
+            writer.flush();
+            writer.close();
+        }catch(Exception ex){
+            ex.printStackTrace();
+        }
+    }
+
+    public static void generateDamage() {
+        try {
+            Texturepack texturepack = Texturepack.getInstance();
+            JSONObject root = new JSONObject();
+            for(DamageCause entity : DamageCause.values()) {
+                System.out.println(texturepack.getDamage(entity)+":"+entity.toString());
+                root.put(texturepack.getDamage(entity)+":"+entity.toString(), "#00000000");
+            }
+
+            File file = new File( System.getProperty("user.dir") + "/plugins/LiveKit/damage.json" );
             if(!file.exists()) file.createNewFile();
 
             PrintWriter writer = new PrintWriter(file);

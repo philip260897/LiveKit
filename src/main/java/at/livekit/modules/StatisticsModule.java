@@ -445,6 +445,8 @@ public class StatisticsModule extends BaseModule implements Listener
                     profile.addWeaponStat(weaponId);
                 }
             }
+
+            //event.getEntity().getLastDamageCause().getCause().
         }
 
         if(event.getEntity() instanceof Player) {
