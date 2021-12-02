@@ -10,7 +10,6 @@ import at.livekit.plugin.Texturepack;
 import at.livekit.statistics.tables.LKStatCmd;
 import at.livekit.statistics.tables.LKStatDeath;
 import at.livekit.statistics.tables.LKStatParameter;
-import at.livekit.statistics.tables.LKStatPVE;
 import at.livekit.statistics.tables.LKStatPVP;
 import at.livekit.statistics.tables.LKStatSession;
 import at.livekit.statistics.tables.LKStatWorld;
@@ -33,7 +32,6 @@ public class LKStatProfile {
     private List<LKStatParameter> entriesList = new ArrayList<LKStatParameter>();
 
     private List<LKStatPVP> pvpList = new ArrayList<LKStatPVP>();
-    private List<LKStatPVE> pveList = new ArrayList<LKStatPVE>();
     private List<LKStatDeath> deathList = new ArrayList<LKStatDeath>();
     
 
@@ -305,20 +303,6 @@ public class LKStatProfile {
         }
         
         for(LKStatPVP entry : pvp)
-        {
-            try {
-                storage.create(entry);
-            }catch(Exception ex){ex.printStackTrace();}
-        }
-
-        //copy sessions to this thread, clear cached entries
-        List<LKStatPVE> pve;
-        synchronized(pveList) {
-            pve = new ArrayList<LKStatPVE>(pveList);
-            pveList.clear();
-        }
-
-        for(LKStatPVE entry : pve)
         {
             try {
                 storage.create(entry);

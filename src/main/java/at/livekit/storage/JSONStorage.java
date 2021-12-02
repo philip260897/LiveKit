@@ -56,7 +56,6 @@ public class JSONStorage extends StorageThreadMarshallAdapter
         registerClassForStorage(LKStatSession.class);
         registerClassForStorage(LKStatWorld.class);
         registerClassForStorage(LKStatPVP.class);
-        registerClassForStorage(LKStatPVE.class);
         registerClassForStorage(LKStatDeath.class);
         registerClassForStorage(LKStatServerSession.class);
         registerClassForStorage(LKUser.class);
