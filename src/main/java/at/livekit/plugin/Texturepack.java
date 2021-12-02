@@ -143,7 +143,7 @@ public class Texturepack {
         Plugin.debug("Patched "+additionalTextures+" entities");
 
         //load entities
-        nextId = 0;
+        nextId = 1;
         json = "";
         
         in = this.getClass().getClassLoader().getResourceAsStream("damage.json");

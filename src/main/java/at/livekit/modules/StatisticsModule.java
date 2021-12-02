@@ -25,6 +25,7 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.AsyncPlayerPreLoginEvent.Result;
 import org.bukkit.event.player.PlayerFishEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.scheduler.BukkitTask;
@@ -452,7 +453,12 @@ public class StatisticsModule extends BaseModule implements Listener
         if(event.getEntity() instanceof Player) {
             LKStatProfile profile = getStatisticProfile(event.getEntity().getUniqueId());
             if(profile != null) {
-                profile.addDeath();
+                int cause = 0;
+                EntityDamageEvent damageEvent = event.getEntity().getLastDamageCause();
+                if(damageEvent != null && damageEvent.getCause() != null) {
+                    cause = texturepack.getDamage(damageEvent.getCause());
+                }
+                profile.addDeath(cause);
             }
         }
     }

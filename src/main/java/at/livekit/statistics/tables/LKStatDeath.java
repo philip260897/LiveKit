@@ -15,6 +15,6 @@ public class LKStatDeath {
     @DatabaseField(uniqueCombo = true)
     public long timestamp;
 
-    @DatabaseField
-    public int count;
+    @DatabaseField(index = true)
+    public int cause;
 }

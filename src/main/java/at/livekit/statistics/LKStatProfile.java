@@ -37,9 +37,10 @@ public class LKStatProfile {
 
     private List<LKStatPVP> pvpList = new ArrayList<LKStatPVP>();
     private List<LKStatPVE> pveList = new ArrayList<LKStatPVE>();
+    private List<LKStatDeath> deathList = new ArrayList<LKStatDeath>();
     
     private Object deathLock = new Object();
-    private LKStatDeath currentDeaths;
+    //private LKStatDeath currentDeaths;
 
     private boolean canClanUp = false;
 
@@ -154,15 +155,14 @@ public class LKStatProfile {
         }
     }*/
 
-    public void addDeath() {
-        synchronized(deathLock) {
-            if(currentDeaths == null) {
-                currentDeaths = new LKStatDeath();
-                currentDeaths.user = user;
-                currentDeaths.timestamp = Utils.getRoundedDayTimestamp();
-                currentDeaths.count = 0;
-            }
-            currentDeaths.count++;
+    public void addDeath(int cause) {
+        LKStatDeath death = new LKStatDeath();
+        death.user = user;
+        death.timestamp = System.currentTimeMillis();
+        death.cause = cause;
+
+        synchronized(deathList) {
+            deathList.add(death);
         }
     }
 
@@ -346,21 +346,16 @@ public class LKStatProfile {
         }
 
         //copy deaths stat for local stuffy
-        if(currentDeaths != null) {
-            LKStatDeath death;
-            synchronized(deathLock) {
-                death = currentDeaths;
-                currentDeaths = null;
-            }
+        List<LKStatDeath> death;
+        synchronized(deathList) {
+            death = new ArrayList<LKStatDeath>(deathList);
+            deathList.clear();
+        }
 
+        for(LKStatDeath entry : death)
+        {
             try {
-                LKStatDeath existing = storage.loadSingle(LKStatDeath.class, new String[]{"user_id", "timestamp"}, new Object[]{death.user, death.timestamp});
-                if(existing != null) {
-                    existing.count += death.count;
-                    storage.update(existing);
-                } else {
-                    storage.create(death);
-                }
+                storage.create(entry);
             }catch(Exception ex){ex.printStackTrace();}
         }
     }
