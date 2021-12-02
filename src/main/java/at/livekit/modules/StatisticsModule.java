@@ -40,6 +40,7 @@ import at.livekit.statistics.LKStatProfile;
 import at.livekit.statistics.results.PVPResult;
 import at.livekit.statistics.results.ProfileResult;
 import at.livekit.statistics.tables.LKStatCmd;
+import at.livekit.statistics.tables.LKStatDeath;
 import at.livekit.statistics.tables.LKStatParameter;
 import at.livekit.statistics.tables.LKStatServerSession;
 import at.livekit.statistics.tables.LKStatSession;
@@ -192,11 +193,11 @@ public class StatisticsModule extends BaseModule implements Listener
     {
         if(identity.isAnonymous()) return new StatusPacket(0, "Permission denied!");
         String playerUid = packet.getData().getString("uuid");
-        Plugin.debug("PlayerUid: "+playerUid+"; parsed: "+UUID.fromString(playerUid));
-        //TODO: Permission handling/check if player is friends if not self uuid
-        
+
+        if(!(identity.getUuid().equals(playerUid) || identity.hasPermission("livekit.modules.admin"))) return new StatusPacket(0, "Permission denied!");
+        //TODO: Permission handling/check if player is friends
+
         SQLStorage storage = getSQLStorage();
-        //LKStatProfile profile = getStatisticProfile(UUID.fromString(playerUid));
         LKUser user = storage.getLKUser(UUID.fromString(playerUid));
 
         ProfileResult pr = storage.getPlayerProfile(user);
@@ -222,10 +223,11 @@ public class StatisticsModule extends BaseModule implements Listener
     {
         String playerUid = packet.getData().getString("uuid");
         LKParam parameter = LKParam.valueOf(packet.getData().getString("param"));
-        //TODO: Permission handling/check if player is friends if not self uuid
+
+        if(!(identity.getUuid().equals(playerUid) || identity.hasPermission("livekit.modules.admin"))) return new StatusPacket(0, "Permission denied!");
+        //TODO: Permission handling/check if player is friends
 
         SQLStorage storage = getSQLStorage();
-        //LKStatProfile profile = getStatisticProfile(UUID.fromString(playerUid));
         LKUser user = storage.getLKUser(UUID.fromString(playerUid));
 
         List<LKStatParameter> values = storage.getTotalParameters(user, parameter);
@@ -241,10 +243,11 @@ public class StatisticsModule extends BaseModule implements Listener
         String playerUid = packet.getData().getString("uuid");
         long from = packet.getData().getLong("from");
         long to = packet.getData().getLong("to");
-        //TODO: Permission handling/check if player is friends if not self uuid
+
+        if(!(identity.getUuid().equals(playerUid) || identity.hasPermission("livekit.modules.admin"))) return new StatusPacket(0, "Permission denied!");
+        //TODO: Permission handling/check if player is friends
 
         SQLStorage storage = getSQLStorage();
-        //LKStatProfile profile = getStatisticProfile(UUID.fromString(playerUid));
         LKUser user = storage.getLKUser(UUID.fromString(playerUid));
 
         List<PVPResult> values = storage.getPlayerPVP(user, from, to);
@@ -260,10 +263,11 @@ public class StatisticsModule extends BaseModule implements Listener
         String playerUid = packet.getData().getString("uuid");
         long from = packet.getData().getLong("from");
         long to = packet.getData().getLong("to");
-        //TODO: Permission handling/check if player is friends if not self uuid
+        
+        if(!(identity.getUuid().equals(playerUid) || identity.hasPermission("livekit.modules.admin"))) return new StatusPacket(0, "Permission denied!");
+        //TODO: Permission handling/check if player is friends
 
         SQLStorage storage = getSQLStorage();
-        //LKStatProfile profile = getStatisticProfile(UUID.fromString(playerUid));
         LKUser user = storage.getLKUser(UUID.fromString(playerUid));
 
         List<LKStatSession> values = storage.getPlayerSessions(user, from, to);
@@ -279,13 +283,34 @@ public class StatisticsModule extends BaseModule implements Listener
         String playerUid = packet.getData().getString("uuid");
         long from = packet.getData().getLong("from");
         long to = packet.getData().getLong("to");
-        //TODO: Permission handling/check if player is friends if not self uuid
+
+        if(!(identity.getUuid().equals(playerUid) || identity.hasPermission("livekit.modules.admin"))) return new StatusPacket(0, "Permission denied!");
+        //TODO: Permission handling/check if player is friends
 
         SQLStorage storage = getSQLStorage();
-        //LKStatProfile profile = getStatisticProfile(UUID.fromString(playerUid));
         LKUser user = storage.getLKUser(UUID.fromString(playerUid));
 
         List<LKStatCmd> values = storage.getPlayerCommands(user, from, to);
+        JSONObject result = new JSONObject();
+        result.put("result", values.stream().map(entry->entry.toJson()).collect(Collectors.toList()));
+
+        return new StatusPacket(1, result);
+    }
+
+    @Action(name="PlayerDeaths", sync = false)
+    protected IPacket playerDeaths(Identity identity, ActionPacket packet) throws Exception
+    {
+        String playerUid = packet.getData().getString("uuid");
+        long from = packet.getData().getLong("from");
+        long to = packet.getData().getLong("to");
+
+        if(!(identity.getUuid().equals(playerUid) || identity.hasPermission("livekit.modules.admin"))) return new StatusPacket(0, "Permission denied!");
+        //TODO: Permission handling/check if player is friends
+
+        SQLStorage storage = getSQLStorage();
+        LKUser user = storage.getLKUser(UUID.fromString(playerUid));
+
+        List<LKStatDeath> values = storage.getPlayerDeaths(user, from, to);
         JSONObject result = new JSONObject();
         result.put("result", values.stream().map(entry->entry.toJson()).collect(Collectors.toList()));
 

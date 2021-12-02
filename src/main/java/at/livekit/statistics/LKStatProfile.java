@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import org.bukkit.block.Block;
-import org.bukkit.entity.EntityType;
 
 import at.livekit.plugin.Plugin;
 import at.livekit.plugin.Texturepack;
@@ -23,9 +22,7 @@ import at.livekit.utils.Utils;
 public class LKStatProfile {
     
     private LKUser user;
-
     private UUID uuid;
-    //private OfflinePlayer player;
 
     private LKStatSession currentSession;
     private LKStatWorld currentWorld;
@@ -39,16 +36,12 @@ public class LKStatProfile {
     private List<LKStatPVE> pveList = new ArrayList<LKStatPVE>();
     private List<LKStatDeath> deathList = new ArrayList<LKStatDeath>();
     
-    private Object deathLock = new Object();
-    //private LKStatDeath currentDeaths;
 
     private boolean canClanUp = false;
 
     public LKStatProfile(UUID uuid)
     {
         this.uuid = uuid;
-        //this.user = new LKUser();
-        //this.user._id = 1;
     }
 
     public void loadUserAsync() throws Exception
@@ -141,19 +134,6 @@ public class LKStatProfile {
             pvpList.add(pvp);
         }
     }
-
-    /*public void addPVE(int entity, int weapon, boolean kill) {
-        LKStatPVE pve = new LKStatPVE();
-        pve.user = user;
-        pve.timestamp = System.currentTimeMillis();
-        pve.entity = entity;
-        pve.weapon = weapon;
-        pve.kill = kill;
-
-        synchronized(pveList) {
-            pveList.add(pve);
-        }
-    }*/
 
     public void addDeath(int cause) {
         LKStatDeath death = new LKStatDeath();

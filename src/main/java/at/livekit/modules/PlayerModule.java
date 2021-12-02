@@ -367,11 +367,11 @@ public class PlayerModule extends BaseModule implements Listener
 
         synchronized(_players) {
             for(Entry<String,LPlayer> entry : _players.entrySet()) {
-                if(!entry.getValue().uuid.equals(identity.getUuid())) {
+                /*if(!entry.getValue().uuid.equals(identity.getUuid())) {
                     if(!entry.getValue().uuid.equals(identity.getUuid()) && !identity.hasPermission("livekit.players.other")) continue;
                     if(!entry.getValue().online && !identity.hasPermission("livekit.module.admin")) continue;
                     if(!entry.getValue().visible && !entry.getValue().uuid.equals(identity.getUuid()) && !identity.hasPermission("livekit.module.admin")) continue;
-                }
+                }*/
             
                 JSONObject j = entry.getValue().toJson();
                 j.remove("actions");
@@ -380,6 +380,7 @@ public class PlayerModule extends BaseModule implements Listener
         }
 
         json.put("players", players);
+        json.put("permission_other", identity.hasPermission("livekit.players.other"));
 
         return new ModuleUpdatePacket(this, json, true);
     }
@@ -400,11 +401,11 @@ public class PlayerModule extends BaseModule implements Listener
                 JSONObject json = new JSONObject();
                 JSONArray players = new JSONArray();
                 for(LPlayer player : _players.values()) {
-                    if(!player.uuid.equals(identity.getUuid())) {
+                    /*if(!player.uuid.equals(identity.getUuid())) {
                         if(!player.uuid.equals(identity.getUuid()) && !identity.hasPermission("livekit.players.other")) continue;
                         if(!player.online && !identity.hasPermission("livekit.module.admin")) continue; 
                         if(!player.visible && !player.uuid.equals(identity.getUuid()) && !identity.hasPermission("livekit.module.admin")) continue;
-                    }
+                    }*/
                     
                     
                     JSONObject jp;
