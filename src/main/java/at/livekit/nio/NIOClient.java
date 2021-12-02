@@ -9,6 +9,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.json.JSONException;
+
 import at.livekit.plugin.Plugin;
 
 public class NIOClient<T> {
@@ -84,6 +86,8 @@ public class NIOClient<T> {
         }catch(ClosedChannelException ex) {
             read = -1;
         }catch(IOException ex) {
+            read = -1;
+        }catch(JSONException ex) {
             read = -1;
         }catch(Exception ex) {
             ex.printStackTrace();
