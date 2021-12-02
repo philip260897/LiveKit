@@ -11,13 +11,13 @@ public class ProfileResult {
     private Long totalSessions;
     private Long longestSession;
     private Long totalDeaths;
-    private Long mostDeathsPerDay;
+    //private Long mostDeathsPerDay;
     private Long totalPVPKills;
     private Long totalPVEKills;
     private UUID lastKillPVPTarget;
     private Long lastKillPVPTimestamp;
-    private Long lastKillPVETarget;
-    private Long lastKillPVETimestamp;
+    //private Long lastKillPVETarget;
+    //private Long lastKillPVETimestamp;
     private Long mostUsedWeapon;
     private Long mostUsedWeaponKills;
     private Long mostUsedTool;
@@ -49,12 +49,12 @@ public class ProfileResult {
     public void setTotalDeaths(Long totalDeaths) {
         this.totalDeaths = totalDeaths;
     }
-    public Long getMostDeathsPerDay() {
+    /*public Long getMostDeathsPerDay() {
         return mostDeathsPerDay;
     }
     public void setMostDeathsPerDay(Long mostDeathsPerDay) {
         this.mostDeathsPerDay = mostDeathsPerDay;
-    }
+    }*/
     public Long getTotalPVPKills() {
         return totalPVPKills;
     }
@@ -103,7 +103,7 @@ public class ProfileResult {
     public void setLastKillPVPTimestamp(Long lastKillPVPTimestamp) {
         this.lastKillPVPTimestamp = lastKillPVPTimestamp;
     }
-    public Long getLastKillPVETarget() {
+    /*public Long getLastKillPVETarget() {
         return lastKillPVETarget;
     }
     public void setLastKillPVETarget(Long lastKillPVETarget) {
@@ -114,7 +114,7 @@ public class ProfileResult {
     }
     public void setLastKillPVETimestamp(Long lastKillPVETimestamp) {
         this.lastKillPVETimestamp = lastKillPVETimestamp;
-    }
+    }*/
     public Long getMostUsedTool() {
         return mostUsedTool;
     }
@@ -148,7 +148,7 @@ public class ProfileResult {
         json.put("totalSessions", totalSessions);
         json.put("longestSession", longestSession);
         json.put("totalDeaths", totalDeaths);
-        json.put("mostDeathsPerDay", mostDeathsPerDay);
+        //json.put("mostDeathsPerDay", mostDeathsPerDay);
         json.put("totalPVPKills", totalPVPKills);
         json.put("totalPVEKills", totalPVEKills);
         json.put("mostUsedWeapon", mostUsedWeapon);
@@ -159,8 +159,8 @@ public class ProfileResult {
         json.put("mostFarmedBlockValue", mostFarmedBlockValue);
         json.put("lastKillPVPTarget", lastKillPVPTarget);
         json.put("lastKillPVPTimestamp", lastKillPVPTimestamp);
-        json.put("lastKillPVETarget", lastKillPVETarget);
-        json.put("lastKillPVETimestamp", lastKillPVETimestamp);
+        //json.put("lastKillPVETarget", lastKillPVETarget);
+        //json.put("lastKillPVETimestamp", lastKillPVETimestamp);
         return json;
     }
 }

@@ -248,12 +248,13 @@ public class SQLStorage extends StorageThreadMarshallAdapter
     public ProfileResult getPlayerProfile(LKUser user) throws Exception
     {
         String query = "SELECT * FROM (SELECT SUM(end-start) as time_played, COUNT(_id) as sessions, MAX(end-start) as longest_session FROM livekit_stats_sessions WHERE user_id="+user._id+" AND start<>0 AND end<>0) as s "+
-        "LEFT JOIN (SELECT SUM(count) as total_deaths, MAX(count) as most_deaths_per_day FROM livekit_stats_deaths WHERE user_id="+user._id+") as d  ON 1=1 "+
+        //"LEFT JOIN (SELECT SUM(count) as total_deaths, MAX(count) as most_deaths_per_day FROM livekit_stats_deaths WHERE user_id="+user._id+") as d  ON 1=1 "+
+        "LEFT JOIN (SELECT COUNT(user_id) as total_deaths FROM livekit_stats_deaths WHERE user_id=userId) as d  ON 1=1 "+
         "LEFT JOIN (SELECT COUNT(user_id) as total_pvp FROM livekit_stats_pvp WHERE user_id="+user._id+") as pvp ON 1=1 "+
-        "LEFT JOIN (SELECT COUNT(user_id) as total_pve FROM livekit_stats_pve WHERE user_id="+user._id+") as pve ON 1=1 "+
+        "LEFT JOIN (SELECT COUNT(user_id) as total_pve FROM livekit_stats_parameter WHERE user_id="+user._id+" AND param="+LKParam.ENTITY_KILLS.ordinal()+") as pve ON 1=1 "+
         "LEFT JOIN (SELECT * FROM (SELECT a.target_id as last_kill_pvp_target_id, a.timestamp as last_kill_pvp_timestamp FROM livekit_stats_pvp as a INNER JOIN ( SELECT MAX(timestamp) as timestamp FROM livekit_stats_pvp WHERE user_id = "+user._id+") as b ON a.user_id = "+user._id+" AND a.timestamp = b.timestamp) as c "+
-        "LEFT JOIN (SELECT uuid as last_kill_pvp_target_uuid, _id as tid FROM livekit_users) as u ON u.tid=c.last_kill_pvp_target_id) as x ON 1=1 "+
-        "LEFT JOIN (SELECT a.entity as last_kill_pve_entity, a.timestamp as last_kill_pve_timestamp FROM livekit_stats_pve as a INNER JOIN ( SELECT MAX(timestamp) as timestamp FROM livekit_stats_pve WHERE user_id = "+user._id+") as b ON a.user_id = "+user._id+" AND a.timestamp = b.timestamp) as e ON 1=1;";
+        "LEFT JOIN (SELECT uuid as last_kill_pvp_target_uuid, _id as tid FROM livekit_users) as u ON u.tid=c.last_kill_pvp_target_id) as x ON 1=1;";
+        //"LEFT JOIN (SELECT a.entity as last_kill_pve_entity, a.timestamp as last_kill_pve_timestamp FROM livekit_stats_pve as a INNER JOIN ( SELECT MAX(timestamp) as timestamp FROM livekit_stats_pve WHERE user_id = "+user._id+") as b ON a.user_id = "+user._id+" AND a.timestamp = b.timestamp) as e ON 1=1;";
 
         Dao<LKStatSession, String> dao = getDao(LKStatSession.class);
         GenericRawResults<String[]> rawResults = dao.queryRaw(query);
@@ -269,13 +270,13 @@ public class SQLStorage extends StorageThreadMarshallAdapter
         result.setTotalSessions(row[1] != null ? Long.parseLong(row[1]) : 0);
         result.setLongestSession(row[2] != null ? Long.parseLong(row[2]) : 0);
         result.setTotalDeaths(row[3] != null ? Long.parseLong(row[3]) : 0);
-        result.setMostDeathsPerDay(row[4] != null ? Long.parseLong(row[4]) : 0);
-        result.setTotalPVPKills(row[5] != null ? Long.parseLong(row[5]) : 0);
-        result.setTotalPVEKills(row[6] != null ? Long.parseLong(row[6]) : 0);
-        result.setLastKillPVPTarget(row[9] != null ? UUID.fromString(row[9]) : null);
-        result.setLastKillPVPTimestamp(row[8] != null ? Long.parseLong(row[8]) : 0);
-        result.setLastKillPVETarget(row[11] != null ? Long.parseLong(row[11]) : 0);
-        result.setLastKillPVETimestamp(row[12] != null ? Long.parseLong(row[12]) : 0);
+        //result.setMostDeathsPerDay(row[4] != null ? Long.parseLong(row[4]) : 0);
+        result.setTotalPVPKills(row[4] != null ? Long.parseLong(row[4]) : 0);
+        result.setTotalPVEKills(row[5] != null ? Long.parseLong(row[5]) : 0);
+        result.setLastKillPVPTarget(row[8] != null ? UUID.fromString(row[8]) : null);
+        result.setLastKillPVPTimestamp(row[7] != null ? Long.parseLong(row[7]) : 0);
+        //result.setLastKillPVETarget(row[11] != null ? Long.parseLong(row[11]) : 0);
+        //result.setLastKillPVETimestamp(row[12] != null ? Long.parseLong(row[12]) : 0);
 
         LKStatParameter maxParameter = null;
         long maxParameterValue = -1;
