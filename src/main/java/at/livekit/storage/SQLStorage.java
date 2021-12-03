@@ -354,6 +354,29 @@ public class SQLStorage extends StorageThreadMarshallAdapter
         return parameters;
     }
 
+    //QTP: SELECT type, SUM(value) as value FROM LiveKit.livekit_stats_parameters WHERE user_id=1 AND param = 3 AND timestamp >= from AND timestamp <= to GROUP BY type;
+    public List<LKStatParameter> getPlayerParameters(LKUser user, LKParam param, long from, long to) throws Exception
+    {
+        Dao<LKStatParameter, String> dao = getDao(LKStatParameter.class);
+        Where<LKStatParameter, String> where = dao.queryBuilder().selectRaw("type", "SUM(value) as value").groupBy("type").orderBy("value", false).where();
+        where.and(where.eq("user_id", user._id), where.eq("param", param)).and().ge("timestamp", from).and().le("timestamp", to);
+    
+        List<LKStatParameter> parameters = new ArrayList<LKStatParameter>();
+    
+        GenericRawResults<String[]> result = where.queryRaw();
+        for(String[] row : result.getResults() ) {
+            LKStatParameter stat = new LKStatParameter();
+            stat.param = param;
+            stat.type = Integer.parseInt(row[0]);
+            stat.value = Integer.parseInt(row[1]);
+            stat.timestamp = 0;
+            parameters.add(stat);
+        }
+        result.close();
+            
+        return parameters;
+    }
+
     public List<LKStatSession> getPlayerSessions(LKUser user, long from, long to) throws Exception
     {
         Dao<LKStatSession, String> dao = getDao(LKStatSession.class);

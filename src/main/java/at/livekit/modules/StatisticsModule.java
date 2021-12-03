@@ -5,14 +5,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -218,11 +215,13 @@ public class StatisticsModule extends BaseModule implements Listener
         return new StatusPacket(1, data);
     }
 
-    @Action(name="TotalPlayerParameter", sync = false)
+    @Action(name="PlayerParameter", sync = false)
     protected IPacket totalPlayerParameter(Identity identity, ActionPacket packet) throws Exception
     {
         String playerUid = packet.getData().getString("uuid");
         LKParam parameter = LKParam.valueOf(packet.getData().getString("param"));
+        long from = packet.getData().getLong("from");
+        long to = packet.getData().getLong("to");
 
         if(!(identity.getUuid().equals(playerUid) || identity.hasPermission("livekit.modules.admin"))) return new StatusPacket(0, "Permission denied!");
         //TODO: Permission handling/check if player is friends
@@ -230,7 +229,7 @@ public class StatisticsModule extends BaseModule implements Listener
         SQLStorage storage = getSQLStorage();
         LKUser user = storage.getLKUser(UUID.fromString(playerUid));
 
-        List<LKStatParameter> values = storage.getTotalParameters(user, parameter);
+        List<LKStatParameter> values = storage.getPlayerParameters(user, parameter, from, to);
         JSONObject result = new JSONObject();
         result.put("result", values.stream().map(entry->entry.toJson(false)).collect(Collectors.toList()));
 
