@@ -11,7 +11,6 @@ import java.util.EnumSet;
 import org.bukkit.Material;
 import org.bukkit.block.Biome;
 import org.bukkit.entity.EntityType;
-import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -94,7 +93,11 @@ public class Texturepack {
         root = new JSONObject(json);
         for(String key : root.keySet()) {
             Integer intKey = Integer.parseInt(key.split(":")[0]);
-            _biomes.put(Biome.valueOf(key.split(":")[1]), intKey);
+
+            try{
+                Biome biome = Biome.valueOf(key.split(":")[1]);
+                _biomes.put(biome, intKey);
+            }catch(Exception ex){}
 
             if(intKey.intValue() >= nextId) nextId = intKey.intValue()+1;
         }
@@ -127,7 +130,11 @@ public class Texturepack {
         root = new JSONObject(json);
         for(String key : root.keySet()) {
             Integer intKey = Integer.parseInt(key.split(":")[0]);
-            _entities.put(EntityType.valueOf(key.split(":")[1]), intKey);
+
+            try{
+                EntityType entity = EntityType.valueOf(key.split(":")[1]);
+                _entities.put(entity, intKey);
+            }catch(Exception ex){}
 
             if(intKey.intValue() >= nextId) nextId = intKey.intValue()+1;
         }
@@ -159,7 +166,11 @@ public class Texturepack {
         root = new JSONObject(json);
         for(String key : root.keySet()) {
             Integer intKey = Integer.parseInt(key.split(":")[0]);
-            _damage.put(DamageCause.valueOf(key.split(":")[1]), intKey);
+
+            try{
+                DamageCause damage = DamageCause.valueOf(key.split(":")[1]);
+                _damage.put(damage, intKey);
+            }catch(Exception ex){}
         
             if(intKey.intValue() >= nextId) nextId = intKey.intValue()+1;
         }
