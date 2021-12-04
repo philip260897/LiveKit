@@ -2,11 +2,8 @@ package at.livekit.utils;
 
 import java.io.File;
 import java.lang.management.ManagementFactory;
-import java.lang.management.RuntimeMXBean;
-import java.lang.management.ThreadMXBean;
 import java.nio.file.Files;
 import java.security.SecureRandom;
-import java.time.LocalDateTime;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.TimeZone;
@@ -165,7 +162,7 @@ public class Utils
         });
     }
 
-    public static void performance()
+    /*public static void performance()
     {
         com.sun.management.OperatingSystemMXBean operatingSystemMXBean = (com.sun.management.OperatingSystemMXBean)ManagementFactory.getOperatingSystemMXBean();
         RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
@@ -186,7 +183,7 @@ public class Utils
         System.out.println("Processors: "+availableProcessors);
         //System.out.println("Java CPU: " + cpuUsage);
         System.out.println("Memory: "+(ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getUsed()/1024/1024));
-    }
+    }*/
 
     public static long getMaxMemory() {
         return Runtime.getRuntime().maxMemory()/1024/1024;
@@ -197,6 +194,10 @@ public class Utils
     }
 
     public static float getCPUUsage() {
-        return (float) ((com.sun.management.OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean()).getProcessCpuLoad()*100;
+        try{
+            return (float) ((com.sun.management.OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean()).getProcessCpuLoad()*100;
+        }catch(Exception ex){
+            return 0f;
+        }
     }
 }

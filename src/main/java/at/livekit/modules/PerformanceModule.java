@@ -20,6 +20,8 @@ import at.livekit.utils.Utils;
 public class PerformanceModule extends BaseModule
 {
     private static int SECONDS = 60*1 + 15;
+    //private static String SUBSCRIPTION_IDLE = "idle";
+    //private static String SUBSCRIPTION_LIVE = "live";
 
     private BukkitTask tickTask;
 
@@ -49,8 +51,8 @@ public class PerformanceModule extends BaseModule
     private String timezone = "Unknown";
     private int coreCount = 0;
 
-    public PerformanceModule(ModuleListener listener) {
-        super(1, "Performance", "livekit.module.performance", UpdateRate.ONCE_PERSEC, listener);
+    public PerformanceModule(String subscription, ModuleListener listener) {
+        super(1, "Performance", "livekit.module.performance", UpdateRate.ONCE_PERSEC, listener, subscription);
     }
 
     private void initializeSystemProperties() {
