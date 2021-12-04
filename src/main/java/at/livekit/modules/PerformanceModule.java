@@ -1,9 +1,11 @@
 package at.livekit.modules;
 
+import java.lang.management.ManagementFactory;
+import java.lang.management.RuntimeMXBean;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
+import java.util.Map.Entry;
 
 import org.bukkit.Bukkit;
 import org.bukkit.World;
@@ -17,35 +19,56 @@ import at.livekit.utils.Utils;
 
 public class PerformanceModule extends BaseModule
 {
-    private static int SECONDS = 60*5;
+    private static int SECONDS = 60*1 + 15;
 
     private BukkitTask tickTask;
 
     private Object backlog = new Object();
     private HashMap<Long, Long> _ramBacklog = new HashMap<Long, Long>();
     private HashMap<Long, Float> _cpuBacklog = new HashMap<Long, Float>();
-    private HashMap<Long, Integer> _chunksBacklog = new HashMap<Long, Integer>();
     private HashMap<Long, Integer> _tickBacklog = new HashMap<Long, Integer>();
+
+    /*private HashMap<Long, Integer> _chunksBacklog = new HashMap<Long, Integer>();
     private HashMap<Long, Integer> _entitiesBacklog = new HashMap<Long, Integer>();
-    private HashMap<Long, Integer> _playersBacklog = new HashMap<Long, Integer>();
+    private HashMap<Long, Integer> _playersBacklog = new HashMap<Long, Integer>();*/
     
     private HashMap<Long, Long> _ram = new HashMap<Long, Long>();
     private HashMap<Long, Float> _cpu = new HashMap<Long, Float>();
-    private HashMap<Long, Integer> _chunks = new HashMap<Long, Integer>();
     private HashMap<Long, Integer> _tick = new HashMap<Long, Integer>();
+
+    /*private HashMap<Long, Integer> _chunks = new HashMap<Long, Integer>();
     private HashMap<Long, Integer> _entities = new HashMap<Long, Integer>();
-    private HashMap<Long, Integer> _players = new HashMap<Long, Integer>();
+    private HashMap<Long, Integer> _players = new HashMap<Long, Integer>();*/
 
     long currentTickTS = 0;
     int currentTick = 0;
+
+    private String os = "Unknown";
+    private String javaVersion = "Unknown";
+    private String javaVM = "Unkown";
+    private String timezone = "Unknown";
+    private int coreCount = 0;
 
     public PerformanceModule(ModuleListener listener) {
         super(1, "Performance", "livekit.module.performance", UpdateRate.ONCE_PERSEC, listener);
     }
 
+    private void initializeSystemProperties() {
+        os = System.getProperty("os.name");
+        javaVersion = System.getProperty("java.version");
+        javaVM = System.getProperty("java.vm.name");
+        timezone = System.getProperty("user.timezone");
+        try{
+            com.sun.management.OperatingSystemMXBean operatingSystemMXBean = (com.sun.management.OperatingSystemMXBean)ManagementFactory.getOperatingSystemMXBean();
+            coreCount = operatingSystemMXBean.getAvailableProcessors();
+        }catch(Exception ex){ex.printStackTrace();}
+    }
+
     @Override
     public void onEnable(Map<String,ActionMethod> signature) {
         super.onEnable(signature);
+
+        initializeSystemProperties();
 
         tickTask = Bukkit.getScheduler().runTaskTimerAsynchronously(Plugin.getInstance(), new Runnable(){
             @Override
@@ -84,7 +107,7 @@ public class PerformanceModule extends BaseModule
         synchronized(backlog) {
             _ram.put(ts, Utils.getMemoryUsage());
             _cpu.put(ts, Utils.getCPUUsage());
-            _players.put(ts, Bukkit.getServer().getOnlinePlayers().size());
+            /*_players.put(ts, Bukkit.getServer().getOnlinePlayers().size());
             
             int entities = 0;
             int chunks = 0;
@@ -93,10 +116,8 @@ public class PerformanceModule extends BaseModule
                 entities += world.getEntities().size();
             }
             _chunks.put(ts, chunks);
-            _entities.put(ts, entities);
+            _entities.put(ts, entities);*/
         }
-
-        //Plugin.debug("Performance: ram="+(_ramBacklog.size()+_ram.size()) + " cpu=" + (_cpuBacklog.size()+_cpu.size())+ " chunks=" + (_chunksBacklog.size()+_chunks.size())+ " ticks=" + (_tickBacklog.size()+_tick.size())+" took: "+(System.currentTimeMillis()-ts)+"ms");
 
         notifyChange();
     }
@@ -106,21 +127,29 @@ public class PerformanceModule extends BaseModule
     public IPacket onJoinAsync(Identity identity)
     {
         JSONObject json = new JSONObject();
-        //JSONArray messages = new JSONArray();
 
         synchronized(backlog) {
             json.put("cpu", _cpuBacklog);
             json.put("ram", _ramBacklog);
-            json.put("chunks", _chunksBacklog);
+            //json.put("chunks", _chunksBacklog);
             json.put("tick", _tickBacklog);
-            json.put("entities", _entitiesBacklog);
-            json.put("players", _playersBacklog);
+            //json.put("entities", _entitiesBacklog);
+            //json.put("players", _playersBacklog);
         }
+
+
+        RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
+        runtimeMXBean.getUptime();
 
         json.put("ram_max", Utils.getMaxMemory());
         json.put("seconds", SECONDS);
-        //json.put("write", identity.hasPermission("livekit.chat.write"));
-        //json.put("offline", identity.hasPermission("livekit.chat.write_offline"));
+        json.put("os", os);
+
+        json.put("processors", coreCount);
+        json.put("uptime", runtimeMXBean.getUptime());
+        json.put("java.version", javaVersion);
+        json.put("java.vm.name", javaVM);
+        json.put("user.timezone", timezone);
 
         return new ModuleUpdatePacket(this, json, true);
     }
@@ -132,13 +161,19 @@ public class PerformanceModule extends BaseModule
 
         JSONObject json = new JSONObject();
 
+        RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
+        runtimeMXBean.getUptime();
+        json.put("uptime", runtimeMXBean.getUptime());
+
         synchronized(backlog) {
             json.put("cpu", _cpu);
             json.put("ram", _ram);
-            json.put("chunks", _chunks);
             json.put("tick", _tick);
+
+
+            /*json.put("chunks", _chunks);
             json.put("entities", _entities);
-            json.put("players", _players);
+            json.put("players", _players);*/
         }
 
         IPacket response =  new ModuleUpdatePacket(this, json, false);
@@ -149,24 +184,27 @@ public class PerformanceModule extends BaseModule
         synchronized(backlog) {
             _ramBacklog.putAll(_ram);
             _cpuBacklog.putAll(_cpu);
-            _chunksBacklog.putAll(_chunks);
             _tickBacklog.putAll(_tick);
+
+            /*_chunksBacklog.putAll(_chunks);
             _entitiesBacklog.putAll(_entities);
-            _playersBacklog.putAll(_players);
+            _playersBacklog.putAll(_players);*/
 
             _ramBacklog.entrySet().removeIf(e -> e.getKey() < ts - SECONDS*1000);
             _cpuBacklog.entrySet().removeIf(e -> e.getKey() < ts - SECONDS*1000);
-            _chunksBacklog.entrySet().removeIf(e -> e.getKey() < ts - SECONDS*1000);
             _tickBacklog.entrySet().removeIf(e -> e.getKey() < ts - SECONDS*1000);
+
+            /*_chunksBacklog.entrySet().removeIf(e -> e.getKey() < ts - SECONDS*1000);
             _entitiesBacklog.entrySet().removeIf(e -> e.getKey() < ts - SECONDS*1000);
-            _playersBacklog.entrySet().removeIf(e -> e.getKey() < ts - SECONDS*1000);
+            _playersBacklog.entrySet().removeIf(e -> e.getKey() < ts - SECONDS*1000);*/
 
             _ram.clear();
             _cpu.clear();
-            _chunks.clear();
             _tick.clear();
+
+            /*_chunks.clear();
             _entities.clear();
-            _players.clear();
+            _players.clear();*/
         }
 
         return responses;

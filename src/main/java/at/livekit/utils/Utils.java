@@ -174,6 +174,12 @@ public class Utils
         long prevProcessCpuTime = operatingSystemMXBean.getProcessCpuTime();
         
         ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
+
+        String architecture = operatingSystemMXBean.getArch();
+        String os = operatingSystemMXBean.getName();
+        long virtualMemorySize = operatingSystemMXBean.getCommittedVirtualMemorySize();
+        int processors = operatingSystemMXBean.getAvailableProcessors();
+        long totalPhysicalMemory = operatingSystemMXBean.getTotalPhysicalMemorySize();
         
         
         System.out.println("Load: "+(operatingSystemMXBean.getProcessCpuLoad()*100)+"%");
