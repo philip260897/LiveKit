@@ -808,10 +808,10 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
         String subscription = action.getData().getString("subscription");
         String password = action.getData().has("password")&&!action.getData().isNull("password") ? action.getData().getString("password") : null;
 
-        if(subscription.equalsIgnoreCase("none")) {
+        /*if(subscription.equalsIgnoreCase("none")) {
             identity.setSubscription(baseType, null);
             return new StatusPacket(1);
-        }
+        }*/
 
         if(!_modules.hasSubscription(baseType, subscription)) return new StatusPacket(0, "Subscription not available!");
 
