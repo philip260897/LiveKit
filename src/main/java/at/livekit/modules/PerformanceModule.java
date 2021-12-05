@@ -51,8 +51,8 @@ public class PerformanceModule extends BaseModule
     private String timezone = "Unknown";
     private int coreCount = 0;
 
-    public PerformanceModule(String subscription, ModuleListener listener) {
-        super(1, "Performance", "livekit.module.performance", UpdateRate.ONCE_PERSEC, listener, subscription);
+    public PerformanceModule(ModuleListener listener) {
+        super(1, "Performance", "livekit.module.performance", UpdateRate.ONCE_PERSEC, listener);
     }
 
     private void initializeSystemProperties() {

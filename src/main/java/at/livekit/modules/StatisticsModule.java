@@ -63,13 +63,13 @@ public class StatisticsModule extends BaseModule implements Listener
 
     private LKStatProfile createProfile(UUID uuid)
     {
-        LKStatProfile profile = getStatisticProfile(uuid);
-        if(profile == null) {
-            profile = new LKStatProfile(uuid);
-            synchronized(profiles) {
-                profiles.add(profile);
-            }
+        //LKStatProfile profile = getStatisticProfile(uuid);
+        //if(profile == null) {
+        LKStatProfile profile = new LKStatProfile(uuid);
+        synchronized(profiles) {
+            profiles.add(profile);
         }
+        //}
         return profile;
     }
 
@@ -125,6 +125,7 @@ public class StatisticsModule extends BaseModule implements Listener
         }
     }
 
+    //TODO: think about cleanup when manual module reload occures ?
     @Override
     public void onEnable(Map<String,ActionMethod> signature) {
         super.onEnable(signature);
@@ -358,14 +359,28 @@ public class StatisticsModule extends BaseModule implements Listener
     @EventHandler(priority = EventPriority.MONITOR)
     public void onAsyncPlayerPreLogin(AsyncPlayerPreLoginEvent event)
     {
+        if(!isEnabled()) return;
+
         if(event.getLoginResult() == Result.ALLOWED)
         {
-            LKStatProfile profile = createProfile(event.getUniqueId());
-            if(profile != null) {
-                try{
-                    profile.loadUserAsync();
-                }catch(Exception ex){ex.printStackTrace();}
+            LKStatProfile profile = null;
+            synchronized(profiles)
+            {
+                //check if profile still exists in cache, invalidate cleanup flag if found
+                profile = getStatisticProfile(event.getUniqueId());
+                if(profile != null) {
+                    profile.invalidateCleanUp();
+                }
             }
+            if(profile == null) {
+                //otherwise create profile
+                profile = createProfile(event.getUniqueId());
+            }
+
+            try{
+                //load profile
+                profile.loadUserAsync();
+            }catch(Exception ex){ex.printStackTrace();}
         }
     }
 
@@ -374,12 +389,14 @@ public class StatisticsModule extends BaseModule implements Listener
     {
         if(!isEnabled()) return;
 
-        LKStatProfile profile = createProfile(event.getPlayer().getUniqueId());
+        //LKStatProfile profile = createProfile(event.getPlayer().getUniqueId());
+        LKStatProfile profile = getStatisticProfile(event.getPlayer().getUniqueId());
         if(profile != null) {
             profile.startSession();
             profile.enterWorld(event.getPlayer().getLocation().getWorld().getName());
+        } else {
+            Plugin.severe("Statistics Profile was not found on login for "+event.getPlayer().getName()+"("+event.getPlayer().getUniqueId().toString()+")");
         }
-        
     }
 
     @EventHandler(priority = EventPriority.MONITOR)

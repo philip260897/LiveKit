@@ -44,6 +44,7 @@ public class LKStatProfile {
 
     public void loadUserAsync() throws Exception
     {
+        canClanUp = false;
         user = Plugin.getStorage().loadSingle(LKUser.class, "uuid", uuid);
         if(user == null)
         {
@@ -334,5 +335,9 @@ public class LKStatProfile {
 
     public boolean canCleanUp() {
         return canClanUp;
+    }
+
+    public void invalidateCleanUp() {
+        canClanUp = false;
     }
 }
