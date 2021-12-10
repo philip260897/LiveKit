@@ -11,22 +11,26 @@ import at.livekit.authentication.Session;
 import at.livekit.plugin.Plugin;
 import at.livekit.statistics.results.PVPResult;
 import at.livekit.statistics.results.ProfileResult;
+import at.livekit.statistics.results.WorldUsageResult;
 import at.livekit.statistics.tables.*;
 import at.livekit.statistics.tables.LKStatParameter.LKParam;
 import at.livekit.utils.HeadLibraryV2.HeadInfo;
 
 import java.lang.reflect.Field;
+import java.sql.Date;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.Map.Entry;
 
 import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.dao.DaoManager;
 import com.j256.ormlite.dao.GenericRawResults;
+import com.j256.ormlite.field.DataType;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.jdbc.JdbcPooledConnectionSource;
 import com.j256.ormlite.logger.LogBackendType;
@@ -38,11 +42,13 @@ import com.j256.ormlite.stmt.Where;
 
 public class SQLStorage extends StorageThreadMarshallAdapter
 {
+    private String sqlProvider;
     private JdbcPooledConnectionSource connectionSource;
     private Map<Class<?>, Dao<?, String>> _daos = new HashMap<Class<?>, Dao<?, String>>();  
 
     public SQLStorage(String connection) throws SQLException {
         this(connection, null, null);
+        this.sqlProvider = connection.split(":")[1];
     }
 
     public SQLStorage(String connection, String username, String password) throws SQLException {
@@ -450,4 +456,60 @@ public class SQLStorage extends StorageThreadMarshallAdapter
         return where.query();
     }
 
+    //QTP: SELECT COUNT(user_id) as count, SUM(`leave`-enter) as duration, world FROM livekit_stats_world WHERE timestamp >= from AND timestamp <= to GROUP BY world;
+    public WorldUsageResult getAnalyticsWorldUsage(long from, long to) throws Exception
+    {
+        WorldUsageResult result = new WorldUsageResult();
+
+        Dao<LKStatWorld, String> dao = getDao(LKStatWorld.class);
+        Where<LKStatWorld, String> where = dao.queryBuilder().selectRaw("COUNT(*) as count", "SUM(`leave`-`enter`) as duration", "world").groupBy("world").where();
+        where.ge("enter", from).and().le("leave", to).and().ne("leave", 0);
+
+        GenericRawResults<String[]> results = where.queryRaw();
+        for(String[] row : results.getResults() ) {
+            result.setWorldUsage(row[2], Long.parseLong(row[1]));
+        }
+        results.close();
+
+        return result;
+    }
+
+    //SELECT DATE(FROM_UNIXTIME(start/1000)) as startDate, COUNT(DISTINCT(user_id)) as users FROM livekit_stats_sessions WHERE start >= from AND start <= to GROUP BY DATE(FROM_UNIXTIME(start/1000)) ORDER BY startDate DESC;
+    public Map<String, Long> getAnalyticsPlayersPerDay(long from, long to) throws Exception
+    {
+        Map<String, Long> result = new TreeMap<String, Long>();
+
+        Dao<LKStatSession, String> dao = getDao(LKStatSession.class);
+        GenericRawResults<Object[]> results = dao.queryRaw("SELECT "+dateFunction("start")+" as startDate, COUNT(DISTINCT(user_id)) as users FROM livekit_stats_sessions WHERE start >= "+from+" AND start <= "+to+" GROUP BY "+dateFunction("start")+" ORDER BY startDate DESC", new DataType[]{DataType.STRING, DataType.STRING});
+        for(Object[] row : results.getResults() ) {
+            result.put((String)row[0], Long.parseLong((String)row[1]));
+        }
+        results.close();
+
+        return result;
+    }
+
+    //SELECT DATE(FROM_UNIXTIME(sessions.start/1000)) as day, COUNT(*) as count FROM (SELECT user_id, MIN(start) as start FROM livekit_stats_sessions GROUP BY user_id) as firstSessions LEFT JOIN livekit_stats_sessions as sessions ON firstSessions.user_id = sessions.user_id AND firstSessions.start = sessions.start GROUP BY DATE(FROM_UNIXTIME(sessions.start/1000));
+    public Map<String, Long> getAnalyticsNewPlayersPerDay(long from, long to) throws Exception
+    {
+        Map<String, Long> result = new TreeMap<String, Long>();
+
+        Dao<LKStatSession, String> dao = getDao(LKStatSession.class);
+        GenericRawResults<String[]> results = dao.queryRaw("SELECT "+dateFunction("sessions.start")+" as day, COUNT(*) as count FROM (SELECT user_id, MIN(start) as start FROM livekit_stats_sessions GROUP BY user_id) as firstSessions LEFT JOIN livekit_stats_sessions as sessions ON firstSessions.user_id = sessions.user_id AND firstSessions.start = sessions.start GROUP BY "+dateFunction("sessions.start")+";");
+        for(Object[] row : results.getResults() ) {
+            result.put((String)row[0], Long.parseLong((String)row[1]));
+        }
+        results.close();
+
+        return result;
+    }
+
+    private String dateFunction(String column)
+    {
+        switch(sqlProvider.toUpperCase())
+        {
+            case "SQLITE": return "DATE("+column+"/1000, \'unixepoch\')";
+            default: return "DATE(FROM_UNIXTIME("+column+"/1000))";
+        }
+    }
 }

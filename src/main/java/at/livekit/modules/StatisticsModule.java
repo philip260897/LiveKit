@@ -36,6 +36,7 @@ import at.livekit.plugin.Texturepack;
 import at.livekit.statistics.LKStatProfile;
 import at.livekit.statistics.results.PVPResult;
 import at.livekit.statistics.results.ProfileResult;
+import at.livekit.statistics.results.WorldUsageResult;
 import at.livekit.statistics.tables.LKStatCmd;
 import at.livekit.statistics.tables.LKStatDeath;
 import at.livekit.statistics.tables.LKStatParameter;
@@ -313,6 +314,57 @@ public class StatisticsModule extends BaseModule implements Listener
         List<LKStatDeath> values = storage.getPlayerDeaths(user, from, to);
         JSONObject result = new JSONObject();
         result.put("result", values.stream().map(entry->entry.toJson()).collect(Collectors.toList()));
+
+        return new StatusPacket(1, result);
+    }
+
+    @Action(name="AnalyticsWorldUsage", sync = false)
+    protected IPacket analyticsWorldUsage(Identity identity, ActionPacket packet) throws Exception
+    {
+        long from = packet.getData().getLong("from");
+        long to = packet.getData().getLong("to");
+
+        //TODO: Permission handling for analytics, premium check ?
+
+        SQLStorage storage = getSQLStorage();
+
+        WorldUsageResult values = storage.getAnalyticsWorldUsage(from, to);
+        JSONObject result = new JSONObject();
+        result.put("result", values.toJson());
+
+        return new StatusPacket(1, result);
+    }
+
+    @Action(name="AnalyticsPlayersPerDay", sync = false)
+    protected IPacket analyticsPlayersPerDay(Identity identity, ActionPacket packet) throws Exception
+    {
+        long from = packet.getData().getLong("from");
+        long to = packet.getData().getLong("to");
+
+        //TODO: Permission handling for analytics, premium check ?
+
+        SQLStorage storage = getSQLStorage();
+
+        Map<String, Long> values = storage.getAnalyticsPlayersPerDay(from, to);
+        JSONObject result = new JSONObject();
+        result.put("result", new JSONObject(values));
+
+        return new StatusPacket(1, result);
+    }
+
+    @Action(name="AnalyticsNewPlayersPerDay", sync = false)
+    protected IPacket analyticsNewPlayersPerDay(Identity identity, ActionPacket packet) throws Exception
+    {
+        long from = packet.getData().getLong("from");
+        long to = packet.getData().getLong("to");
+
+        //TODO: Permission handling for analytics, premium check ?
+
+        SQLStorage storage = getSQLStorage();
+
+        Map<String, Long> values = storage.getAnalyticsNewPlayersPerDay(from, to);
+        JSONObject result = new JSONObject();
+        result.put("result", new JSONObject(values));
 
         return new StatusPacket(1, result);
     }
