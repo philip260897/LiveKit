@@ -1,6 +1,7 @@
 package at.livekit.plugin;
 
 
+import java.io.File;
 import java.util.logging.Logger;
 
 
@@ -18,6 +19,7 @@ import at.livekit.commands.LiveKitCommandExecutor;
 import at.livekit.livekit.LiveKit;
 import at.livekit.modules.PlayerModule;
 import at.livekit.modules.PlayerModule.LPlayer;
+import at.livekit.nbt.NBTRenderer;
 import at.livekit.provider.BasicPlayerInfoProvider;
 import at.livekit.provider.BasicPlayerPinProvider;
 import at.livekit.provider.POISpawnProvider;
@@ -79,6 +81,7 @@ public class Plugin extends JavaPlugin implements ILiveKitPlugin, Listener {
 		}
 
 		try{
+			
 			storage = StorageManager.initialize();
 		} catch(Exception exception) {
 			exception.printStackTrace();

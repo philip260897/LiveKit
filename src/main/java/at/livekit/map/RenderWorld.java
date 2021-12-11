@@ -19,6 +19,7 @@ import org.json.JSONObject;
 
 import at.livekit.modules.LiveMapModule.Offset;
 import at.livekit.modules.LiveMapModule.RegionData;
+import at.livekit.nbt.NBTRenderer;
 import at.livekit.packets.IPacket;
 import at.livekit.plugin.Plugin;
 import at.livekit.utils.Legacy;
@@ -361,6 +362,16 @@ public class RenderWorld
         byte[] regionBuffer = new byte[8 + 512 * 512 * 4];
         Arrays.fill(regionBuffer, (byte)0xFF);
 
+        //====== TESTING ======
+        try{
+            File regionFile = new File("/Users/philip/Documents/Minecraft Servers/1.17.1-basic-testing/"+world+"/region/r."+x+"."+z+".mca");
+            if(regionFile.exists()) {
+                NBTRenderer.renderRegion(regionFile, regionBuffer);
+            }
+        }catch(Exception ex){ex.printStackTrace();}
+        
+
+
         RegionData region = new RegionData(x, z, regionBuffer);
         region.invalidate();
         synchronized(_loadedRegions) {
@@ -424,6 +435,7 @@ public class RenderWorld
                 }catch(Exception ex){ex.printStackTrace();};
 
                 if(createNew) {
+                    
                      region = createRegion(x, z);
 
                      if(failedToLoad) {
