@@ -35,6 +35,7 @@ import at.livekit.plugin.Plugin;
 import at.livekit.plugin.Texturepack;
 import at.livekit.statistics.LKStatProfile;
 import at.livekit.statistics.results.PVPResult;
+import at.livekit.statistics.results.PlayerValueResult;
 import at.livekit.statistics.results.ProfileResult;
 import at.livekit.statistics.results.WorldUsageResult;
 import at.livekit.statistics.tables.LKStatCmd;
@@ -365,6 +366,23 @@ public class StatisticsModule extends BaseModule implements Listener
         Map<String, Long> values = storage.getAnalyticsNewPlayersPerDay(from, to);
         JSONObject result = new JSONObject();
         result.put("result", new JSONObject(values));
+
+        return new StatusPacket(1, result);
+    }
+
+    @Action(name="AnalyticsMostActivePlayers", sync = false)
+    protected IPacket analyticsMostActivePlayers(Identity identity, ActionPacket packet) throws Exception
+    {
+        long from = packet.getData().getLong("from");
+        long to = packet.getData().getLong("to");
+
+        //TODO: Permission handling for analytics, premium check ?
+
+        SQLStorage storage = getSQLStorage();
+
+        List<PlayerValueResult<Long, Integer>> values = storage.getAnalyticsMostActivePlayer(from, to);
+        JSONObject result = new JSONObject();
+        result.put("result", values.stream().map(entry->entry.toJson()).collect(Collectors.toList()));
 
         return new StatusPacket(1, result);
     }

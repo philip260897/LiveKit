@@ -10,6 +10,7 @@ import at.livekit.authentication.Pin;
 import at.livekit.authentication.Session;
 import at.livekit.plugin.Plugin;
 import at.livekit.statistics.results.PVPResult;
+import at.livekit.statistics.results.PlayerValueResult;
 import at.livekit.statistics.results.ProfileResult;
 import at.livekit.statistics.results.WorldUsageResult;
 import at.livekit.statistics.tables.*;
@@ -48,10 +49,11 @@ public class SQLStorage extends StorageThreadMarshallAdapter
 
     public SQLStorage(String connection) throws SQLException {
         this(connection, null, null);
-        this.sqlProvider = connection.split(":")[1];
     }
 
     public SQLStorage(String connection, String username, String password) throws SQLException {
+        this.sqlProvider = connection.split(":")[1];
+        
         if(!Plugin.isDebug()) {
             LoggerFactory.setLogBackendFactory(new NullLogBackend.NullLogBackendFactory());
         } else {
@@ -498,6 +500,21 @@ public class SQLStorage extends StorageThreadMarshallAdapter
         GenericRawResults<String[]> results = dao.queryRaw("SELECT "+dateFunction("sessions.start")+" as day, COUNT(*) as count FROM (SELECT user_id, MIN(start) as start FROM livekit_stats_sessions GROUP BY user_id) as firstSessions LEFT JOIN livekit_stats_sessions as sessions ON firstSessions.user_id = sessions.user_id AND firstSessions.start = sessions.start GROUP BY "+dateFunction("sessions.start")+";");
         for(Object[] row : results.getResults() ) {
             result.put((String)row[0], Long.parseLong((String)row[1]));
+        }
+        results.close();
+
+        return result;
+    }
+
+    //SELECT u.uuid, COUNT(user_id) as count, SUM(end - start) as total FROM livekit_stats_sessions WHERE start >= from AND start <= to LEFT JOIN livekit_users as u ON u._id = user_id GROUP BY user_id ORDER BY total DESC;
+    public List<PlayerValueResult<Long, Integer>> getAnalyticsMostActivePlayer(long from, long to) throws Exception
+    {
+        List<PlayerValueResult<Long, Integer>> result = new ArrayList<PlayerValueResult<Long, Integer>>();
+
+        Dao<LKStatSession, String> dao = getDao(LKStatSession.class);
+        GenericRawResults<String[]> results = dao.queryRaw("SELECT u.uuid, s.total, s.count FROM ( SELECT user_id, COUNT(user_id) as count, SUM(end - start) as total FROM livekit_stats_sessions WHERE start >= "+from+" AND start <= "+to+" AND end <> 0 GROUP BY user_id ORDER BY total DESC ) as s LEFT JOIN livekit_users as u ON u._id = s.user_id;");
+        for(String[] row : results.getResults() ) {
+            result.add(new PlayerValueResult<Long, Integer>(UUID.fromString(row[0]), Long.parseLong(row[1]), Integer.parseInt(row[2])));
         }
         results.close();
 
