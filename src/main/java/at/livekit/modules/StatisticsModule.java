@@ -1,6 +1,7 @@
 package at.livekit.modules;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -387,7 +388,41 @@ public class StatisticsModule extends BaseModule implements Listener
         return new StatusPacket(1, result);
     }
 
-    @Action(name="ListAllSessions", sync = false)
+    @Action(name="AnalyticsSessions", sync = false)
+    protected IPacket analyticsSessions(Identity identity, ActionPacket packet) throws Exception
+    {
+        long from = packet.getData().getLong("from");
+        long to = packet.getData().getLong("to");
+
+        //TODO: Permission handling for analytics, premium check ?
+
+        SQLStorage storage = getSQLStorage();
+
+        List<PlayerValueResult<Long, Long>> values = storage.getAnalyticsSessions(from, to);
+        JSONObject result = new JSONObject();
+        result.put("result", values.stream().map(entry->entry.toJson()).collect(Collectors.toList()));
+
+        return new StatusPacket(1, result);
+    }
+
+    @Action(name="AnalyticsPlaytime", sync = false)
+    protected IPacket analyticsPlaytime(Identity identity, ActionPacket packet) throws Exception
+    {
+        long from = packet.getData().getLong("from");
+        long to = packet.getData().getLong("to");
+
+        //TODO: Permission handling for analytics, premium check ?
+
+        SQLStorage storage = getSQLStorage();
+
+        Map<String, Long> values = storage.getAnalyticsPlaytime(from, to);
+        JSONObject result = new JSONObject();
+        result.put("result", new JSONObject(values));
+
+        return new StatusPacket(1, result);
+    }
+
+    /*@Action(name="ListAllSessions", sync = false)
     protected IPacket listAllSessions(Identity identity, ActionPacket packet) throws Exception
     {
         //TODO: Permission handling
@@ -417,7 +452,7 @@ public class StatisticsModule extends BaseModule implements Listener
         data.put("result", result);
             
         return packet.response(data);
-    }
+    }*/
 
     private SQLStorage getSQLStorage() throws Exception {
         if(Plugin.getStorage() instanceof SQLStorage) {

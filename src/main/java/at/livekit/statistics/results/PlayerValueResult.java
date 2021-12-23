@@ -16,6 +16,14 @@ public class PlayerValueResult<T, J> {
         this.secondary = j;
     }
 
+    public T getValue() {
+        return value;
+    }
+
+    public J getSecondary() {
+        return secondary;
+    }
+
     public JSONObject toJson() {
         JSONObject data = new JSONObject();
         data.put("uuid", uuid.toString());

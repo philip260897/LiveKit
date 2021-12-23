@@ -18,9 +18,14 @@ import at.livekit.statistics.tables.LKStatParameter.LKParam;
 import at.livekit.utils.HeadLibraryV2.HeadInfo;
 
 import java.lang.reflect.Field;
-import java.sql.Date;
+//import java.sql.Date;
 import java.sql.SQLException;
+import java.sql.Time;
+import java.text.SimpleDateFormat;
+import java.time.Year;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -520,6 +525,71 @@ public class SQLStorage extends StorageThreadMarshallAdapter
 
         return result;
     }
+    
+    //SELECT u.uuid, d.start, (CASE (d.end) WHEN 0 THEN unix_timestamp()*1000 ELSE d.end END) as end FROM (SELECT * FROM LiveKit.livekit_stats_sessions WHERE start >= 0 AND end <= 1000000000000000) as d LEFT JOIN LiveKit.livekit_users as u ON u._id = d.user_id;
+    public List<PlayerValueResult<Long, Long>> getAnalyticsSessions(long from, long to) throws Exception
+    {
+        List<PlayerValueResult<Long, Long>> result = new ArrayList<PlayerValueResult<Long, Long>>();
+
+        Dao<LKStatSession, String> dao = getDao(LKStatSession.class);
+        GenericRawResults<String[]> results = dao.queryRaw("SELECT u.uuid, d.start, "+replaceZeroSession("d.end", "end")+" FROM (SELECT * FROM LiveKit.livekit_stats_sessions WHERE start >= "+from+" AND start <= "+to+") as d LEFT JOIN LiveKit.livekit_users as u ON u._id = d.user_id;");
+        for(String[] row : results.getResults() ) {
+            result.add(new PlayerValueResult<Long, Long>(UUID.fromString(row[0]), Long.parseLong(row[1]), Long.parseLong(row[2])));
+        }
+        results.close();
+
+        return result;
+    }
+
+    public Map<String, Long> getAnalyticsPlaytime(long from, long to) throws Exception
+    {
+        List<PlayerValueResult<Long, Long>> result = getAnalyticsSessions(from, to);
+        Map<String, Long> data = new HashMap<String, Long>(); 
+
+        for(PlayerValueResult<Long, Long> item : result) {
+            if(!(item.getSecondary() > item.getValue())) continue;
+
+            Calendar startExact = Calendar.getInstance();
+            startExact.setTimeInMillis(item.getValue());
+
+            Calendar endExact = Calendar.getInstance();
+            endExact.setTimeInMillis(item.getSecondary());
+
+            Calendar start = getCalendarWithoutTime();
+            start.set(startExact.get(Calendar.YEAR), startExact.get(Calendar.MONTH), startExact.get(Calendar.DAY_OF_MONTH));
+
+            Calendar end = getCalendarWithoutTime();
+            end.set(endExact.get(Calendar.YEAR), endExact.get(Calendar.MONTH), endExact.get(Calendar.DAY_OF_MONTH));
+
+            String formatedStart = dateFormat(start);
+            String formatedEnd = dateFormat(end);
+
+            if(start.equals(end)) {
+                if(!data.containsKey(formatedStart)) data.put(formatedStart, 0L);
+                data.put(formatedStart, data.get(formatedStart) + (item.getSecondary() - item.getValue()));
+            } else {
+                Calendar next = getCalendarWithoutTime();
+                next.set(startExact.get(Calendar.YEAR), startExact.get(Calendar.MONTH), startExact.get(Calendar.DAY_OF_MONTH));
+                next.add(Calendar.DATE, 1);
+
+                if(!data.containsKey(formatedStart)) data.put(formatedStart, 0L);
+                data.put(formatedStart, data.get(formatedStart) + (next.getTimeInMillis() - item.getValue()));
+
+                while(!next.equals(end)) {
+                    String formatedNext = dateFormat(next);
+
+                    if(!data.containsKey(formatedNext)) data.put(formatedNext, 0L);
+                    data.put(formatedNext, data.get(formatedNext) + 24*60*60*1000);
+
+                    next.add(Calendar.DATE, 1);
+                }
+
+                if(!data.containsKey(formatedEnd)) data.put(formatedEnd, 0L);
+                data.put(formatedEnd, data.get(formatedEnd) + (item.getSecondary() - end.getTimeInMillis()));
+            }
+        }
+        return data;
+    }
 
     private String dateFunction(String column)
     {
@@ -528,5 +598,33 @@ public class SQLStorage extends StorageThreadMarshallAdapter
             case "SQLITE": return "DATE("+column+"/1000, \'unixepoch\')";
             default: return "DATE(FROM_UNIXTIME("+column+"/1000))";
         }
+    }
+
+    private String unixFunction()
+    {
+        switch(sqlProvider.toUpperCase())
+        {
+            case "SQLITE": return "strftime('%s', 'now')*1000";
+            case "POSTGRESQL": return "extract(epoch FROM now())*1000";
+            default: return "unix_timestamp()*1000";
+        }
+    }
+
+    private String replaceZeroSession(String columnName, String asName) {
+        return "(CASE ("+columnName+") WHEN 0 THEN "+unixFunction()+" ELSE "+columnName+" END) as "+asName;
+    }
+
+    private static SimpleDateFormat format1 = new SimpleDateFormat("yyyy-MM-dd");
+    private String dateFormat(Calendar calendar) {
+        return format1.format(calendar.getTime());
+    }
+
+    private Calendar getCalendarWithoutTime() {
+        Calendar cal = Calendar.getInstance();
+        cal.set(Calendar.HOUR_OF_DAY, 0);
+        cal.set(Calendar.MINUTE, 0);
+        cal.set(Calendar.SECOND, 0);
+        cal.set(Calendar.MILLISECOND, 0);
+        return cal;
     }
 }
