@@ -259,7 +259,7 @@ public class SQLStorage extends StorageThreadMarshallAdapter
     //QTP: CALL Profile(1);
     public ProfileResult getPlayerProfile(LKUser user) throws Exception
     {
-        String query = "SELECT * FROM (SELECT SUM(end-start) as time_played, COUNT(_id) as sessions, MAX(end-start) as longest_session FROM livekit_stats_sessions WHERE user_id="+user._id+" AND start<>0 AND end<>0) as s "+
+        String query = "SELECT * FROM (SELECT SUM("+replaceZeroSession("end", null)+"-start) as time_played, COUNT(_id) as sessions, MAX("+replaceZeroSession("end", null)+"-start) as longest_session FROM livekit_stats_sessions WHERE user_id="+user._id+" AND start<>0 ) as s "+
         //"LEFT JOIN (SELECT SUM(count) as total_deaths, MAX(count) as most_deaths_per_day FROM livekit_stats_deaths WHERE user_id="+user._id+") as d  ON 1=1 "+
         "LEFT JOIN (SELECT COUNT(user_id) as total_deaths FROM livekit_stats_deaths WHERE user_id="+user._id+") as d  ON 1=1 "+
         "LEFT JOIN (SELECT COUNT(user_id) as total_pvp FROM livekit_stats_pvp WHERE user_id="+user._id+") as pvp ON 1=1 "+
@@ -445,23 +445,23 @@ public class SQLStorage extends StorageThreadMarshallAdapter
         return result;
     }
 
-    public List<LKStatSession> getSessionsFromTo(long from, long to) throws Exception
+    /*public List<LKStatSession> getSessionsFromTo(long from, long to) throws Exception
     {
         Dao<LKStatSession, String> dao = getDao(LKStatSession.class);
         Where<LKStatSession, String> where = dao.queryBuilder().where();
         where.and(where.le("start", to), where.or(where.ge("end", from), where.eq("end", 0)));
 
         return where.query();
-    }
+    }*/
 
-    public List<LKStatServerSession> getServerSessionFromTo(long from, long to) throws Exception
+    /*public List<LKStatServerSession> getServerSessionFromTo(long from, long to) throws Exception
     {
         Dao<LKStatServerSession, String> dao = getDao(LKStatServerSession.class);
         Where<LKStatServerSession, String> where = dao.queryBuilder().where();
         where.and(where.le("start", to), where.or(where.ge("end", from), where.eq("end", 0)));
 
         return where.query();
-    }
+    }*/
 
     //QTP: SELECT COUNT(user_id) as count, SUM(`leave`-enter) as duration, world FROM livekit_stats_world WHERE timestamp >= from AND timestamp <= to GROUP BY world;
     public WorldUsageResult getAnalyticsWorldUsage(long from, long to) throws Exception
@@ -469,8 +469,8 @@ public class SQLStorage extends StorageThreadMarshallAdapter
         WorldUsageResult result = new WorldUsageResult();
 
         Dao<LKStatWorld, String> dao = getDao(LKStatWorld.class);
-        Where<LKStatWorld, String> where = dao.queryBuilder().selectRaw("COUNT(*) as count", "SUM(`leave`-`enter`) as duration", "world").groupBy("world").where();
-        where.ge("enter", from).and().le("leave", to).and().ne("leave", 0);
+        Where<LKStatWorld, String> where = dao.queryBuilder().selectRaw("COUNT(*) as count", "SUM("+replaceZeroSession("leave", null)+"-`enter`) as duration", "world").groupBy("world").where();
+        where.ge("enter", from).and().le("leave", to)/*.and().ne("leave", 0)*/;
 
         GenericRawResults<String[]> results = where.queryRaw();
         for(String[] row : results.getResults() ) {
@@ -517,7 +517,7 @@ public class SQLStorage extends StorageThreadMarshallAdapter
         List<PlayerValueResult<Long, Integer>> result = new ArrayList<PlayerValueResult<Long, Integer>>();
 
         Dao<LKStatSession, String> dao = getDao(LKStatSession.class);
-        GenericRawResults<String[]> results = dao.queryRaw("SELECT u.uuid, s.total, s.count FROM ( SELECT user_id, COUNT(user_id) as count, SUM(end - start) as total FROM livekit_stats_sessions WHERE start >= "+from+" AND start <= "+to+" AND end <> 0 GROUP BY user_id ORDER BY total DESC ) as s LEFT JOIN livekit_users as u ON u._id = s.user_id;");
+        GenericRawResults<String[]> results = dao.queryRaw("SELECT u.uuid, s.total, s.count FROM ( SELECT user_id, COUNT(user_id) as count, SUM("+replaceZeroSession("end", null)+" - start) as total FROM livekit_stats_sessions WHERE start >= "+from+" AND start <= "+to+" GROUP BY user_id ORDER BY total DESC ) as s LEFT JOIN livekit_users as u ON u._id = s.user_id;");
         for(String[] row : results.getResults() ) {
             result.add(new PlayerValueResult<Long, Integer>(UUID.fromString(row[0]), Long.parseLong(row[1]), Integer.parseInt(row[2])));
         }
@@ -532,7 +532,7 @@ public class SQLStorage extends StorageThreadMarshallAdapter
         List<PlayerValueResult<Long, Long>> result = new ArrayList<PlayerValueResult<Long, Long>>();
 
         Dao<LKStatSession, String> dao = getDao(LKStatSession.class);
-        GenericRawResults<String[]> results = dao.queryRaw("SELECT u.uuid, d.start, "+replaceZeroSession("d.end", "end")+" FROM (SELECT * FROM LiveKit.livekit_stats_sessions WHERE start >= "+from+" AND start <= "+to+") as d LEFT JOIN LiveKit.livekit_users as u ON u._id = d.user_id;");
+        GenericRawResults<String[]> results = dao.queryRaw("SELECT u.uuid, d.start, "+replaceZeroSession("d.end", "end")+" FROM (SELECT * FROM livekit_stats_sessions WHERE start >= "+from+" AND start <= "+to+") as d LEFT JOIN livekit_users as u ON u._id = d.user_id;");
         for(String[] row : results.getResults() ) {
             result.add(new PlayerValueResult<Long, Long>(UUID.fromString(row[0]), Long.parseLong(row[1]), Long.parseLong(row[2])));
         }
@@ -611,7 +611,7 @@ public class SQLStorage extends StorageThreadMarshallAdapter
     }
 
     private String replaceZeroSession(String columnName, String asName) {
-        return "(CASE ("+columnName+") WHEN 0 THEN "+unixFunction()+" ELSE "+columnName+" END) as "+asName;
+        return "(CASE ("+columnName+") WHEN 0 THEN "+unixFunction()+" ELSE "+columnName+" END)"+(asName != null ?" as "+asName : "");
     }
 
     private static SimpleDateFormat format1 = new SimpleDateFormat("yyyy-MM-dd");
