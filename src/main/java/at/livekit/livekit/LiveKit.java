@@ -351,8 +351,11 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
             
 
             long delta = System.currentTimeMillis() - start;
-            if( delta > 1) Plugin.debug("TICK "+delta+"ms "+tickTime+"ms [cpackets="+(packets-commands)+"ms; cmds="+(commands-module_full)+"ms; mfull="+(module_full-module_updates)+"ms; mupdate="+(module_updates-module_dispatch)+"; dispatch="+(module_dispatch-start)+"]");
-            if(delta >= tickTime) Plugin.severe("LiveKit tick can't keep up ("+delta+"ms/"+tickTime+"ms)");
+            //if( delta > 1) Plugin.debug("TICK "+delta+"ms "+tickTime+"ms [cpackets="+(packets-commands)+"ms; cmds="+(commands-module_full)+"ms; mfull="+(module_full-module_updates)+"ms; mupdate="+(module_updates-module_dispatch)+"; dispatch="+(module_dispatch-start)+"]");
+            if(delta >= tickTime){
+                //removing this since it only confuses people
+                Plugin.debug("LiveKit tick can't keep up ("+delta+"ms/"+tickTime+"ms)");
+            }
             else {
                 try{
                     Thread.sleep(tickTime-delta);
