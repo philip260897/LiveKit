@@ -15,6 +15,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerLoginEvent;
 import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
@@ -422,6 +423,57 @@ public class StatisticsModule extends BaseModule implements Listener
         return new StatusPacket(1, result);
     }
 
+    @Action(name="AnalyticsDeathCauses", sync = false)
+    protected IPacket analyticsDeathCauses(Identity identity, ActionPacket packet) throws Exception
+    {
+        long from = packet.getData().getLong("from");
+        long to = packet.getData().getLong("to");
+
+        //TODO: Permission handling for analytics, premium check ?
+
+        SQLStorage storage = getSQLStorage();
+
+        Map<Integer, Long> values = storage.getAnalyticsDeathCauses(from, to);
+        JSONObject result = new JSONObject();
+        result.put("result", new JSONObject(values));
+
+        return new StatusPacket(1, result);
+    }
+
+    @Action(name="AnalyticsDeathsPerDay", sync = false)
+    protected IPacket analyticsDeathPerDay(Identity identity, ActionPacket packet) throws Exception
+    {
+        long from = packet.getData().getLong("from");
+        long to = packet.getData().getLong("to");
+
+        //TODO: Permission handling for analytics, premium check ?
+
+        SQLStorage storage = getSQLStorage();
+
+        Map<String, Long> values = storage.getAnalyticsDeathsPerDay(from, to);
+        JSONObject result = new JSONObject();
+        result.put("result", new JSONObject(values));
+
+        return new StatusPacket(1, result);
+    }
+
+    @Action(name="AnalyticsMostDeaths", sync = false)
+    protected IPacket analyticsMostPlayerDeaths(Identity identity, ActionPacket packet) throws Exception
+    {
+        long from = packet.getData().getLong("from");
+        long to = packet.getData().getLong("to");
+
+        //TODO: Permission handling for analytics, premium check ?
+
+        SQLStorage storage = getSQLStorage();
+
+        List<PlayerValueResult<Long, Long>> values = storage.getAnalyticsMostPlayerDeaths(from, to);
+        JSONObject result = new JSONObject();
+        result.put("result", values.stream().map(entry->entry.toJson()).collect(Collectors.toList()));
+
+        return new StatusPacket(1, result);
+    }
+
     /*@Action(name="ListAllSessions", sync = false)
     protected IPacket listAllSessions(Identity identity, ActionPacket packet) throws Exception
     {
@@ -486,6 +538,19 @@ public class StatisticsModule extends BaseModule implements Listener
                 //load profile
                 profile.loadUserAsync();
             }catch(Exception ex){ex.printStackTrace();}
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerLogin(PlayerLoginEvent event) {
+        if(!isEnabled()) return;
+
+        if(event.getResult() != org.bukkit.event.player.PlayerLoginEvent.Result.ALLOWED) {
+            LKStatProfile profile = getStatisticProfile(event.getPlayer().getUniqueId());
+            if(profile != null)
+            {
+                profile.endSession();
+            }
         }
     }
 

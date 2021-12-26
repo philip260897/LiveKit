@@ -74,10 +74,14 @@ public class LKStatProfile {
 
     public void endSession()
     {
-        this.currentSession.end = System.currentTimeMillis();
-        synchronized(sessionList) {
-            if(!sessionList.contains(currentSession)) {
-                sessionList.add(currentSession);
+        //whitelist enabled -> join not permitted -> profile loaded but session not started -> onDisable session is null
+        if(this.currentSession != null) 
+        {
+            this.currentSession.end = System.currentTimeMillis();
+            synchronized(sessionList) {
+                if(!sessionList.contains(currentSession)) {
+                    sessionList.add(currentSession);
+                }
             }
         }
 
