@@ -605,7 +605,7 @@ public class SQLStorage extends StorageThreadMarshallAdapter
         Map<String, Long> result = new TreeMap<String, Long>();
 
         Dao<LKStatSession, String> dao = getDao(LKStatSession.class);
-        GenericRawResults<Object[]> results = dao.queryRaw("SELECT "+dateFunction("timestamp")+" as deathDate, COUNT(*) as deaths FROM livekit_stats_deaths GROUP BY "+dateFunction("timestamp")+" ORDER BY deathDate DESC;", new DataType[]{DataType.STRING, DataType.STRING});
+        GenericRawResults<Object[]> results = dao.queryRaw("SELECT "+dateFunction("timestamp")+" as deathDate, COUNT(*) as deaths FROM livekit_stats_deaths WHERE timestamp >= "+from+" AND timestamp <= "+to+" GROUP BY "+dateFunction("timestamp")+" ORDER BY deathDate DESC;", new DataType[]{DataType.STRING, DataType.STRING});
         for(Object[] row : results.getResults() ) {
             result.put((String)row[0], Long.parseLong((String)row[1]));
         }
