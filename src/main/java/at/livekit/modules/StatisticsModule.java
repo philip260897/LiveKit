@@ -474,6 +474,74 @@ public class StatisticsModule extends BaseModule implements Listener
         return new StatusPacket(1, result);
     }
 
+    @Action(name="AnalyticsMostUsedCommands", sync = false)
+    protected IPacket analyticsMostUsedCommands(Identity identity, ActionPacket packet) throws Exception
+    {
+        long from = packet.getData().getLong("from");
+        long to = packet.getData().getLong("to");
+
+        //TODO: Permission handling for analytics, premium check ?
+
+        SQLStorage storage = getSQLStorage();
+
+        Map<String, Long> values = storage.getAnalyticsMostUsedCommands(from, to);
+        JSONObject result = new JSONObject();
+        result.put("result", new JSONObject(values));
+
+        return new StatusPacket(1, result);
+    }
+
+    @Action(name="AnalyticsCommands", sync = false)
+    protected IPacket analyticsCommands(Identity identity, ActionPacket packet) throws Exception
+    {
+        long from = packet.getData().getLong("from");
+        long to = packet.getData().getLong("to");
+
+        //TODO: Permission handling for analytics, premium check ?
+
+        SQLStorage storage = getSQLStorage();
+
+        List<PlayerValueResult<String, Long>> values = storage.getAnalyticsCommands(from, to);
+        JSONObject result = new JSONObject();
+        result.put("result", values.stream().map(entry->entry.toJson()).collect(Collectors.toList()));
+
+        return new StatusPacket(1, result);
+    }
+
+    @Action(name="AnalyticsPVPPerDay", sync = false)
+    protected IPacket analyticsPVPPerDay(Identity identity, ActionPacket packet) throws Exception
+    {
+        long from = packet.getData().getLong("from");
+        long to = packet.getData().getLong("to");
+
+        //TODO: Permission handling for analytics, premium check ?
+
+        SQLStorage storage = getSQLStorage();
+
+        Map<String, Long> values = storage.getAnalyticsPVPPerDay(from, to);
+        JSONObject result = new JSONObject();
+        result.put("result", new JSONObject(values));
+
+        return new StatusPacket(1, result);
+    }
+
+    @Action(name="AnalyticsBestPVP", sync = false)
+    protected IPacket analyticsBestPVP(Identity identity, ActionPacket packet) throws Exception
+    {
+        long from = packet.getData().getLong("from");
+        long to = packet.getData().getLong("to");
+
+        //TODO: Permission handling for analytics, premium check ?
+
+        SQLStorage storage = getSQLStorage();
+
+        List<PlayerValueResult<Long, Long>> values = storage.getAnalyticsBestPVP(from, to);
+        JSONObject result = new JSONObject();
+        result.put("result", values.stream().map(entry->entry.toJson()).collect(Collectors.toList()));
+
+        return new StatusPacket(1, result);
+    }
+
     /*@Action(name="ListAllSessions", sync = false)
     protected IPacket listAllSessions(Identity identity, ActionPacket packet) throws Exception
     {

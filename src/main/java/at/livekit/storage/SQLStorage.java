@@ -644,6 +644,51 @@ public class SQLStorage extends StorageThreadMarshallAdapter
         return result;
     }
 
+    //SELECT users.uuid, cmd, args, timestamp FROM livekit_stats_cmds LEFT JOIN livekit_users users ON users._id=user_id WHERE timestamp > 0 ORDER BY timestamp DESC;
+    public List<PlayerValueResult<String, Long>> getAnalyticsCommands(long from, long to) throws Exception
+    {
+        List<PlayerValueResult<String, Long>> result = new ArrayList<PlayerValueResult<String, Long>>();
+
+        Dao<LKStatSession, String> dao = getDao(LKStatSession.class);
+        GenericRawResults<String[]> results = dao.queryRaw("SELECT users.uuid, cmd, args, timestamp FROM livekit_stats_cmds LEFT JOIN livekit_users users ON users._id=user_id WHERE timestamp >= "+from+" AND timestamp <= "+to+" ORDER BY timestamp DESC;");
+        for(String[] row : results.getResults() ) {
+            result.add(new PlayerValueResult<String,Long>(UUID.fromString(row[0]), row[1] + " " + row[2], Long.parseLong(row[3])));
+        }
+        results.close();
+
+        return result;
+    }
+
+    //SELECT DATE(FROM_UNIXTIME(timestamp/1000)) as pvpDate, COUNT(*) as pvp FROM LiveKit.livekit_stats_pvp GROUP BY DATE(FROM_UNIXTIME(timestamp/1000)) ORDER BY pvp DESC;
+    public Map<String, Long> getAnalyticsPVPPerDay(long from, long to) throws Exception
+    {
+        Map<String, Long> result = new TreeMap<String, Long>();
+
+        Dao<LKStatSession, String> dao = getDao(LKStatSession.class);
+        GenericRawResults<Object[]> results = dao.queryRaw("SELECT "+dateFunction("timestamp")+" as pvpDate, COUNT(*) as pvp FROM livekit_stats_pvp WHERE timestamp >= "+from+" AND timestamp <= "+to+" GROUP BY "+dateFunction("timestamp")+" ORDER BY pvpDate DESC;", new DataType[]{DataType.STRING, DataType.STRING});
+        for(Object[] row : results.getResults() ) {
+            result.put((String)row[0], Long.parseLong((String)row[1]));
+        }
+        results.close();
+
+        return result;
+    }
+
+    //SELECT users.uuid, COUNT(*) as count FROM livekit_stats_pvp LEFT JOIN livekit_users as users ON users._id = user_id GROUP BY user_id ORDER BY count DESC;
+    public List<PlayerValueResult<Long, Long>> getAnalyticsBestPVP(long from, long to) throws Exception
+    {
+        List<PlayerValueResult<Long, Long>> result = new ArrayList<PlayerValueResult<Long, Long>>();
+
+        Dao<LKStatSession, String> dao = getDao(LKStatSession.class);
+        GenericRawResults<String[]> results = dao.queryRaw("SELECT users.uuid, COUNT(*) as count FROM livekit_stats_pvp LEFT JOIN livekit_users as users ON users._id = user_id WHERE timestamp >= "+from+" AND timestamp <= "+to+" GROUP BY user_id ORDER BY count DESC;");
+        for(String[] row : results.getResults() ) {
+            result.add(new PlayerValueResult<Long,Long>(UUID.fromString(row[0]), Long.parseLong(row[1]), null));
+        }
+        results.close();
+
+        return result;
+    }
+
     private String dateFunction(String column)
     {
         switch(sqlProvider.toUpperCase())
