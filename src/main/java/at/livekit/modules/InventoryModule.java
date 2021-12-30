@@ -128,6 +128,7 @@ public class InventoryModule extends BaseModule implements Listener
                     entry.put("d",(int) ((double)((Damageable)stack.getItemMeta()).getDamage() / (double)stack.getType().getMaxDurability() * 100.0));
                 }
                 entry.put("s", i);
+                entry.put("e", new JSONObject(stack.getEnchantments()));
                 storage.put(entry);
             }
             
