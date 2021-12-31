@@ -5,9 +5,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.Map.Entry;
 
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
@@ -128,7 +130,15 @@ public class InventoryModule extends BaseModule implements Listener
                     entry.put("d",(int) ((double)((Damageable)stack.getItemMeta()).getDamage() / (double)stack.getType().getMaxDurability() * 100.0));
                 }
                 entry.put("s", i);
-                entry.put("e", new JSONObject(stack.getEnchantments()));
+                JSONArray ench = new JSONArray();
+                for(Entry<Enchantment, Integer> enchantment : stack.getEnchantments().entrySet()) {
+                    JSONObject obj = new JSONObject();
+                    obj.put("k", enchantment.getKey().getKey().getKey());
+                    obj.put("n", enchantment.getKey().getKey().getNamespace());
+                    obj.put("l", enchantment.getValue());
+                    ench.put(obj);
+                }
+                entry.put("e", ench);
                 storage.put(entry);
             }
             

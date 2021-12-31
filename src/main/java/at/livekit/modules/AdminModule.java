@@ -11,14 +11,18 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -71,6 +75,18 @@ public class AdminModule extends BaseModule
         JSONArray w = new JSONArray();
         data.put("worlds", _worlds);
         data.put("whitelist", whitelist);
+
+        JSONArray enchants = new JSONArray();
+        for(Enchantment enchantment : Enchantment.values()) {
+            JSONObject json = new JSONObject();
+            json.put("namespace", enchantment.getKey().getNamespace());
+            json.put("name", enchantment.getKey().getKey());
+            json.put("min", enchantment.getStartLevel());
+            json.put("max", enchantment.getMaxLevel());
+            enchants.put(json);
+        }
+
+        data.put("enchantments", enchants);
 
         return new ModuleUpdatePacket(this, data, true);
     }
@@ -331,6 +347,11 @@ public class AdminModule extends BaseModule
         String uuid = packet.getData().getString("uuid");
         String material = packet.getData().getString("material");
         int amount = packet.getData().getInt("amount");
+
+        JSONArray enchantments = new JSONArray();
+        if(packet.getData().has("enchantments")) {
+            enchantments = packet.getData().getJSONArray("enchantments");
+        }
         
         OfflinePlayer offline = Bukkit.getServer().getOfflinePlayer(UUID.fromString(uuid));
         if(offline == null) return new StatusPacket(0, "Player not found!"); 
@@ -339,6 +360,14 @@ public class AdminModule extends BaseModule
         if(mat == null) return new StatusPacket(0, "Material not found!");
 
         ItemStack itemStack = new ItemStack(Material.getMaterial(material), amount);
+        for(int i = 0; i < enchantments.length(); i++) {
+            String[] s = enchantments.getString(i).split(":");
+            int level = Integer.parseInt(s[2]);
+            Enchantment enchantment = Enchantment.getByKey(NamespacedKey.minecraft(s[1]));
+            if(enchantment.canEnchantItem(itemStack)) {
+                itemStack.addEnchantment(enchantment, level);
+            }
+        }
 
         Player player = offline.getPlayer();
         player.getInventory().addItem(itemStack);
@@ -387,6 +416,39 @@ public class AdminModule extends BaseModule
         if(!stack.getType().name().equals(material) || stack.getAmount() != amount) return new StatusPacket(0, "ItemStack missmatch!");
 
         inventory.clear(slot);
+        InventoryModule inventoryModule = (InventoryModule)LiveKit.getInstance().getModuleManager().getModule("InventoryModule");
+        if(inventoryModule != null && inventoryModule.isEnabled()) {
+            inventoryModule.updateInventory(player);
+        }
+
+        return new StatusPacket(1);
+    }
+
+    @Action(name="RemoveEnchantment")
+    protected IPacket actionRemoveEnchantment(Identity identity, ActionPacket packet) {
+        String uuid = packet.getData().getString("uuid");
+        String material = packet.getData().getString("material");
+        int amount = packet.getData().getInt("amount");
+        int slot = packet.getData().getInt("slot");
+        String senchant = packet.getData().getString("enchantment");
+
+        Enchantment enchantment = Enchantment.getByKey(NamespacedKey.minecraft(senchant.split(":")[1]));
+        if(enchantment == null) return new StatusPacket(0, "An error occured!"); 
+        
+        OfflinePlayer offline = Bukkit.getServer().getOfflinePlayer(UUID.fromString(uuid));
+        if(offline == null) return new StatusPacket(0, "Player not found!"); 
+
+        Player player = offline.getPlayer();
+        PlayerInventory inventory = player.getInventory();
+        
+        ItemStack stack = inventory.getItem(slot);
+        if(stack == null) return new StatusPacket(0, "Slot was empty");
+
+        if(!stack.getType().name().equals(material) || stack.getAmount() != amount) return new StatusPacket(0, "ItemStack missmatch!");
+
+        stack.removeEnchantment(enchantment);
+
+        //inventory.clear(slot);
         InventoryModule inventoryModule = (InventoryModule)LiveKit.getInstance().getModuleManager().getModule("InventoryModule");
         if(inventoryModule != null && inventoryModule.isEnabled()) {
             inventoryModule.updateInventory(player);
