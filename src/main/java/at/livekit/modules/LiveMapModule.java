@@ -64,7 +64,7 @@ public class LiveMapModule extends BaseModule implements Listener
     private boolean waitingForWorld = false;
 
     public LiveMapModule(String world, ModuleListener listener, Map<String, String> availableWorlds) {
-        super(1, "Live Map", "livekit.module.map", UpdateRate.MAX, listener, world);
+        super(1, "Live Map", "livekit.map", UpdateRate.MAX, listener, world);
         this.world = world;
         this.availableWorlds = availableWorlds;
     }
@@ -193,7 +193,6 @@ public class LiveMapModule extends BaseModule implements Listener
 
         JSONArray availableWorlds = new JSONArray();
         json.put("worldNames", availableWorlds);
-        json.put("blockInfo", identity.hasPermission("livekit.map.info"));
         JSONArray regions = new JSONArray();
         json.put("regions", regions);
 

@@ -14,23 +14,13 @@ storage:
 anonymous:
   allow: true
   permissions:
-  - livekit.module.chat
-  - livekit.module.map
-  - livekit.module.players
+  - livekit.map
+  - livekit.chat
   - livekit.players.other
 permissions:
   useVault: false
   default:
   - livekit.commands.basic
-  - livekit.module.map
-  - livekit.module.players
-  - livekit.module.weathertime
-  - livekit.module.chat
-  - livekit.module.poi
-  - livekit.module.statistics
-  - livekit.chat.write
-  - livekit.poi.personalpins
-  - livekit.players.other
 modules:
   LiveMapModule:
     enabled: true

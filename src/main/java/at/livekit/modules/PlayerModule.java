@@ -9,10 +9,17 @@ import java.util.Map.Entry;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
+import org.bukkit.BanList;
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.World;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -43,6 +50,8 @@ import at.livekit.api.map.PersonalPin;
 import at.livekit.api.map.PlayerInfoProvider;
 import at.livekit.api.map.Waypoint;
 import at.livekit.livekit.Identity;
+import at.livekit.livekit.LiveKit;
+import at.livekit.map.Renderer;
 import at.livekit.plugin.Plugin;
 import at.livekit.packets.ActionPacket;
 import at.livekit.packets.IPacket;
@@ -59,7 +68,7 @@ public class PlayerModule extends BaseModule implements Listener
     private List<String> _downstreamUpdate = new ArrayList<String>();
 
     public PlayerModule(ModuleListener listener) {
-        super(1, "Players", "livekit.module.players", UpdateRate.MAX, listener);
+        super(1, "Players", "livekit.players", UpdateRate.MAX, listener);
     }
      
     public void clearProviders() {
@@ -380,7 +389,19 @@ public class PlayerModule extends BaseModule implements Listener
         }
 
         json.put("players", players);
-        json.put("permission_other", identity.hasPermission("livekit.players.other"));
+        
+        JSONArray enchants = new JSONArray();
+        for(Enchantment enchantment : Enchantment.values()) {
+            JSONObject data = new JSONObject();
+            data.put("namespace", enchantment.getKey().getNamespace());
+            data.put("name", enchantment.getKey().getKey());
+            data.put("min", enchantment.getStartLevel());
+            data.put("max", enchantment.getMaxLevel());
+            enchants.put(data);
+        }
+
+        json.put("enchantments", enchants);
+        //json.put("permission_other", identity.hasPermission("livekit.players.other"));
 
         return new ModuleUpdatePacket(this, json, true);
     }
@@ -454,7 +475,8 @@ public class PlayerModule extends BaseModule implements Listener
         return null;
     }
 
-    @Action(name="Teleport")
+    //TODO: Move to POI ?
+    @Action(name="TeleportWaypoint", permission = "livekit.players")
     protected IPacket teleportWaypoint(Identity identity, ActionPacket packet) {
         String wp = packet.getData().getString("waypoint");
         Waypoint waypoint = getWaypointByUUID(identity.getUuid(), UUID.fromString(wp));
@@ -474,12 +496,13 @@ public class PlayerModule extends BaseModule implements Listener
         return new StatusPacket(1);
     }
 
-    @Action(name = "GetPlayerInfo", sync = false)
+    @Action(name = "GetPlayerInfo", permission = "livekit.players", sync = false)
     public IPacket actionPlayerInfo(Identity identity, ActionPacket packet) {
         String uuid = packet.getData().getString("uuid");
         OfflinePlayer player = Bukkit.getOfflinePlayer(UUID.fromString(uuid));
         if(player == null) return new StatusPacket(0, "Player not found");
-        if(!player.isOnline() && !identity.hasPermission("livekit.module.admin")) return new StatusPacket(0, "Permission denied");
+        
+        if(!player.isOnline() && !identity.hasPermission("livekit.players.info")) return new StatusPacket(0, "Permission denied");
 
         JSONObject response = new JSONObject();
         JSONArray infoData = new JSONArray();
@@ -501,17 +524,20 @@ public class PlayerModule extends BaseModule implements Listener
                 public Void call() throws Exception {
                     Player onlinePlayer = (player.isOnline() ?  player.getPlayer() : null);
 
-                    if(identity.hasPermission("livekit.module.admin") || uuid.equals(identity.getUuid())) {
+                    if(identity.hasPermission("livekit.players.ban") || identity.hasPermission("livekit.players.unban") || uuid.equals(identity.getUuid())) {
+                        response.put("banned", player.isBanned());
+                    }
+                    
+                    if(identity.hasPermission("livekit.players.info") || uuid.equals(identity.getUuid())) {
                         response.put("firstPlayed", player.getFirstPlayed());
                         response.put("lastPlayed", player.getLastPlayed());
-                        response.put("banned", player.isBanned());
                         if(onlinePlayer != null) response.put("gamemode", onlinePlayer.getGameMode().name());
                     }
 
                     synchronized(_infoProviders) {
                         for(PlayerInfoProvider iprov : _infoProviders) {
                             if(iprov instanceof AsyncPlayerInfoProvider) continue;
-                            if(iprov.getPermission() != null && !identity.hasPermission(iprov.getPermission()) && !identity.hasPermission("livekit.module.admin")) continue;
+                            if(iprov.getPermission() != null && !identity.hasPermission(iprov.getPermission()) && !identity.hasPermission("livekit.players.info")) continue;
 
                             iprov.onResolvePlayerInfo(player, _infos);
                             iprov.onResolvePlayerLocation(player, _waypoints);
@@ -529,7 +555,7 @@ public class PlayerModule extends BaseModule implements Listener
         synchronized(_infoProviders) {
             for(PlayerInfoProvider iprov : _infoProviders) {
                 if(!(iprov instanceof AsyncPlayerInfoProvider)) continue;
-                if(iprov.getPermission() != null && !identity.hasPermission(iprov.getPermission()) && !identity.hasPermission("livekit.module.admin")) continue;
+                if(iprov.getPermission() != null && !identity.hasPermission(iprov.getPermission()) && !identity.hasPermission("livekit.players.info")) continue;
 
                 iprov.onResolvePlayerInfo(player, _infos);
                 iprov.onResolvePlayerLocation(player, _waypoints);
@@ -545,7 +571,7 @@ public class PlayerModule extends BaseModule implements Listener
             if(entry.getPrivacy() == null) continue;
             
             if(entry.getPrivacy() == Privacy.PRIVATE) {
-                if(!identity.hasPermission("livekit.module.admin") ) {
+                if(!identity.hasPermission("livekit.players.info") ) {
                     if(!uuid.equals(identity.getUuid())) continue;
                 }
             }
@@ -563,7 +589,7 @@ public class PlayerModule extends BaseModule implements Listener
             if(waypoint.getPrivacy() == null) continue;
             
             if(waypoint.getPrivacy() == Privacy.PRIVATE) {
-                if(!identity.hasPermission("livekit.module.admin") ) {
+                if(!identity.hasPermission("livekit.players.info") ) {
                     if(!uuid.equals(identity.getUuid())) continue;
                 }
             }
@@ -583,7 +609,7 @@ public class PlayerModule extends BaseModule implements Listener
         
         if(player.isOnline()) {
             //adding potion info
-            if(uuid.equals(identity.getUuid()) || identity.hasPermission("livekit.module.admin")) {
+            if(uuid.equals(identity.getUuid()) || identity.hasPermission("livekit.players.info")) {
                 for(PotionEffect potion : ((Player)player).getActivePotionEffects()) {
                     JSONObject jpotion = new JSONObject();
                     jpotion.put("type", potion.getType().getName());
@@ -596,6 +622,165 @@ public class PlayerModule extends BaseModule implements Listener
 
         return packet.response(response);
     }
+
+    @Action(name="KickPlayer", permission = "livekit.players.kick")
+    protected IPacket actionKick(Identity identity, ActionPacket packet) {
+        String uuid = packet.getData().getString("uuid");
+        String message = packet.getData().has("message")&&!packet.getData().isNull("message") ? packet.getData().getString("message") : null;
+
+        Player player = Bukkit.getServer().getPlayer(UUID.fromString(uuid));
+        if(player == null || !player.isOnline()) return new StatusPacket(0, "Player is offline!"); 
+
+        player.kickPlayer(message);
+
+        return new StatusPacket(1, "Player has been kicked!");
+    }
+
+    @Action(name="KillPlayer", permission = "livekit.players.kill")
+    protected IPacket actionKill(Identity identity, ActionPacket packet) {
+        String uuid = packet.getData().getString("uuid");
+
+        Player player = Bukkit.getServer().getPlayer(UUID.fromString(uuid));
+        if(player == null || !player.isOnline()) return new StatusPacket(0, "Player is offline!"); 
+
+        player.damage(player.getHealth());
+
+        return new StatusPacket(1, "Player has been killed!");
+    }
+
+    @Action(name="SlapPlayer", permission = "livekit.players.slap")
+    protected IPacket actionSlap(Identity identity, ActionPacket packet) {
+        String uuid = packet.getData().getString("uuid");
+
+        Player player = Bukkit.getServer().getPlayer(UUID.fromString(uuid));
+        if(player == null || !player.isOnline()) return new StatusPacket(0, "Player is offline!"); 
+
+        player.damage(0.5);
+
+        return new StatusPacket(1, "Player has been slapped!");
+    }
+
+    @Action(name="StrikePlayer", permission = "livekit.players.strike")
+    protected IPacket actionStrike(Identity identity, ActionPacket packet) {
+        String uuid = packet.getData().getString("uuid");
+
+        Player player = Bukkit.getServer().getPlayer(UUID.fromString(uuid));
+        if(player == null || !player.isOnline()) return new StatusPacket(0, "Player is offline!"); 
+
+        World world = player.getWorld();
+        world.strikeLightningEffect(player.getLocation());
+        player.damage(1);
+
+        return new StatusPacket(1, "Player has been slapped!");
+    }
+
+    @Action(name="GameModePlayer", permission = "livekit.players.gamemode")
+    protected IPacket actionGamemode(Identity identity, ActionPacket packet) {
+        String uuid = packet.getData().getString("uuid");
+        String gamemode = packet.getData().getString("gamemode");
+
+        Player player = Bukkit.getServer().getPlayer(UUID.fromString(uuid));
+        if(player == null || !player.isOnline()) return new StatusPacket(0, "Player is offline!"); 
+
+        GameMode mode = null;
+        for(GameMode m : GameMode.values()) {
+            if(m.name().toUpperCase().equals(gamemode.toUpperCase())) {
+                mode = m;
+            }
+        }
+        if(mode == null) return new StatusPacket(0, "Gamemode "+gamemode+" not found!"); 
+
+        player.setGameMode(mode);
+
+        return new StatusPacket(1, "Player has been slapped!");
+    }
+
+    @Action(name="BanPlayer", permission = "livekit.players.ban")
+    protected IPacket actionBan(Identity identity, ActionPacket packet) {
+        String uuid = packet.getData().getString("uuid");
+        String message = packet.getData().has("message")&&!packet.getData().isNull("message") ? packet.getData().getString("message") : null;
+
+        OfflinePlayer player = Bukkit.getServer().getOfflinePlayer(UUID.fromString(uuid));
+        if(player == null) return new StatusPacket(0, "Player not found!"); 
+
+        Bukkit.getBanList(BanList.Type.NAME).addBan(player.getUniqueId().toString(), message, null, null);
+        if(player.isOnline())player.getPlayer().kickPlayer(message);
+
+        return new StatusPacket(1, "Player has been kicked!");
+    }
+
+    @Action(name="UnbanPlayer", permission = "livekit.players.unban")
+    protected IPacket actionUnban(Identity identity, ActionPacket packet) {
+        String uuid = packet.getData().getString("uuid");
+
+        OfflinePlayer player = Bukkit.getServer().getOfflinePlayer(UUID.fromString(uuid));
+        if(player == null) return new StatusPacket(0, "Player not found!"); 
+
+        Bukkit.getBanList(BanList.Type.NAME).pardon(player.getUniqueId().toString());
+        
+        return new StatusPacket(1, "Player has been kicked!");
+    }
+
+    @Action(name="GiveItem", permission = "livekit.players.give")
+    protected IPacket actionGiveItem(Identity identity, ActionPacket packet) {
+        String uuid = packet.getData().getString("uuid");
+        String material = packet.getData().getString("material");
+        int amount = packet.getData().getInt("amount");
+
+        JSONArray enchantments = new JSONArray();
+        if(packet.getData().has("enchantments")) {
+            enchantments = packet.getData().getJSONArray("enchantments");
+        }
+        
+        OfflinePlayer offline = Bukkit.getServer().getOfflinePlayer(UUID.fromString(uuid));
+        if(offline == null) return new StatusPacket(0, "Player not found!"); 
+
+        Material mat = Material.getMaterial(material);
+        if(mat == null) return new StatusPacket(0, "Material not found!");
+
+        ItemStack itemStack = new ItemStack(Material.getMaterial(material), amount);
+        for(int i = 0; i < enchantments.length(); i++) {
+            String[] s = enchantments.getString(i).split(":");
+            int level = Integer.parseInt(s[2]);
+            Enchantment enchantment = Enchantment.getByKey(NamespacedKey.minecraft(s[1]));
+            if(enchantment.canEnchantItem(itemStack)) {
+                itemStack.addEnchantment(enchantment, level);
+            }
+        }
+
+        Player player = offline.getPlayer();
+        player.getInventory().addItem(itemStack);
+
+        InventoryModule inventoryModule = (InventoryModule)LiveKit.getInstance().getModuleManager().getModule("InventoryModule");
+        if(inventoryModule != null && inventoryModule.isEnabled()) {
+            inventoryModule.updateInventory(player);
+        }
+
+        return new StatusPacket(1);
+    }
+
+    @Action(name="TeleportPlayer", permission = "livekit.players.teleport")
+    protected IPacket teleportPlayer(Identity identity, ActionPacket packet) {
+        double x = packet.getData().getDouble("x");
+        double y = packet.getData().getDouble("y");
+        double z = packet.getData().getDouble("z");
+        String world = packet.getData().getString("world");
+        String target = packet.getData().getString("uuid");
+
+        World w = Bukkit.getWorld(world);
+        if(w == null) return new StatusPacket(0, "World does not exist");
+
+        OfflinePlayer player = Bukkit.getOfflinePlayer(UUID.fromString(target));
+        if(player == null || !player.isOnline()) return new StatusPacket(0, "Can't teleport offline player");
+
+        Player online = player.getPlayer();
+
+        Block block = Renderer.getBlockForRendering(Bukkit.getWorld(world).getHighestBlockAt((int)x, (int)z));
+        online.teleport(block.getRelative(BlockFace.UP, 1).getLocation());
+
+        return new StatusPacket(1);
+    }
+
 
     public static class LItem implements Serializable {
         public int amount;

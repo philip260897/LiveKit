@@ -125,7 +125,16 @@ public class Identity
         if(!isIdentified()) return false;
         if(uuid == null && anonymous == false) return false;
         if(op) return true;
-        return permissions.contains(permission);
+        
+        for(String owned : this.permissions) {
+            if(owned.startsWith(permission)) {
+                return true;
+            }
+        }
+
+        //TODO: implement star check
+
+        return false;
     }
 
     public void updateSubscriptions(HashMap<String, String> defaultSub) {

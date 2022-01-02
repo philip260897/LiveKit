@@ -8,10 +8,12 @@ import java.util.UUID;
 import java.util.Map.Entry;
 
 import org.bukkit.Bukkit;
+import org.bukkit.NamespacedKey;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -28,6 +30,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import at.livekit.livekit.Identity;
+import at.livekit.livekit.LiveKit;
 import at.livekit.packets.ActionPacket;
 import at.livekit.packets.IPacket;
 import at.livekit.packets.StatusPacket;
@@ -41,7 +44,7 @@ public class InventoryModule extends BaseModule implements Listener
     private List<Player> _queue = new ArrayList<Player>();
 
     public InventoryModule(ModuleListener listener) {
-        super(1, "Inventories", "livekit.module.inventory", UpdateRate.HIGH, listener);
+        super(1, "Inventories", "livekit.inventory", UpdateRate.HIGH, listener);
     } 
 
     @Override
@@ -114,7 +117,7 @@ public class InventoryModule extends BaseModule implements Listener
     }
 
     public void updateInventory(Player player) {
-        if(!player.isOnline()) return;
+        if(!player.isOnline() || !isEnabled()) return;
 
         JSONObject inventory = new JSONObject();
         JSONArray storage = new JSONArray();
@@ -156,11 +159,11 @@ public class InventoryModule extends BaseModule implements Listener
         notifyChange();
     }
 
-    @Action(name="OpenInventory")
+    @Action(name="OpenInventory", permission = "livekit.inventory")
     protected IPacket actionOpenInventory(Identity identity, ActionPacket packet) {
         String uuid = packet.getData().getString("uuid");
         
-        if(!uuid.equals(identity.getUuid()) && !identity.hasPermission("livekit.module.admin")) return new StatusPacket(0, "Permission denied!");
+        if(!uuid.equals(identity.getUuid()) && !identity.hasPermission("livekit.inventory.other")) return new StatusPacket(0, "Permission denied!");
         
         OfflinePlayer target = Bukkit.getOfflinePlayer(UUID.fromString(uuid));
         if(target == null || !target.isOnline()) return new StatusPacket(0, "Player is offline");
@@ -173,13 +176,84 @@ public class InventoryModule extends BaseModule implements Listener
         return new StatusPacket(1);
     }
 
-    @Action(name="CloseInventory")
+    @Action(name="CloseInventory", permission = "livekit.inventory")
     protected IPacket actionCloseInventory(Identity identity, ActionPacket packet) {
         synchronized(_inventorySubs) {
             if(_inventorySubs.containsKey(identity)) {
                 _inventorySubs.remove(identity);
             }
         }
+        return new StatusPacket(1);
+    }
+
+    @Action(name="ClearInventory", permission = "livekit.inventory.delete")
+    protected IPacket actionClearInventory(Identity identity, ActionPacket packet) {
+        String uuid = packet.getData().getString("uuid");
+        
+        OfflinePlayer offline = Bukkit.getServer().getOfflinePlayer(UUID.fromString(uuid));
+        if(offline == null) return new StatusPacket(0, "Player not found!"); 
+
+        offline.getPlayer().getInventory().clear();
+
+        InventoryModule inventoryModule = (InventoryModule)LiveKit.getInstance().getModuleManager().getModule("InventoryModule");
+        if(inventoryModule != null && inventoryModule.isEnabled()) {
+            inventoryModule.updateInventory(offline.getPlayer());
+        }
+
+        return new StatusPacket(1);
+    }
+
+    @Action(name="RemoveItem", permission = "livekit.inventory.delete")
+    protected IPacket actionRemoveItem(Identity identity, ActionPacket packet) {
+        String uuid = packet.getData().getString("uuid");
+        String material = packet.getData().getString("material");
+        int amount = packet.getData().getInt("amount");
+        int slot = packet.getData().getInt("slot");
+        
+        OfflinePlayer offline = Bukkit.getServer().getOfflinePlayer(UUID.fromString(uuid));
+        if(offline == null) return new StatusPacket(0, "Player not found!"); 
+
+        Player player = offline.getPlayer();
+        PlayerInventory inventory = player.getInventory();
+        
+        ItemStack stack = inventory.getItem(slot);
+        if(stack == null) return new StatusPacket(0, "Slot was empty");
+
+        if(!stack.getType().name().equals(material) || stack.getAmount() != amount) return new StatusPacket(0, "ItemStack missmatch!");
+
+        inventory.clear(slot);
+
+        updateInventory(player);
+
+        return new StatusPacket(1);
+    }
+
+    @Action(name="RemoveEnchantment", permission = "livekit.inventory.delete")
+    protected IPacket actionRemoveEnchantment(Identity identity, ActionPacket packet) {
+        String uuid = packet.getData().getString("uuid");
+        String material = packet.getData().getString("material");
+        int amount = packet.getData().getInt("amount");
+        int slot = packet.getData().getInt("slot");
+        String senchant = packet.getData().getString("enchantment");
+
+        Enchantment enchantment = Enchantment.getByKey(NamespacedKey.minecraft(senchant.split(":")[1]));
+        if(enchantment == null) return new StatusPacket(0, "An error occured!"); 
+        
+        OfflinePlayer offline = Bukkit.getServer().getOfflinePlayer(UUID.fromString(uuid));
+        if(offline == null) return new StatusPacket(0, "Player not found!"); 
+
+        Player player = offline.getPlayer();
+        PlayerInventory inventory = player.getInventory();
+        
+        ItemStack stack = inventory.getItem(slot);
+        if(stack == null) return new StatusPacket(0, "Slot was empty");
+
+        if(!stack.getType().name().equals(material) || stack.getAmount() != amount) return new StatusPacket(0, "ItemStack missmatch!");
+
+        stack.removeEnchantment(enchantment);
+
+        updateInventory(player);
+
         return new StatusPacket(1);
     }
 

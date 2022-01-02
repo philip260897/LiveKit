@@ -5,10 +5,8 @@ import java.lang.management.RuntimeMXBean;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import org.bukkit.Bukkit;
-import org.bukkit.World;
 import org.bukkit.scheduler.BukkitTask;
 import org.json.JSONObject;
 
@@ -52,7 +50,7 @@ public class PerformanceModule extends BaseModule
     private int coreCount = 0;
 
     public PerformanceModule(ModuleListener listener) {
-        super(1, "Performance", "livekit.module.performance", UpdateRate.ONCE_PERSEC, listener);
+        super(1, "Performance", "livekit.performance", UpdateRate.ONCE_PERSEC, listener);
     }
 
     private void initializeSystemProperties() {
