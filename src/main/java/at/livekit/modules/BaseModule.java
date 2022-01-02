@@ -76,7 +76,7 @@ public abstract class BaseModule
             for(Method method : methods) {
                 if(method.isAnnotationPresent(Action.class)) {
                     Action a = method.getAnnotation(Action.class);
-                    signature.put(name+":"+a.name(), new ActionMethod(method, a.sync()));
+                    signature.put(name+":"+a.name(), new ActionMethod(method, a.permission(), a.sync()));
                 }
             }
         }
@@ -308,20 +308,27 @@ public abstract class BaseModule
     @Target(ElementType.METHOD)
     public @interface Action {
         public String name() default "";
+        public String permission() default "none";
         public boolean sync() default true;
     }
 
     public static class ActionMethod {
         private boolean sync;
+        private String permission;
         private Method method;
 
-        public ActionMethod(Method method, boolean sync) {
+        public ActionMethod(Method method, String permission, boolean sync) {
             this.method = method;
             this.sync = sync;
+            this.permission = permission;
         }
 
         public boolean sync() {
             return sync;
+        }
+
+        public String getPermission() {
+            return permission;
         }
 
         public IPacket invoke(Object instance, boolean sync, Object ...parameters) throws Exception {

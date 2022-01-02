@@ -1,5 +1,8 @@
 package at.livekit.packets;
 
+import java.util.List;
+
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 public class IdentityPacket extends RequestPacket {
@@ -11,13 +14,15 @@ public class IdentityPacket extends RequestPacket {
     private String head;
     private String authorization;
     private String serverToken;
+    private String[] permissions;
 
-    public IdentityPacket(String uuid, String name, String head, String authorization, String serverToken) {
+    public IdentityPacket(String uuid, String name, String head, String authorization, String serverToken, String[] permissions) {
         this.name = name;
         this.uuid = uuid;
         this.head = head;
         this.authorization = authorization;
         this.serverToken = serverToken;
+        this.permissions = permissions;
     }
 
     @Override
@@ -32,6 +37,7 @@ public class IdentityPacket extends RequestPacket {
         json.put("authorization", authorization);
         json.put("server_token", serverToken);
         json.put("packet_id", PACKETID);
+        json.put("permissions", new JSONArray(permissions));
         return json;
     }
 }

@@ -144,7 +144,7 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
             for(Method method : methods) {
                 if(method.isAnnotationPresent(Action.class)) {
                     Action a = method.getAnnotation(Action.class);
-                    invokationMap.put("LiveKit:"+a.name(), new ActionMethod(method, a.sync()));
+                    invokationMap.put("LiveKit:"+a.name(), new ActionMethod(method,a.permission(), a.sync()));
                 }
             }
         }
@@ -780,7 +780,7 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
                     }catch(Exception ex){ex.printStackTrace();}
                 }
             
-                return new IdentityPacket(identity, client.getIdentifier().getName(), HeadLibraryV2.get(client.getIdentifier().getName(), true), session.getAuthentication(), _session != null ? _session.getSessionToken() : null);
+                return new IdentityPacket(identity, client.getIdentifier().getName(), HeadLibraryV2.get(client.getIdentifier().getName(), true), session.getAuthentication(), _session != null ? _session.getSessionToken() : null, client.getIdentifier().getPermissions());
             }
         } 
         else
@@ -796,7 +796,7 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
                 _server.send(client.getIdentifier(), _modules.onJoinAsync(client.getIdentifier()));
             }catch(Exception ex){ex.printStackTrace();}
 
-            return new IdentityPacket(null, client.getIdentifier().getName(), null, null, null);
+            return new IdentityPacket(null, client.getIdentifier().getName(), null, null, null, client.getIdentifier().getPermissions());
         }
 
         return new StatusPacket(0, "Invalid authentication credentials!");
@@ -882,12 +882,15 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
             
             try{
                 ActionMethod method = getMethod(action.getModuleType(), action.getActionName());
-                RequestPacket packet =  ((RequestPacket) method.invoke(action.getModuleType().equals("LiveKit") ? this : module, sync, identity, action));
-                //Plugin.debug("Action Resolved: "+action.getModuleType()+":"+action.getActionName()+" packet="+(packet != null)+"; ");
-                if(packet != null) {
-                    results.put(identity,packet.setRequestId(action.requestId));
+                if(method.getPermission().equals("none") || identity.hasPermission(method.getPermission())) {
+                    RequestPacket packet =  ((RequestPacket) method.invoke(action.getModuleType().equals("LiveKit") ? this : module, sync, identity, action));
+                    if(packet != null) {
+                        results.put(identity,packet.setRequestId(action.requestId));
+                    }
+                } else {
+                    results.put(identity, new StatusPacket(0, "Permission denied!").setRequestId(action.requestId));
+                    continue;  
                 }
-                
             }catch(Exception ex) {
                 ex.printStackTrace();
                 results.put(identity, new StatusPacket(0, "Something went wrong!").setRequestId(action.requestId));

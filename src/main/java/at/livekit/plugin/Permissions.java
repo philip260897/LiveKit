@@ -22,7 +22,7 @@ public class Permissions
 
     public static boolean initialize() {
         Permissions.use = Config.usePermissions();
-        permissions.add("livekit.commands.admin");
+        /*permissions.add("livekit.commands.admin");
         permissions.add("livekit.commands.basic");
 		permissions.add("livekit.module.map");
 		permissions.add("livekit.module.players");
@@ -42,7 +42,56 @@ public class Permissions
         permissions.add("livekit.poi.edit");
         permissions.add("livekit.players.other");
         permissions.add("livekit.map.info");
-        permissions.add("livekit.console.execute");
+        permissions.add("livekit.console.execute");*/
+
+        //new
+        permissions.add("livekit.commands.basic");  //access commands to connect to livekit
+        permissions.add("livekit.commands.admin");  //access commands to render map
+
+        permissions.add("livekit.map");             //acesss to map
+        permissions.add("livekit.map.info");        //access to block info indicator
+        permissions.add("livekit.map.compass");     //access to compass
+
+        permissions.add("livekit.players");         //see self on map
+        permissions.add("livekit.players.other");   //see other players
+        permissions.add("livekit.players.hidden");  //see invisible (potion) players
+        permissions.add("livekit.players.kick");
+        permissions.add("livekit.players.ban");
+        permissions.add("livekit.players.unban");
+        permissions.add("livekit.players.kill");
+        permissions.add("livekit.players.slap");
+        permissions.add("livekit.players.whitelist");
+        permissions.add("livekit.players.strike");
+        permissions.add("livekit.players.gamemode");
+        permissions.add("livekit.players.selfteleport");
+        permissions.add("livekit.players.teleport");
+
+        permissions.add("livekit.players.give");
+        permissions.add("livekit.players.give.enchanted");
+
+        permissions.add("livekit.weathertime");     //display weather and time
+        permissions.add("livekit.weathertime.set"); //set weather and time
+
+        permissions.add("livekit.chat");            //read chat from app
+        permissions.add("livekit.chat.write");      //write from app when online
+        permissions.add("livekit.chat.offline");    //write from app when offline
+
+        permissions.add("livekit.poi");             //able to see POIs
+        permissions.add("livekit.poi.personal");    //set personal pins
+        permissions.add("livekit.poi.create");      //create public POIs
+        permissions.add("livekit.poi.teleportable");//create public POIs to teleport
+
+        permissions.add("livekit.console");         //able to see console
+        permissions.add("livekit.console.execute"); //able to execute commands
+
+        permissions.add("livekit.inventory");       //open own inventory
+        permissions.add("livekit.inventory.other"); //open other inventory
+        permissions.add("livekit.inventory.delete");//delete items from inventory
+
+        permissions.add("livekit.performance");     //access to performance view
+        
+
+        
 
         if(use) {
             if(Bukkit.getPluginManager().getPlugin("Vault") == null) {

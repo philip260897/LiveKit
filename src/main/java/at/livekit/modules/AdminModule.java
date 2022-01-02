@@ -18,18 +18,14 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
-import org.bukkit.potion.PotionEffect;
-import org.bukkit.potion.PotionEffectType;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import at.livekit.livekit.Identity;
 import at.livekit.livekit.LiveKit;
 import at.livekit.map.Renderer;
-import at.livekit.modules.BaseModule.Action;
 import at.livekit.packets.ActionPacket;
 import at.livekit.packets.IPacket;
 import at.livekit.packets.StatusPacket;
