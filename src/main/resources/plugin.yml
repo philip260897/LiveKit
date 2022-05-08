@@ -1,9 +1,9 @@
+api-version: 1.16
 main: at.livekit.plugin.Plugin
 name: LiveKit
-version: 1.4.4b
+version: 1.4.4c
 author: livekitapp@gmail.com
 description: Connector plugin for LiveKit. Allows LiveKit App to connect to server
-api-version: 1.16
 softdepend: [Vault,DiscordSRV]
 commands:
   livekit:

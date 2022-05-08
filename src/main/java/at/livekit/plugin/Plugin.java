@@ -6,9 +6,7 @@ import java.util.logging.Logger;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.server.ServerLoadEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import at.livekit.api.core.ILiveKit;
@@ -157,10 +155,10 @@ public class Plugin extends JavaPlugin implements ILiveKitPlugin, Listener {
 		}
     }
     
-	@EventHandler
+	/*@EventHandler
 	public void onServerLoadEvent(ServerLoadEvent event) {
 		//try enable economy after everything has loaded
-		/*if(Economy.getInstance().isAvailable() == false) {
+		if(Economy.getInstance().isAvailable() == false) {
 			if(Bukkit.getPluginManager().getPlugin("Vault") == null) {
 				Plugin.debug("Vault not found! No default Economy available!");
 				return;
@@ -180,8 +178,8 @@ public class Plugin extends JavaPlugin implements ILiveKitPlugin, Listener {
 
 			Plugin.log("Found Vault! Using economy ["+econ.getName()+"]");
 			LiveKit.getInstance().setEconomyAdapter(new VaultEconomyAdapter(econ));
-		}*/
-	}
+		}
+	}*/
 
     @Override
     public void onDisable() {
