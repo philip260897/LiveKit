@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -78,6 +79,7 @@ public class LiveKitCommandExecutor implements CommandExecutor, TabCompleter {
     private LKCommand ADMIN_MODULES_ENABLE = new LKCommand("livekit modules {module} enable", "livekit.commands.admin", true, this::cmdModulesToggle, Plugin.isDebug());
     private LKCommand ADMIN_MODULES_DISABLE = new LKCommand("livekit modules {module} disable", "livekit.commands.admin", true, this::cmdModulesToggle, Plugin.isDebug());
     private LKCommand ADMIN_TEXTUREPACK = new LKCommand("livekit tp", "livekit.commands.admin", true, this::cmdTexturepack, Plugin.isDebug());
+    private LKCommand ADMIN_TEST = new LKCommand("livekit test", "livekit.commands.admin", false, this::cmdTest, Plugin.isDebug());
 
     private String prefix;
     private String prefixError;
@@ -597,6 +599,18 @@ public class LiveKitCommandExecutor implements CommandExecutor, TabCompleter {
             writer.flush();
             writer.close();
 
+        }catch(Exception ex){ex.printStackTrace();}
+    }
+
+    private void cmdTest(CommandSender sender, LKCommand cmd) {
+        try {
+            if(sender instanceof Player) {
+                Player player = (Player)sender;
+                Location location = player.getLocation();
+                player.sendMessage("Block Type: "+location.getBlock().getType().name() + " " + Texturepack.getInstance().getTexture(location.getBlock().getType()));
+                Location below = location.clone().add(0, -1, 0);
+                player.sendMessage("Below Block Type: "+below.getBlock().getType().name()+ " " + Texturepack.getInstance().getTexture(location.getBlock().getType()));
+            }
         }catch(Exception ex){ex.printStackTrace();}
     }
     

@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>LiveKit</groupId>
   <artifactId>LiveKit</artifactId>
-  <version>1.4.4c</version>
+  <version>1.4.5</version>
   <name>LiveKit</name>
   <properties>
   <maven.compiler.source>1.8</maven.compiler.source>
@@ -141,7 +141,7 @@
     <dependency>
       <groupId>org.spigotmc</groupId>
       <artifactId>spigot-api</artifactId>
-      <version>1.18.2-R0.1-SNAPSHOT</version>
+      <version>1.19-R0.1-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
   
