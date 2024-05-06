@@ -562,6 +562,17 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
         serverSettings.put("needsPassword", _modules.getSettings().needsPassword);
 
         _server.send(client, new ServerSettingsPacket(serverSettings));
+
+        try {
+            Bukkit.getScheduler().runTaskAsynchronously(Plugin.getInstance(), new Runnable() {
+                @Override
+                public void run() {
+                    Plugin.getStat().onLkConnected();
+                }
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
