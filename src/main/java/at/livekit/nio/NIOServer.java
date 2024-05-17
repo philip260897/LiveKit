@@ -2,6 +2,7 @@ package at.livekit.nio;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
@@ -12,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import at.livekit.livekit.LiveCloud;
 import at.livekit.nio.NIOClient.NIOClientEvent;
 import at.livekit.plugin.Plugin;
 
@@ -20,16 +22,20 @@ public class NIOServer<T> implements Runnable, NIOClientEvent<T> {
     private int port;
     public Map<SelectionKey, NIOClient<T>> clients;
 
-    private Selector selector;
+    protected Selector selector;
     private ServerSocketChannel server;
     private boolean abort = false;
 
     private Thread thread;
-    private NIOServerEvent<T> listener;
+    protected NIOServerEvent<T> listener;
+
+    private NIOProxyPool<T> proxyPool;
     
     public NIOServer(int port) {
         this.port = port;
         this.clients = new HashMap<SelectionKey, NIOClient<T>>();
+
+        
     }
 
     public void setServerListener(NIOServerEvent<T> listener) {
@@ -122,11 +128,19 @@ public class NIOServer<T> implements Runnable, NIOClientEvent<T> {
         }
     }
 
+    public void enableProxy(String uuid, String token, int limit) { 
+        try {
+            this.proxyPool = new NIOProxyPool<T>(this, uuid, token, limit);
+            this.proxyPool.createClient();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
     @Override
     public void run() {
         try
         {
-
             Plugin.log("Server listening on "+port+" for incoming connections");
             boolean writable = false;
             while(!abort) {
@@ -208,6 +222,26 @@ public class NIOServer<T> implements Runnable, NIOClientEvent<T> {
                 last = System.currentTimeMillis();
                 System.out.println("Avg: "+ (size/clientss)+" max: "+max+" min: "+min);
             }
+        }
+    }
+
+    private void createProxyClient() throws Exception {
+        SocketChannel client = SocketChannel.open(new InetSocketAddress("localhost", 8080));
+        if(client.isConnected()) {
+            client.configureBlocking(false);
+            SelectionKey key = client.register(selector, SelectionKey.OP_READ);
+            NIOClient<T> nio = new NIOClient<T>(key, client);
+            nio.setClientListener(this);
+
+            synchronized(clients) {
+                clients.put(key, nio);
+            }
+
+            if(listener != null) listener.clientConnected(nio);
+
+            System.out.println("Connected proxy client");
+        } else {
+            System.out.println("Could not connect proxy client");
         }
     }
 

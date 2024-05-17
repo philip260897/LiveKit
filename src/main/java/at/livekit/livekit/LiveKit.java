@@ -66,6 +66,7 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
 
     private Thread _thread;
     // private TCPServer _server;
+    private LiveCloud _cloud = new LiveCloud();
     private NIOServer<Identity> _server;
     private ModuleManager _modules = new ModuleManager(this);
     private List<String> _moduleUpdates = new ArrayList<String>();
@@ -204,6 +205,16 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
 
     @Override
     public void run() {
+        if(_cloud.enableServer()) {
+            if(_cloud.canProxyConnections()) {
+                Plugin.warning("Port forwarding not setup for "+Config.getServerPort()+"! Enabling proxy...");
+                Plugin.warning("NOTE: You need to setup port forwarding for LiveKit port "+Config.getServerPort()+" to enable direct connections! Direct connections offer better performance and stability! Proxy connections are only a fallback if port forwarding is not possible! Only "+_cloud.getProxyConnectionCount()+" proxy connections are allowed!");
+                _server.enableProxy(_cloud.getUuid(), _cloud.getToken(), _cloud.getProxyConnectionCount());
+            }
+        } else {
+            Plugin.warning("LiveKit proxy not available. Only direct connections possible (Port forwarding for LiveKit port "+Config.getServerPort()+" required!)");
+        }
+
         while(!abort) {
             int tickTime = 1000/(_modules.getSettings().liveMapTickRate);
             long start = System.currentTimeMillis();

@@ -15,7 +15,7 @@ import at.livekit.plugin.Plugin;
 
 public class NIOClient<T> {
 
-    private NIOClientEvent<T> listener;
+    protected NIOClientEvent<T> listener;
     private SocketChannel channel;
     private SelectionKey key;
     private ByteBuffer buffer;

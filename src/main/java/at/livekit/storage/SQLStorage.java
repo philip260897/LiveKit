@@ -37,11 +37,11 @@ public class SQLStorage extends StorageThreadMarshallAdapter
     }
 
     public SQLStorage(String connection, String username, String password) throws SQLException {
-        if(!Plugin.isDebug()) {
+        //if(!Plugin.isDebug()) {
             LoggerFactory.setLogBackendFactory(new NullLogBackend.NullLogBackendFactory());
-        } else {
-            LoggerFactory.setLogBackendType(LogBackendType.CONSOLE);
-        }
+        //} else {
+        //    LoggerFactory.setLogBackendType(LogBackendType.CONSOLE);
+        //}
         
         if(connectionSource == null) {
             connectionSource = new JdbcPooledConnectionSource(connection, username, password);
