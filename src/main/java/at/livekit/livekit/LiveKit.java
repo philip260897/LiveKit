@@ -66,7 +66,6 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
 
     private Thread _thread;
     // private TCPServer _server;
-    private LiveCloud _cloud = new LiveCloud();
     private NIOServer<Identity> _server;
     private ModuleManager _modules = new ModuleManager(this);
     private List<String> _moduleUpdates = new ArrayList<String>();
@@ -205,15 +204,7 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
 
     @Override
     public void run() {
-        if(_cloud.enableServer()) {
-            if(_cloud.canProxyConnections()) {
-                Plugin.warning("Port forwarding not setup for "+Config.getServerPort()+"! Enabling proxy...");
-                Plugin.warning("NOTE: You need to setup port forwarding for LiveKit port "+Config.getServerPort()+" to enable direct connections! Direct connections offer better performance and stability! Proxy connections are only a fallback if port forwarding is not possible! Only "+_cloud.getProxyConnectionCount()+" proxy connections are allowed!");
-                _server.enableProxy(_cloud.getUuid(), _cloud.getToken(), _cloud.getProxyConnectionCount());
-            }
-        } else {
-            Plugin.warning("LiveKit proxy not available. Only direct connections possible (Port forwarding for LiveKit port "+Config.getServerPort()+" required!)");
-        }
+
 
         while(!abort) {
             int tickTime = 1000/(_modules.getSettings().liveMapTickRate);
@@ -574,7 +565,7 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
 
         _server.send(client, new ServerSettingsPacket(serverSettings));
 
-        try {
+        /*try {
             Bukkit.getScheduler().runTaskAsynchronously(Plugin.getInstance(), new Runnable() {
                 @Override
                 public void run() {
@@ -583,7 +574,7 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
             });
         } catch (Exception e) {
             e.printStackTrace();
-        }
+        }*/
     }
 
     @Override
@@ -715,9 +706,9 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
                         Plugin.getStorage().delete(p);
                     }
 
-                    /*if(pin.equals("123456")) {
-                        identity = "867678c4-391b-42a9-a4cb-3ad14089f3f6";
-                    }*/
+                    //if(pin.equals("123456")) {
+                    //    identity = "867678c4-391b-42a9-a4cb-3ad14089f3f6";
+                    //}
 
                     if(identity != null) {
                         List<Session> sessions = Plugin.getStorage().load(Session.class, "uuid", UUID.fromString(identity));

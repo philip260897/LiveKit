@@ -1,9 +1,6 @@
 package at.livekit.nio;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.SocketOption;
-import java.net.SocketOptions;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
@@ -11,6 +8,7 @@ import java.util.List;
 
 import org.bukkit.Bukkit;
 
+import at.livekit.livekit.LiveCloud;
 import at.livekit.nio.proxy.NIOProxyClient;
 import at.livekit.nio.proxy.NIOProxyListener;
 import at.livekit.packets.ProxyConnectPacket;
@@ -23,23 +21,29 @@ public class NIOProxyPool<T> implements NIOProxyListener<T> {
     private String serverUuid;
     private String token;
     private int limit;
+    private String ip;
+    private int port;
     
     private List<NIOProxyClient<T>> clients = new ArrayList<NIOProxyClient<T>>();
     private NIOProxyClient<T> currentClient;
     
     private Object lock = new Object();
 
-    public NIOProxyPool(NIOServer<T> server, String serverUuid, String token, int limit) {
-        this.serverUuid = serverUuid;
-        this.token = token;
+    
+    public NIOProxyPool(NIOServer<T> server) {
         this.server = server;
-        this.limit = limit;
+        this.limit = LiveCloud.getInstance().getProxyConnectionCount();
+        this.ip = LiveCloud.getInstance().getProxyIp();
+        this.port = LiveCloud.getInstance().getProxyPort();
+        this.serverUuid = LiveCloud.getInstance().getUuid();
+        this.token = LiveCloud.getInstance().getToken();
     }
 
-    private boolean scheduled = false;
+    private volatile boolean scheduled = false;
     private int reconnects = 0;
     private int reconnectsLimit = 3;
     private int seconds = 5;
+    private long lastTry = 0;
 
     public void createClient() {
         
@@ -48,7 +52,11 @@ public class NIOProxyPool<T> implements NIOProxyListener<T> {
                 Plugin.debug("[Proxy] currentClient == null "+(currentClient == null));
                 if(currentClient == null) {
                     try {
-                        SocketChannel channel = SocketChannel.open(new InetSocketAddress("localhost", 8080));
+                        if(System.currentTimeMillis() - lastTry < 3000) {
+                            throw new Exception("Too many retries");
+                        }
+
+                        SocketChannel channel = SocketChannel.open(new InetSocketAddress(ip, port));
                         channel.configureBlocking(false);
                         channel.socket().setKeepAlive(true);
                         SelectionKey key = channel.register(server.selector, SelectionKey.OP_READ);
@@ -60,22 +68,37 @@ public class NIOProxyPool<T> implements NIOProxyListener<T> {
                         }
 
                         server.send(currentClient, new ProxyConnectPacket(serverUuid, token));
-
                         reconnects = 0;
 
-                        Plugin.debug("[Proxy] Proxy connected, waiting for client...");
-                    } catch(IOException e) {
+                        Plugin.log("Proxy connection established, waiting for connection...");
+                    } catch(Exception e) {
                         if(scheduled == false && reconnects < reconnectsLimit) {
                             scheduled = true;
                             reconnects++;
-                            Plugin.debug("[Proxy] Proxy connection failed, retrying in "+((Math.pow((seconds), reconnects)))+" seconds...");
-                            Bukkit.getScheduler().runTaskLaterAsynchronously(Plugin.getInstance(), () -> { Plugin.debug("Running scheduler");  scheduled = false; createClient(); }, (int)Math.pow((seconds), reconnects)*20);
+                            Plugin.log("Proxy connection failed, retrying in "+((int)(Math.pow((seconds), reconnects)))+" seconds...");
+                            Bukkit.getScheduler().runTaskLaterAsynchronously(Plugin.getInstance(), () -> { scheduled = false; server.requestProxyClient(); }, (int)Math.pow((seconds), reconnects)*20);
                         }
                     }
                 }
             }
         } else {
-            Plugin.debug("[Proxy] Proxy limit reached, waiting for proxy to disconnect...");
+            Plugin.warning("[Proxy] Proxy limit reached, waiting for proxy to disconnect...");
+        }
+        lastTry = System.currentTimeMillis();
+    }
+
+    public void close() {
+        System.out.println("CLOSING CURRENT CLIENT");
+        synchronized(clients) {
+            for(NIOProxyClient<T> client : clients) {
+                client.close();
+            }
+            clients.clear();
+        }
+        if(currentClient != null) {
+            System.out.println("CLOSING CURRENT CLIENT 2");
+            currentClient.close();
+            currentClient = null;
         }
     }
 
@@ -92,12 +115,14 @@ public class NIOProxyPool<T> implements NIOProxyListener<T> {
         client.setClientListener(server);
         server.listener.clientConnected(client);
 
-        try{ createClient(); } catch(Exception e) { e.printStackTrace(); }
+        server.requestProxyClient();
     }
 
 
     @Override
     public void clientDisconnected(NIOProxyClient<T> client) {
+        Plugin.debug("[Proxy] Proxy client disconnected...");
+
         synchronized(clients) {
             clients.remove(client);
         }
@@ -105,55 +130,7 @@ public class NIOProxyPool<T> implements NIOProxyListener<T> {
             currentClient = null;
         }
 
-        try{ createClient(); } catch(Exception e) { e.printStackTrace(); }
+        server.requestProxyClient();
     }
-
-    /*@Override
-    public void messageReceived(NIOClient<T> client, String message) {
-        JSONObject json = new JSONObject(message);
-        int packetId = json.getInt("packet_id");
-
-        if(packetId == ProxyClientConnectedPacket.PACKETID) {
-            synchronized(currentClient) {
-                currentClient = null;
-            }
-
-            client.setClientListener(server);
-            server.listener.clientConnected(client);
-
-            System.out.println("[Proxy] Proxy client connected...handing socket over to LiveKit server");
-
-            try{ createClient(); } catch(Exception e) { e.printStackTrace(); }
-        } else {
-            System.out.println("[Proxy] Invalid message received: "+message);
-        }
-
-    }
-
-
-    @Override
-    public void connectionClosed(NIOClient<T> client) {
-        synchronized(lock) {
-            currentClient = null;
-        }
-
-        synchronized(server.clients) {
-            server.clients.remove(client.getKey());
-        }
-
-        System.out.println("[Proxy] Proxy client disconnected...creating new instance");
-
-        try{ createClient(); } catch(Exception e) { e.printStackTrace(); }
-    }*/
-
- 
-
-
-
-
-
-
-
-
 }
 

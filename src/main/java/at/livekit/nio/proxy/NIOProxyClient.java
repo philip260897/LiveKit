@@ -57,4 +57,8 @@ public class NIOProxyClient<T> extends NIOClient<T> implements NIOClientEvent<T>
         if(clientListener != null) clientListener.connectionClosed(client);
         if(proxyListener != null) proxyListener.clientDisconnected(this);
     }
+
+    public boolean getProxyConnected() {
+        return proxyConnected;
+    }
 }

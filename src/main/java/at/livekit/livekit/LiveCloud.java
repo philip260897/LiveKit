@@ -20,15 +20,26 @@ import at.livekit.plugin.Plugin;
 
 public class LiveCloud {
 
-    private static final String HOST = "http://localhost:9090/livekit/api/v1";
+    private static final String HOST = "https://proxy.livekitapp.com/livekit/api/v1";
+
+    //singleton
+    private static LiveCloud instance = null;
+    public static LiveCloud getInstance() {
+        if(instance == null) {
+            instance = new LiveCloud();
+        }
+        return instance;
+    }
     
     private File sessionFile = null;
     private String serverUuid = null;
     private String serverToken = null;
     private boolean forwarding = false;
     private int proxyConnections = 3;
+    private String proxyIp = null;
+    private int proxyPort = 0;
 
-    public LiveCloud() {
+    private LiveCloud() {
         sessionFile = new File(Plugin.getInstance().getDataFolder(), "server_identity");
         if(sessionFile.exists()) {
             try {
@@ -75,6 +86,8 @@ public class LiveCloud {
             serverToken = json.getString("token");
             forwarding = json.getBoolean("forwarding");
             proxyConnections = json.getInt("proxy_connections");
+            proxyIp = json.getString("proxy_ip");
+            proxyPort = json.getInt("proxy_port");
 
             persistIdentity();
 
@@ -91,10 +104,12 @@ public class LiveCloud {
             URL uri = new URL(url);
             connection = (HttpURLConnection) uri.openConnection();
 
+
+
             for(Map.Entry<String, String> entry : headers.entrySet()) {
                 connection.setRequestProperty(entry.getKey(), entry.getValue());
             }
-
+            connection.setRequestProperty("Referer", "bukkit");
 
             String response = readBody(connection.getInputStream());
 
@@ -102,16 +117,16 @@ public class LiveCloud {
 
             return response;
         } catch (ConnectException e) {
-            e.printStackTrace();
+            if(Plugin.isDebug()) e.printStackTrace();
             Plugin.debug("LiveKit Proxy Error: "+e.getMessage());
             Plugin.debug("URL: "+url);
         } 
         catch (IOException e) {
-            e.printStackTrace();
+            if(Plugin.isDebug()) e.printStackTrace();
             Plugin.debug("URL: "+url);
             try {
                 String error = readBody(connection.getErrorStream());
-                Plugin.severe("LiveKit Proxy Error: " + error);
+                Plugin.debug("LiveKit Proxy Error: " + error);
             } catch (Exception ex) {e.printStackTrace();}
         }
 
@@ -124,6 +139,14 @@ public class LiveCloud {
 
     public String getToken() {
         return serverToken;
+    }
+
+    public String getProxyIp() {
+        return proxyIp;
+    }
+
+    public int getProxyPort() {
+        return proxyPort;
     }
 
     public boolean canProxyConnections() {

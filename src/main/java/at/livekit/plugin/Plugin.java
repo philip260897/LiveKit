@@ -27,7 +27,7 @@ import at.livekit.utils.Metrics;
 
 public class Plugin extends JavaPlugin implements ILiveKitPlugin, Listener {
 
-	private static boolean DEBUG = true;
+	private static boolean DEBUG = false;
 
 	private static Logger logger;
 	private static Plugin instance;
@@ -40,7 +40,7 @@ public class Plugin extends JavaPlugin implements ILiveKitPlugin, Listener {
 	private static IStorageAdapterGeneric storage;
 
 	private static DiscordSRVPlugin discordPlugin;
-	private static Stat stat;
+	//private static Stat stat;
 
 	@Override
 	public void onEnable() {
@@ -53,7 +53,7 @@ public class Plugin extends JavaPlugin implements ILiveKitPlugin, Listener {
 			getDataFolder().mkdirs();
 		}
 
-		stat = new Stat();
+		//stat = new Stat();
 
 		try{
 			Texturepack.getInstance();
@@ -155,14 +155,14 @@ public class Plugin extends JavaPlugin implements ILiveKitPlugin, Listener {
         	discordPlugin.onEnable();
 		}
 
-		int serverPort = Bukkit.getPort();
+		/*int serverPort = Bukkit.getPort();
 		int lkPort = Config.getServerPort();
 		Bukkit.getScheduler().runTaskAsynchronously(this, new Runnable() {
 			@Override
 			public void run() {
 				stat.onEnabled(serverPort, lkPort);
 			}
-		});
+		});*/
     }
     
 	/*@EventHandler
@@ -251,9 +251,9 @@ public class Plugin extends JavaPlugin implements ILiveKitPlugin, Listener {
 		return DEBUG;
 	}
 
-	public static Stat getStat() {
+	/*public static Stat getStat() {
 		return stat;
-	}
+	}*/
 
 	@Override
 	public ILiveKit getLiveKit() {

@@ -137,6 +137,7 @@ public class NIOClient<T> {
 
     public void close() {
         try{ 
+            key.cancel();
             channel.close();
         }catch(Exception ex){ex.printStackTrace();}
     }

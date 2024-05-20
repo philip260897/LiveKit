@@ -2,7 +2,6 @@ package at.livekit.nio;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
@@ -15,6 +14,7 @@ import java.util.stream.Collectors;
 
 import at.livekit.livekit.LiveCloud;
 import at.livekit.nio.NIOClient.NIOClientEvent;
+import at.livekit.plugin.Config;
 import at.livekit.plugin.Plugin;
 
 public class NIOServer<T> implements Runnable, NIOClientEvent<T> {
@@ -61,6 +61,8 @@ public class NIOServer<T> implements Runnable, NIOClientEvent<T> {
             for(NIOClient<T> client : clients.values())client.close();
             clients.clear();
         }
+
+
 
         try{
             selector.close();
@@ -128,29 +130,55 @@ public class NIOServer<T> implements Runnable, NIOClientEvent<T> {
         }
     }
 
-    public void enableProxy(String uuid, String token, int limit) { 
+    /*public void enableProxy(String uuid, String token, int limit, String ip, int port) { 
         try {
-            this.proxyPool = new NIOProxyPool<T>(this, uuid, token, limit);
+            this.proxyPool = new NIOProxyPool<T>(this, uuid, token, limit, ip, port);
             this.proxyPool.createClient();
         } catch (Exception ex) {
             ex.printStackTrace();
         }
+    }*/
+
+    private volatile boolean proxyClientRequest = false;
+    public void requestProxyClient() {
+        proxyClientRequest = true;
+        selector.wakeup();
     }
 
     @Override
     public void run() {
         try
         {
+            if(LiveCloud.getInstance().enableServer()) {
+                if(LiveCloud.getInstance().canProxyConnections()) {
+                    Plugin.warning("Port forwarding not setup for "+Config.getServerPort()+"! Enabling proxy...");
+                    Plugin.warning("NOTE: You need to setup port forwarding for LiveKit port "+Config.getServerPort()+" to enable direct connections! Direct connections offer better performance and stability! Proxy connections are only a fallback if port forwarding is not possible! Only "+LiveCloud.getInstance().getProxyConnectionCount()+" proxy connections are allowed!");
+                    this.proxyPool = new NIOProxyPool<T>(this);
+                    this.requestProxyClient();
+                }
+            } else {
+                Plugin.warning("LiveKit proxy not available. Only direct connections possible \u001B[31m(Port forwarding for LiveKit port "+Config.getServerPort()+" required!)\u001B[0m");
+            }
+
             Plugin.log("Server listening on "+port+" for incoming connections");
             boolean writable = false;
+
+
             while(!abort) {
 
-                if(!writable) {
+                if(!writable && !proxyClientRequest) {
                     selector.select();
                     if(!selector.isOpen()) continue;
                 } else {
                     Thread.sleep(20);
                     selector.selectNow();
+                }
+
+                if(proxyClientRequest) {
+                    proxyClientRequest = false;
+                    if(proxyPool != null) {
+                        proxyPool.createClient();
+                    }
                 }
 
                 //System.out.println("Selector working");
@@ -194,6 +222,10 @@ public class NIOServer<T> implements Runnable, NIOClientEvent<T> {
             ex.printStackTrace();
         }
 
+        if(proxyPool != null) {
+            proxyPool.close();
+        }
+
         try{
             server.close();
         }catch(Exception ex){ex.printStackTrace();}
@@ -222,26 +254,6 @@ public class NIOServer<T> implements Runnable, NIOClientEvent<T> {
                 last = System.currentTimeMillis();
                 System.out.println("Avg: "+ (size/clientss)+" max: "+max+" min: "+min);
             }
-        }
-    }
-
-    private void createProxyClient() throws Exception {
-        SocketChannel client = SocketChannel.open(new InetSocketAddress("localhost", 8080));
-        if(client.isConnected()) {
-            client.configureBlocking(false);
-            SelectionKey key = client.register(selector, SelectionKey.OP_READ);
-            NIOClient<T> nio = new NIOClient<T>(key, client);
-            nio.setClientListener(this);
-
-            synchronized(clients) {
-                clients.put(key, nio);
-            }
-
-            if(listener != null) listener.clientConnected(nio);
-
-            System.out.println("Connected proxy client");
-        } else {
-            System.out.println("Could not connect proxy client");
         }
     }
 
