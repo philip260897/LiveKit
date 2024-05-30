@@ -88,7 +88,6 @@ public class NIOProxyPool<T> implements NIOProxyListener<T> {
     }
 
     public void close() {
-        System.out.println("CLOSING CURRENT CLIENT");
         synchronized(clients) {
             for(NIOProxyClient<T> client : clients) {
                 client.close();
@@ -96,7 +95,6 @@ public class NIOProxyPool<T> implements NIOProxyListener<T> {
             clients.clear();
         }
         if(currentClient != null) {
-            System.out.println("CLOSING CURRENT CLIENT 2");
             currentClient.close();
             currentClient = null;
         }
