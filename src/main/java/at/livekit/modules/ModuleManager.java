@@ -12,19 +12,16 @@ import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 import org.bukkit.Bukkit;
-import org.bukkit.World;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import at.livekit.livekit.Identity;
-import at.livekit.map.RenderScheduler;
 import at.livekit.modules.BaseModule.ActionMethod;
 import at.livekit.modules.BaseModule.ModuleListener;
 import at.livekit.modules.BaseModule.ModulesAvailablePacket;
 import at.livekit.packets.StatusPacket;
 import at.livekit.plugin.Config;
 import at.livekit.plugin.Plugin;
-import javafx.scene.input.MouseButton;
 import at.livekit.packets.IPacket;
 
 public class ModuleManager 
