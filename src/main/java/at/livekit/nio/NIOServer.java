@@ -51,6 +51,7 @@ public class NIOServer<T> implements Runnable, NIOClientEvent<T> {
         server.register(selector, SelectionKey.OP_ACCEPT);
 
         thread = new Thread(this);
+        thread.setName("LiveKit server");
         thread.start();
     }
 
