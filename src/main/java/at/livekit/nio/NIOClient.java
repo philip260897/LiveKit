@@ -2,16 +2,15 @@ package at.livekit.nio;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.Buffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.json.JSONException;
 
-import at.livekit.plugin.Plugin;
 
 public class NIOClient<T> {
 
@@ -79,7 +78,7 @@ public class NIOClient<T> {
             while((read = channel.read(buffer)) > 0) {
                 //Plugin.log("["+channel.getRemoteAddress().toString()+"] "+(new String(buffer.array(), 0, read, "UTF-8")));
                 builder.append(new String(buffer.array(), 0, read, "UTF-8"));
-                buffer.clear();
+                ((Buffer)buffer).clear();
 
                 parsePackets();
             }
