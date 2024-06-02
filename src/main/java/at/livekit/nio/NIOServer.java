@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import at.livekit.livekit.LiveCloud;
+import at.livekit.livekit.LiveProxy;
 import at.livekit.nio.NIOClient.NIOClientEvent;
 import at.livekit.plugin.Config;
 import at.livekit.plugin.Plugin;
@@ -150,10 +150,10 @@ public class NIOServer<T> implements Runnable, NIOClientEvent<T> {
     public void run() {
         try
         {
-            if(LiveCloud.getInstance().enableServer()) {
-                if(LiveCloud.getInstance().canProxyConnections()) {
+            if(LiveProxy.getInstance().enableServer()) {
+                if(LiveProxy.getInstance().canProxyConnections()) {
                     Plugin.warning("Port forwarding not setup for "+Config.getServerPort()+"! Enabling proxy...");
-                    Plugin.warning("NOTE: You need to setup port forwarding for LiveKit port "+Config.getServerPort()+" to enable direct connections! Direct connections offer better performance and stability! Proxy connections are only a fallback if port forwarding is not possible! Only "+LiveCloud.getInstance().getProxyConnectionCount()+" proxy connections are allowed!");
+                    Plugin.warning("NOTE: You need to setup port forwarding for LiveKit port "+Config.getServerPort()+" to enable direct connections! Direct connections offer better performance and stability! Proxy connections are only a fallback if port forwarding is not possible! Only "+LiveProxy.getInstance().getProxyConnectionCount()+" proxy connections are allowed!");
                     this.proxyPool = new NIOProxyPool<T>(this);
                     this.requestProxyClient();
                 }

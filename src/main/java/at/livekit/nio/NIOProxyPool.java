@@ -8,7 +8,7 @@ import java.util.List;
 
 import org.bukkit.Bukkit;
 
-import at.livekit.livekit.LiveCloud;
+import at.livekit.livekit.LiveProxy;
 import at.livekit.nio.proxy.NIOProxyClient;
 import at.livekit.nio.proxy.NIOProxyListener;
 import at.livekit.packets.ProxyConnectPacket;
@@ -32,11 +32,11 @@ public class NIOProxyPool<T> implements NIOProxyListener<T> {
     
     public NIOProxyPool(NIOServer<T> server) {
         this.server = server;
-        this.limit = LiveCloud.getInstance().getProxyConnectionCount();
-        this.ip = LiveCloud.getInstance().getProxyIp();
-        this.port = LiveCloud.getInstance().getProxyPort();
-        this.serverUuid = LiveCloud.getInstance().getUuid();
-        this.token = LiveCloud.getInstance().getToken();
+        this.limit = LiveProxy.getInstance().getProxyConnectionCount();
+        this.ip = LiveProxy.getInstance().getProxyIp();
+        this.port = LiveProxy.getInstance().getProxyPort();
+        this.serverUuid = LiveProxy.getInstance().getUuid();
+        this.token = LiveProxy.getInstance().getToken();
     }
 
     private volatile boolean scheduled = false;

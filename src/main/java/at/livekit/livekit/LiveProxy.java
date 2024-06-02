@@ -18,15 +18,15 @@ import org.json.JSONObject;
 import at.livekit.plugin.Config;
 import at.livekit.plugin.Plugin;
 
-public class LiveCloud {
+public class LiveProxy {
 
     private static final String HOST = "https://proxy.livekitapp.com/livekit/api/v1";
 
     //singleton
-    private static LiveCloud instance = null;
-    public static LiveCloud getInstance() {
+    private static LiveProxy instance = null;
+    public static LiveProxy getInstance() {
         if(instance == null) {
-            instance = new LiveCloud();
+            instance = new LiveProxy();
         }
         return instance;
     }
@@ -34,12 +34,12 @@ public class LiveCloud {
     private File sessionFile = null;
     private String serverUuid = null;
     private String serverToken = null;
-    private boolean forwarding = false;
+    private boolean proxy = false;
     private int proxyConnections = 3;
     private String proxyIp = null;
     private int proxyPort = 0;
 
-    private LiveCloud() {
+    private LiveProxy() {
         sessionFile = new File(Plugin.getInstance().getDataFolder(), "server_identity");
         if(sessionFile.exists()) {
             try {
@@ -84,7 +84,7 @@ public class LiveCloud {
             JSONObject json = new JSONObject(response);
             serverUuid = json.getString("uuid");
             serverToken = json.getString("token");
-            forwarding = json.getBoolean("forwarding");
+            proxy = json.getBoolean("proxy");
             proxyConnections = json.getInt("proxy_connections");
             proxyIp = json.getString("proxy_ip");
             proxyPort = json.getInt("proxy_port");
@@ -150,7 +150,7 @@ public class LiveCloud {
     }
 
     public boolean canProxyConnections() {
-        return forwarding == false && serverUuid != null && serverToken != null;
+        return proxy && serverUuid != null && serverToken != null;
     }
 
     public int getProxyConnectionCount() {
