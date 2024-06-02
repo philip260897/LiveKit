@@ -84,12 +84,11 @@ public class LiveProxy {
             JSONObject json = new JSONObject(response);
             serverUuid = json.getString("uuid");
             serverToken = json.getString("token");
+            persistIdentity();
             proxy = json.getBoolean("proxy");
             proxyConnections = json.getInt("proxy_connections");
             proxyIp = json.getString("proxy_ip");
             proxyPort = json.getInt("proxy_port");
-
-            persistIdentity();
 
             return true;
         }
