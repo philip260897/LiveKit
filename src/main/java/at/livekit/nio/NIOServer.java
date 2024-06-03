@@ -182,6 +182,7 @@ public class NIOServer<T> implements Runnable, NIOClientEvent<T> {
                 while(iter.hasNext()) {
                     SelectionKey key = iter.next();
                     
+                    
                     if(key.isAcceptable()) {
                         acceptIncoming();
                     }
@@ -189,6 +190,7 @@ public class NIOServer<T> implements Runnable, NIOClientEvent<T> {
                     if(key.isReadable()) {
                         NIOClient<T> client = clients.get(key);
                         if(client != null) client.read();
+                        else Plugin.debug("ERROR!!!!!! Client not found for key: "+key);
                     }
 
                     iter.remove();

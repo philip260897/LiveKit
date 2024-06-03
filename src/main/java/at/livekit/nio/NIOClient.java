@@ -11,6 +11,8 @@ import java.util.List;
 
 import org.json.JSONException;
 
+import at.livekit.plugin.Plugin;
+
 
 public class NIOClient<T> {
 
@@ -77,6 +79,8 @@ public class NIOClient<T> {
         try{
             while((read = channel.read(buffer)) > 0) {
                 //Plugin.log("["+channel.getRemoteAddress().toString()+"] "+(new String(buffer.array(), 0, read, "UTF-8")));
+                String b = new String(buffer.array(), 0, read, "UTF-8");
+                Plugin.debug("["+channel.getRemoteAddress().toString()+"] "+b);
                 builder.append(new String(buffer.array(), 0, read, "UTF-8"));
                 ((Buffer)buffer).clear();
 

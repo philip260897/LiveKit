@@ -275,19 +275,7 @@ public class Plugin extends JavaPlugin implements ILiveKitPlugin, Listener {
         }*/
     }
     
-	/*private static Field getField(Class clazz, String fieldName)
-	throws NoSuchFieldException {
-try {
-  return clazz.getDeclaredField(fieldName);
-} catch (NoSuchFieldException e) {
-  Class superClass = clazz.getSuperclass();
-  if (superClass == null) {
-	throw e;
-  } else {
-	return getField(superClass, fieldName);
-  }
-}
-}*/
+
 
 	@EventHandler
 	public void onServerLoadEvent(ServerLoadEvent event){

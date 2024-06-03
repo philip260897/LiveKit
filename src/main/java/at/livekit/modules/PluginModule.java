@@ -14,6 +14,7 @@ import org.json.JSONObject;
 
 import at.livekit.livekit.Identity;
 import at.livekit.packets.IPacket;
+import at.livekit.timings.TimedCommandExecutor;
 import at.livekit.timings.TimedRegisteredListener;
 import at.livekit.utils.Utils;
 
@@ -26,12 +27,15 @@ public class PluginModule extends BaseModule{
     private HashMap<Long, Long> _ramBacklog = new HashMap<Long, Long>();
     private HashMap<Long, Float> _cpuBacklog = new HashMap<Long, Float>();
     private HashMap<Long, Integer> _tickBacklog = new HashMap<Long, Integer>();
+    private HashMap<Long, Map<String, Long>> _pluginBacklog = new HashMap<Long, Map<String, Long>>();
+    private HashMap<Long, Map<String, Map<String, Long>>> _commandBacklog = new HashMap<Long, Map<String, Map<String, Long>>>();
     
     private HashMap<Long, Long> _ram = new HashMap<Long, Long>();
     private HashMap<Long, Float> _cpu = new HashMap<Long, Float>();
     private HashMap<Long, Integer> _tick = new HashMap<Long, Integer>();
+    private HashMap<Long, Map<String, Long>> _plugin = new HashMap<Long, Map<String, Long>>();
+    private HashMap<Long, Map<String, Map<String, Long>>> _command = new HashMap<Long, Map<String, Map<String, Long>>>();
 
-    private Map<Plugin, Long> pluginTimings;
     private Plugin[] plugins;
 
     long currentTickTS = 0;
@@ -94,24 +98,42 @@ public class PluginModule extends BaseModule{
     @Override
     public void onServerLoad() {
         plugins = Bukkit.getPluginManager().getPlugins();
-        pluginTimings = new HashMap<Plugin, Long>();
         try{ 
             TimedRegisteredListener.registerListeners();
+        } catch (Exception e) { e.printStackTrace(); }
+        try{ 
+            TimedCommandExecutor.registerTimedCommandExecutor();
         } catch (Exception e) { e.printStackTrace(); }
     }
 
     @Override
     public void update() {
-        synchronized(pluginTimings) {
-            pluginTimings = TimedRegisteredListener.snapshotTimings();
-        }
-
-
         long ts = System.currentTimeMillis();
+
+        Map<Plugin, Long> timings = TimedRegisteredListener.snapshotTimings();
+        Map<Plugin, Map<String, Long>>  cmdTimings = TimedCommandExecutor.snapshotTimings();
+        Map<String, Long> pluginTimings = new HashMap<>();
+        Map<String, Map<String, Long>> commandTimings = new HashMap<>();
+        for(Plugin plugin : timings.keySet()) {
+            pluginTimings.put(plugin.getName(), timings.get(plugin));
+        }
+        for(Plugin plugin : cmdTimings.keySet()) {
+            Long time = cmdTimings.get(plugin).values().stream().mapToLong(Long::longValue).sum();
+
+            if(pluginTimings.containsKey(plugin.getName())) {
+                pluginTimings.put(plugin.getName(), pluginTimings.get(plugin.getName()) + time);
+            } else {
+                pluginTimings.put(plugin.getName(), time);
+            }
+
+            commandTimings.put(plugin.getName(), cmdTimings.get(plugin));
+        }
 
         synchronized(backlog) {
             _ram.put(ts, Utils.getMemoryUsage());
             _cpu.put(ts, Utils.getCPUUsage());
+            _plugin.put(ts, pluginTimings);
+            _command.put(ts, commandTimings);
         }
         notifyChange();
         super.update();
@@ -125,6 +147,8 @@ public class PluginModule extends BaseModule{
             data.put("cpu", _cpuBacklog);
             data.put("ram", _ramBacklog);
             data.put("tick", _tickBacklog);
+            data.put("plugins", _pluginBacklog);
+            data.put("commands", _commandBacklog);
         }
 
         RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
@@ -145,11 +169,14 @@ public class PluginModule extends BaseModule{
             JSONObject pluginData = new JSONObject();
             pluginData.put("name", plugin.getName());
             pluginData.put("version", plugin.getDescription().getVersion());
-            pluginData.put("author", plugin.getDescription().getAuthors().get(0));
+            pluginData.put("authors", plugin.getDescription().getAuthors());
             pluginData.put("enabled", plugin.isEnabled());
+            pluginData.put("description", plugin.getDescription().getDescription());
+            pluginData.put("website", plugin.getDescription().getWebsite());
+            pluginData.put("main", plugin.getDescription().getMain());
             plugins.put(pluginData);
         }
-        data.put("plugins", plugins);
+        data.put("pluginList", plugins);
         return new ModuleUpdatePacket(this, data, true);
     }
 
@@ -158,13 +185,6 @@ public class PluginModule extends BaseModule{
         Map<Identity,IPacket> responses = new HashMap<Identity,IPacket>();
 
         JSONObject data = new JSONObject();
-
-        synchronized(pluginTimings) {
-            for(Plugin plugin : this.pluginTimings.keySet()) {
-                data.put(plugin.getName(), pluginTimings.get(plugin));
-            }
-        }
-
         
         RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
         runtimeMXBean.getUptime();
@@ -174,6 +194,8 @@ public class PluginModule extends BaseModule{
             data.put("cpu", _cpu);
             data.put("ram", _ram);
             data.put("tick", _tick);
+            data.put("plugins", _plugin);
+            data.put("commands", _command);
         }
 
 
@@ -184,14 +206,20 @@ public class PluginModule extends BaseModule{
             _ramBacklog.putAll(_ram);
             _cpuBacklog.putAll(_cpu);
             _tickBacklog.putAll(_tick);
+            _pluginBacklog.putAll(_plugin);
+            _commandBacklog.putAll(_command);
 
             _ramBacklog.entrySet().removeIf(e -> e.getKey() < ts - SECONDS*1000);
             _cpuBacklog.entrySet().removeIf(e -> e.getKey() < ts - SECONDS*1000);
             _tickBacklog.entrySet().removeIf(e -> e.getKey() < ts - SECONDS*1000);
+            _pluginBacklog.entrySet().removeIf(e -> e.getKey() < ts - SECONDS*1000);
+            _commandBacklog.entrySet().removeIf(e -> e.getKey() < ts - SECONDS*1000);
 
             _ram.clear();
             _cpu.clear();
             _tick.clear();
+            _plugin.clear();
+            _command.clear();
         }
 
         return responses;
