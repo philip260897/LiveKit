@@ -254,6 +254,13 @@ public class Config
             save = true;
         }
 
+        if(config.get("modules.PluginModule") == null) {
+            Plugin.log("Patching config with new Plugin module...");
+            config.set("modules.PluginModule.enabled", true);
+
+            save = true;
+        }
+
         if(config.get("storage.type") == null) {
             Plugin.log("Patching storage config...");
             config.set("storage.type", "SQLITE");

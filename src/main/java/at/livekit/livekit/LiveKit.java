@@ -131,6 +131,10 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
         return null;
     }
 
+    public void onServerLoad() {
+        _modules.onServerLoad();
+    }
+
     public void onEnable() throws Exception {
         //PlayerAuth.initialize();
 

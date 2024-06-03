@@ -85,6 +85,8 @@ public abstract class BaseModule
         if(listener != null) listener.onFullUpdate(getType());
     }
 
+    public void onServerLoad() {}
+
     public void onDisable(Map<String,ActionMethod> signature) {
         enabled = false;
         String name = getType();

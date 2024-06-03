@@ -15,8 +15,10 @@ import org.bukkit.command.CommandMap;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.command.SimpleCommandMap;
 import org.bukkit.craftbukkit.v1_20_R3.CraftServer;
+import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
+import org.bukkit.event.server.ServerLoadEvent;
 import org.bukkit.plugin.EventExecutor;
 import org.bukkit.plugin.RegisteredListener;
 import org.bukkit.plugin.SimplePluginManager;
@@ -40,7 +42,6 @@ import at.livekit.provider.POISpawnProvider;
 import at.livekit.storage.IStorageAdapterGeneric;
 import at.livekit.storage.StorageManager;
 import at.livekit.supported.DiscordSRVPlugin;
-import at.livekit.timings.TimedCommandExecutor;
 import at.livekit.timings.TimedRegisteredListener;
 import at.livekit.utils.ConsoleListener;
 import at.livekit.utils.HeadLibraryEvent;
@@ -49,7 +50,7 @@ import at.livekit.utils.Metrics;
 
 public class Plugin extends JavaPlugin implements ILiveKitPlugin, Listener {
 
-	private static boolean DEBUG = false;
+	private static boolean DEBUG = true;
 
 	private static Logger logger;
 	private static Plugin instance;
@@ -275,7 +276,7 @@ public class Plugin extends JavaPlugin implements ILiveKitPlugin, Listener {
         }*/
     }
     
-	private static Field getField(Class clazz, String fieldName)
+	/*private static Field getField(Class clazz, String fieldName)
 	throws NoSuchFieldException {
 try {
   return clazz.getDeclaredField(fieldName);
@@ -287,7 +288,12 @@ try {
 	return getField(superClass, fieldName);
   }
 }
-}
+}*/
+
+	@EventHandler
+	public void onServerLoadEvent(ServerLoadEvent event){
+		LiveKit.getInstance().onServerLoad();
+	}
 
 	/*@EventHandler
 	public void onServerLoadEvent(ServerLoadEvent event) {

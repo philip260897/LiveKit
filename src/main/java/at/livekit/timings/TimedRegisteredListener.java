@@ -2,6 +2,9 @@ package at.livekit.timings;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.bukkit.Bukkit;
 import org.bukkit.event.EventException;
@@ -14,6 +17,8 @@ import org.bukkit.plugin.RegisteredListener;
 
 public class TimedRegisteredListener extends RegisteredListener {
 
+    private static Map<Plugin, Long> pluginTimings = new ConcurrentHashMap<>();
+
     public TimedRegisteredListener(Listener listener, EventExecutor executor, EventPriority priority, Plugin plugin, boolean ignoreCancelled) {
         super(listener, executor, priority, plugin, ignoreCancelled);
     }
@@ -24,11 +29,20 @@ public class TimedRegisteredListener extends RegisteredListener {
         super.callEvent(event);
         long end = System.nanoTime();
 
-        double seconds = (end - start) / 1000000000.0;
 
-        System.out.println(event.getEventName() + " took " + (end - start) + "ns (" + seconds + "s) to process.");
+        if(!pluginTimings.containsKey(getPlugin())) {
+            pluginTimings.put(getPlugin(), (end-start));
+        }
+        else {
+            pluginTimings.put(getPlugin(), pluginTimings.get(getPlugin()) + (end-start));
+        }
     }
-    
+
+    public static Map<Plugin, Long> snapshotTimings() {
+        Map<Plugin, Long> snapshot = new HashMap<>(pluginTimings);
+        pluginTimings.clear();
+        return snapshot;
+    }
 
     public static TimedRegisteredListener fromRegisteredListener(RegisteredListener listener) throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException{
         Field executorField = RegisteredListener.class.getDeclaredField("executor");
