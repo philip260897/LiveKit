@@ -146,21 +146,15 @@ public class NIOServer<T> implements Runnable, NIOClientEvent<T> {
         selector.wakeup();
     }
 
+    public void setupProxyPool() {
+        this.proxyPool = new NIOProxyPool<T>(this);
+        this.requestProxyClient();
+    }
+
     @Override
     public void run() {
         try
         {
-            if(LiveProxy.getInstance().enableServer()) {
-                if(LiveProxy.getInstance().canProxyConnections()) {
-                    Plugin.warning("Port forwarding not setup for "+Config.getServerPort()+"! Enabling proxy...");
-                    Plugin.warning("NOTE: You need to setup port forwarding for LiveKit port "+Config.getServerPort()+" to enable direct connections! Direct connections offer better performance and stability! Proxy connections are only a fallback if port forwarding is not possible! Only "+LiveProxy.getInstance().getProxyConnectionCount()+" proxy connections are allowed!");
-                    this.proxyPool = new NIOProxyPool<T>(this);
-                    this.requestProxyClient();
-                }
-            } else {
-                Plugin.warning("LiveKit proxy not available. Only direct connections possible \u001B[31m(Port forwarding for LiveKit port "+Config.getServerPort()+" required!)\u001B[0m");
-            }
-
             Plugin.log("Server listening on "+port+" for incoming connections");
             boolean writable = false;
 

@@ -40,18 +40,7 @@ public class LiveProxy {
     private int proxyPort = 0;
 
     private LiveProxy() {
-        sessionFile = new File(Plugin.getInstance().getDataFolder(), "server_identity");
-        if(sessionFile.exists()) {
-            try {
-                List<String> lines = Files.readAllLines(sessionFile.toPath());
-                if(lines.size() > 0) {
-                    serverUuid = lines.get(0);
-                    serverToken = lines.get(1);
-                }
-            } catch (Exception ex) {
-                ex.printStackTrace();
-            }
-        }
+
     }
 
     public void persistIdentity() {
@@ -63,7 +52,6 @@ public class LiveProxy {
             if(!sessionFile.exists()) {
                 sessionFile.createNewFile();
             }
-
             Files.write(sessionFile.toPath(), (serverUuid + "\n" + serverToken).getBytes());
         } catch (IOException e) {
             e.printStackTrace();
@@ -71,6 +59,34 @@ public class LiveProxy {
     }
 
     public boolean enableServer() {
+        File lockFile = new File(Plugin.getInstance().getDataFolder(), "identity.lock");
+        for(int i = 0; i < 8; i++) {
+            if(lockFile.exists()) {
+                try {
+                    Thread.sleep(2000);
+                    Plugin.log("Identity lock file exists, waiting...");
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            } else {
+                break;
+            }
+        }
+        try{ lockFile.createNewFile(); }catch(Exception ex){ex.printStackTrace();}
+
+        sessionFile = new File(Plugin.getInstance().getDataFolder(), "identity");
+        if(sessionFile.exists()) {
+            try {
+                List<String> lines = Files.readAllLines(sessionFile.toPath());
+                if(lines.size() > 0) {
+                    serverUuid = lines.get(0);
+                    serverToken = lines.get(1);
+                }
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        }
+
         int serverPort = Plugin.getInstance().getServer().getPort();
         int liveKitPort = Config.getServerPort();
 
@@ -90,9 +106,11 @@ public class LiveProxy {
             proxyIp = json.getString("proxy_ip");
             proxyPort = json.getInt("proxy_port");
 
+            lockFile.delete();
             return true;
         }
 
+        lockFile.delete();
         return false;
     }
 

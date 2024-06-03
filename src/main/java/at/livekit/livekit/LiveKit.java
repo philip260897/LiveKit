@@ -37,6 +37,7 @@ import at.livekit.modules.BaseModule.Action;
 import at.livekit.modules.BaseModule.ActionMethod;
 import at.livekit.modules.BaseModule.ModuleListener;
 import at.livekit.nio.NIOClient;
+import at.livekit.nio.NIOProxyPool;
 import at.livekit.nio.NIOServer;
 import at.livekit.nio.NIOServer.NIOServerEvent;
 import at.livekit.packets.ActionPacket;
@@ -192,6 +193,26 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
         _thread = new Thread(this);
         _thread.setName("LiveKit worker");
         _thread.start();
+
+
+        Thread _proxyTHread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                if(LiveProxy.getInstance().enableServer()) {
+                    if(LiveProxy.getInstance().canProxyConnections() && !abort) {
+                        Plugin.warning("Port forwarding status for "+Config.getServerPort()+": \u001B[31mCLOSED!\u001B[0m. Enabling proxy...");
+                        Plugin.warning("NOTE: You need to setup port forwarding for LiveKit port "+Config.getServerPort()+" to enable direct connections! Direct connections offer better performance and stability! Proxy connections are only a fallback if port forwarding is not possible! Only "+LiveProxy.getInstance().getProxyConnectionCount()+" proxy connections are allowed!");
+                        _server.setupProxyPool();
+                    } else {
+                        Plugin.log("Port forwarding status for "+Config.getServerPort()+": \u001B[32mOPEN!\u001B[0m. Direct connections enabled!");
+                    }
+                } else {
+                   if(!abort) Plugin.warning("LiveKit proxy not available. Only direct connections possible \u001B[31m(Port forwarding for LiveKit port "+Config.getServerPort()+" required!)\u001B[0m");
+                }
+            }
+        });
+        _proxyTHread.setName("LiveKit Proxy");
+        _proxyTHread.start();
     }
 
     private boolean abort;
@@ -205,7 +226,6 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
 
     @Override
     public void run() {
-
 
         while(!abort) {
             int tickTime = 1000/(_modules.getSettings().liveMapTickRate);
