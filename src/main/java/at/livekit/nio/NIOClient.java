@@ -39,6 +39,18 @@ public class NIOClient<T> {
         
     }
 
+    public int getLocalPort() {
+        return channel.socket().getLocalPort();
+    }
+
+    public int getRemotePort() {
+        return channel.socket().getPort();
+    }
+
+    public String getRemoteAddress() {
+        return channel.socket().getInetAddress().getHostAddress();
+    }
+
     public T getIdentifier() {
         return identifier;
     }

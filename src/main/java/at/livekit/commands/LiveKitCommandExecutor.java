@@ -2,8 +2,10 @@ package at.livekit.commands;
 
 import java.io.File;
 import java.io.PrintWriter;
+import java.nio.channels.SelectionKey;
 import java.util.List;
 import java.util.Set;
+import java.util.Map.Entry;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -35,6 +37,10 @@ import at.livekit.map.RenderBounds.RenderShape;
 import at.livekit.map.RenderJob.RenderJobMode;
 import at.livekit.modules.BaseModule;
 import at.livekit.modules.LiveMapModule;
+import at.livekit.nio.NIOClient;
+import at.livekit.nio.NIOServer;
+import at.livekit.nio.proxy.NIOProxyClient;
+import at.livekit.packets.StatusPacket;
 import at.livekit.plugin.Config;
 import at.livekit.plugin.Permissions;
 import at.livekit.plugin.Plugin;
@@ -79,7 +85,8 @@ public class LiveKitCommandExecutor implements CommandExecutor, TabCompleter {
     private LKCommand ADMIN_MODULES_ENABLE = new LKCommand("livekit modules {module} enable", "livekit.commands.admin", true, this::cmdModulesToggle, Plugin.isDebug());
     private LKCommand ADMIN_MODULES_DISABLE = new LKCommand("livekit modules {module} disable", "livekit.commands.admin", true, this::cmdModulesToggle, Plugin.isDebug());
     private LKCommand ADMIN_TEXTUREPACK = new LKCommand("livekit tp", "livekit.commands.admin", true, this::cmdTexturepack, Plugin.isDebug());
-    private LKCommand ADMIN_TEST = new LKCommand("livekit test", "livekit.commands.admin", false, this::cmdTest, Plugin.isDebug());
+    private LKCommand ADMIN_TEST = new LKCommand("livekit test", "livekit.commands.admin", true, this::cmdTest, Plugin.isDebug());
+    private LKCommand ADMIN_TEST2 = new LKCommand("livekit test {num}", "livekit.commands.admin", true, this::cmdTest2, Plugin.isDebug());
 
     private String prefix;
     private String prefixError;
@@ -604,14 +611,50 @@ public class LiveKitCommandExecutor implements CommandExecutor, TabCompleter {
 
     private void cmdTest(CommandSender sender, LKCommand cmd) {
         try {
-            if(sender instanceof Player) {
-                Player player = (Player)sender;
-                Location location = player.getLocation();
-                player.sendMessage("Block Type: "+location.getBlock().getType().name() + " " + Texturepack.getInstance().getTexture(location.getBlock().getType()));
-                Location below = location.clone().add(0, -1, 0);
-                player.sendMessage("Below Block Type: "+below.getBlock().getType().name()+ " " + Texturepack.getInstance().getTexture(location.getBlock().getType()));
+            NIOServer<Identity> server = LiveKit.getInstance().getServer();
+            for(Entry<SelectionKey, NIOClient<Identity>> entry : server.clients.entrySet()) {
+                NIOClient<Identity> client = entry.getValue();
+                SelectionKey key = entry.getKey();
+                printClientStatus(sender, client);
             }
         }catch(Exception ex){ex.printStackTrace();}
+    }
+
+    private void cmdTest2(CommandSender sender, LKCommand cmd) {
+        try {
+            int port = cmd.get("num");
+            NIOServer<Identity> server = LiveKit.getInstance().getServer();
+            for(Entry<SelectionKey, NIOClient<Identity>> entry : server.clients.entrySet()) {
+                NIOClient<Identity> client = entry.getValue();
+                SelectionKey key = entry.getKey();
+
+                if(client.getLocalPort() == port) {
+                    try{
+                        server.send(client, new StatusPacket(1));
+                        printClientStatus(sender, client);
+                    }catch(Exception ex){ex.printStackTrace();}
+                }
+            }
+            
+        }catch(Exception ex){ex.printStackTrace();}
+    }
+
+    private void printClientStatus(CommandSender sender, NIOClient<Identity> client) {
+        SelectionKey key = client.getKey();
+
+        boolean isProxyClient = client instanceof NIOProxyClient;
+        boolean isOpen = key.channel().isOpen();
+        boolean isBlocking = key.channel().isBlocking();
+        boolean isRegistered = key.isValid();
+        boolean isWritable = key.isWritable();
+        boolean isReadable = key.isReadable();
+        boolean isConnectable = key.isConnectable();
+        boolean isAcceptable = key.isAcceptable();
+        int getLocalPort = client.getLocalPort();
+        int getRemotePort = client.getRemotePort();
+        String getRemoteAddress = client.getRemoteAddress();
+
+        sender.sendMessage("Client["+getLocalPort+"->"+getRemoteAddress+":"+getRemotePort+"] Proxy: "+isProxyClient+" Open: "+isOpen+" Blocking: "+isBlocking+" Registered: "+isRegistered+" Writable: "+isWritable+" Readable: "+isReadable+" Connectable: "+isConnectable+" Acceptable: "+isAcceptable);
     }
     
 	private boolean checkPerm(CommandSender sender, String permission, boolean verbose) {

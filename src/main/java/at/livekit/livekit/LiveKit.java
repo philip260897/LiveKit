@@ -135,6 +135,10 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
         _modules.onServerLoad();
     }
 
+    public NIOServer<Identity> getServer() {
+        return _server;
+    }
+
     public void onEnable() throws Exception {
         //PlayerAuth.initialize();
 
@@ -841,6 +845,14 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
         identity.setSubscription(baseType, subscription);
         identity.setModuleAuthentication(module.getType(), password);
         _server.send(identity, module.onJoinAsync(identity));
+
+        return new StatusPacket(1);
+    }
+
+    @Action(name = "Unsubscribe", sync = false)
+    public IPacket unsubscribe(Identity identity, ActionPacket action) {
+        String baseType = action.getData().getString("baseType");
+        identity.setSubscription(baseType, null);
 
         return new StatusPacket(1);
     }
