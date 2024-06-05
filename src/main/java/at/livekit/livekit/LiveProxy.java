@@ -7,6 +7,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.ConnectException;
 import java.net.HttpURLConnection;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.net.URL;
 import java.nio.file.Files;
 import java.util.HashMap;
@@ -39,6 +41,10 @@ public class LiveProxy {
     private String proxyIp = null;
     private int proxyPort = 0;
 
+    private String echoIp = null;
+    private int echoPort = 0;
+    private String myIp = null;
+
     private LiveProxy() {
 
     }
@@ -59,6 +65,18 @@ public class LiveProxy {
     }
 
     public boolean enableServer() {
+        getServerEchoIp();
+        Plugin.debug("Echo IP: "+echoIp+" Echo Port: "+echoPort);
+        if(echoIp == null || echoPort == 0) {
+            return false;
+        }
+
+        String ip = getMyIp();
+        Plugin.debug("My IP: "+ip);
+        if(ip == null) {
+            return false;
+        }
+
         File lockFile = new File(Plugin.getInstance().getDataFolder(), "identity.lock");
         for(int i = 0; i < 8; i++) {
             if(lockFile.exists()) {
@@ -95,7 +113,7 @@ public class LiveProxy {
             headers.put("Authorization", serverUuid + ":" + serverToken);
         }
 
-        String response = get(HOST+"/server/enable?port=" + serverPort + "&lkport=" + liveKitPort, headers);
+        String response = get(HOST+"/server/enable?port=" + serverPort + "&lkport=" + liveKitPort + "&ip="+ip + (Config.getProxyHostname() != null ? "&alias="+Config.getProxyHostname() : "") , headers);
         if(response != null) {
             JSONObject json = new JSONObject(response);
             serverUuid = json.getString("uuid");
@@ -112,6 +130,31 @@ public class LiveProxy {
 
         lockFile.delete();
         return false;
+    }
+
+    public void getServerEchoIp() {
+        String response = get(HOST+"/server/ip", new HashMap<String, String>());
+        if(response != null) {
+            JSONObject json = new JSONObject(response);
+            echoIp = json.getString("ip");
+            echoPort = json.getInt("port");
+        }
+    }
+
+
+    public String getMyIp() {
+        try {
+            Socket socket = new Socket();
+            socket.connect(new InetSocketAddress(echoIp, echoPort));
+            BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            myIp = reader.readLine();
+            reader.close();
+            socket.close();
+            return myIp;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
 
@@ -148,6 +191,10 @@ public class LiveProxy {
         }
 
         return null;
+    }
+
+    public String getMyResolvedIp() {
+        return myIp;
     }
 
     public String getUuid() {

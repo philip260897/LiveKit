@@ -14,6 +14,8 @@ import java.util.stream.Collectors;
 
 import at.livekit.livekit.LiveProxy;
 import at.livekit.nio.NIOClient.NIOClientEvent;
+import at.livekit.nio.proxy.NIOProxyClient;
+import at.livekit.packets.ProxyClientKeepAlivePacket;
 import at.livekit.plugin.Config;
 import at.livekit.plugin.Plugin;
 
@@ -151,6 +153,19 @@ public class NIOServer<T> implements Runnable, NIOClientEvent<T> {
         this.requestProxyClient();
     }
 
+    public void keepAlive() {
+        synchronized(clients) {
+            for(NIOClient<T> client : clients.values()) {
+                if(client instanceof NIOProxyClient) {
+                    if(client.canKeepAlive()) {
+                        Plugin.debug("[Proxy|"+client.getLocalPort()+"] Sending keep alive packet...");
+                        send(client, new ProxyClientKeepAlivePacket());
+                    }
+                }
+            }
+        }
+    }
+
     @Override
     public void run() {
         try
@@ -162,7 +177,7 @@ public class NIOServer<T> implements Runnable, NIOClientEvent<T> {
             while(!abort) {
 
                 if(!writable && !proxyClientRequest) {
-                    selector.select();
+                    selector.select(1000);
                     if(!selector.isOpen()) continue;
                 } else {
                     Thread.sleep(20);
@@ -176,7 +191,7 @@ public class NIOServer<T> implements Runnable, NIOClientEvent<T> {
                     }
                 }
 
-                //System.out.println("Selector working");
+                keepAlive();
 
                 Iterator<SelectionKey> iter = selector.selectedKeys().iterator();
                 while(iter.hasNext()) {

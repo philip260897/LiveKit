@@ -11,6 +11,7 @@ import org.bukkit.Bukkit;
 import at.livekit.livekit.LiveProxy;
 import at.livekit.nio.proxy.NIOProxyClient;
 import at.livekit.nio.proxy.NIOProxyListener;
+import at.livekit.packets.ProxyClientKeepAlivePacket;
 import at.livekit.packets.ProxyConnectPacket;
 import at.livekit.plugin.Plugin;
 
@@ -102,7 +103,7 @@ public class NIOProxyPool<T> implements NIOProxyListener<T> {
 
     @Override
     public void clientConnected(NIOProxyClient<T> client) {
-        Plugin.debug("[Proxy] Proxy client connected...handing socket over to LiveKit server");
+        Plugin.debug("[Proxy|"+client.getLocalPort()+"] Proxy client connected...handing socket over to LiveKit server");
 
         synchronized(clients) {
             clients.add(client);
@@ -119,13 +120,16 @@ public class NIOProxyPool<T> implements NIOProxyListener<T> {
 
     @Override
     public void clientDisconnected(NIOProxyClient<T> client) {
-        Plugin.debug("[Proxy] Proxy client disconnected...");
+        Plugin.debug("[Proxy|"+client.getLocalPort()+"] Proxy client disconnected...");
 
         synchronized(clients) {
             clients.remove(client);
         }
         if(client == currentClient) {
             currentClient = null;
+        }
+        synchronized(server.clients) {
+            server.clients.remove(client.getKey());
         }
 
         server.requestProxyClient();

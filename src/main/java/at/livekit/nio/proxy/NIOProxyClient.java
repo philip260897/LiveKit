@@ -17,6 +17,7 @@ public class NIOProxyClient<T> extends NIOClient<T> implements NIOClientEvent<T>
     private NIOClientEvent<T> clientListener;
     private boolean proxyConnected = false;
 
+
     public NIOProxyClient(SelectionKey key, SocketChannel channel) {
         super(key, channel);
         super.listener = this;
@@ -33,7 +34,7 @@ public class NIOProxyClient<T> extends NIOClient<T> implements NIOClientEvent<T>
 
     @Override
     public void messageReceived(NIOClient<T> client, String message) {
-        Plugin.debug("[Proxy] Message received: "+message);
+        Plugin.debug("[Proxy|"+client.getLocalPort()+"] Message received: "+message);
         if(proxyConnected == false) {
             JSONObject json = new JSONObject(message);
             int packetId = json.getInt("packet_id");
@@ -41,9 +42,9 @@ public class NIOProxyClient<T> extends NIOClient<T> implements NIOClientEvent<T>
             if(packetId == ProxyClientConnectedPacket.PACKETID) {
                 proxyConnected = true;
                 if(proxyListener != null) proxyListener.clientConnected(this);
-                Plugin.debug("[Proxy] Proxy client established connection");
+                Plugin.debug("[Proxy|"+client.getLocalPort()+"] Proxy client established connection");
             } else {
-                Plugin.debug("[Proxy] Invalid message received: "+message);
+                Plugin.debug("[Proxy|"+client.getLocalPort()+"] Invalid message received: "+message);
             }
         } else {
             if(clientListener != null) {

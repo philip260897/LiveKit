@@ -36,6 +36,14 @@ public class Config
         return config.getString("server.name");
     }
 
+    public static String getProxyHostname() {
+        return getNullableString("proxy.hostname");
+    }
+
+    public static boolean isProxyEnabled() {
+        return config.getBoolean("proxy.enabled");
+    } 
+
     public static int getTickRate() {
         int tickrate = config.getInt("server.tickrate");
         if(tickrate <= 0) return 1;
@@ -169,6 +177,14 @@ public class Config
 
     private static void fixMissing() {
         boolean save = false;
+
+
+        if(!config.contains("proxy.hostname")) {
+            Plugin.log("Updating config with proxy hostname");
+            config.set("proxy.enabled", true);
+            config.set("proxy.hostname", "NULL");
+            save = true;
+        }
 
         if(!config.contains("modules.ChatModule.enabled")) {
             config.set("modules.ChatModule.enabled", true);

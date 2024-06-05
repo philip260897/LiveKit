@@ -653,8 +653,9 @@ public class LiveKitCommandExecutor implements CommandExecutor, TabCompleter {
         int getLocalPort = client.getLocalPort();
         int getRemotePort = client.getRemotePort();
         String getRemoteAddress = client.getRemoteAddress();
+        boolean isConnected = client.isConnected();
 
-        sender.sendMessage("Client["+getLocalPort+"->"+getRemoteAddress+":"+getRemotePort+"] Proxy: "+isProxyClient+" Open: "+isOpen+" Blocking: "+isBlocking+" Registered: "+isRegistered+" Writable: "+isWritable+" Readable: "+isReadable+" Connectable: "+isConnectable+" Acceptable: "+isAcceptable);
+        sender.sendMessage("Client["+getLocalPort+"->"+getRemoteAddress+":"+getRemotePort+"] Proxy: "+isProxyClient+" Connected: "+isConnected+" Open: "+isOpen+" Blocking: "+isBlocking+" Registered: "+isRegistered+" Writable: "+isWritable+" Readable: "+isReadable+" Connectable: "+isConnectable+" Acceptable: "+isAcceptable);
     }
     
 	private boolean checkPerm(CommandSender sender, String permission, boolean verbose) {

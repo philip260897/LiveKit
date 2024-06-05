@@ -72,13 +72,9 @@ public class TimedCommandExecutor implements CommandExecutor {
         for (Map.Entry<String, Command> entry : knownCommands.entrySet()) {
             Command command = entry.getValue();
             if(command instanceof PluginCommand) {
-                System.out.println(entry.getKey() + " -> " + command);
-
                 PluginCommand pluginCommand = (PluginCommand) command;
-
                 CommandExecutor originalExecutor = pluginCommand.getExecutor();
                 if(!(originalExecutor instanceof TimedCommandExecutor)) {
-                    System.out.println(originalExecutor.getClass().getName());
                     if (originalExecutor != null) {
                         TimedCommandExecutor timedExecutor = new TimedCommandExecutor(originalExecutor, pluginCommand.getPlugin());
                         pluginCommand.setExecutor(timedExecutor);

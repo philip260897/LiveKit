@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.json.JSONException;
+import org.json.JSONObject;
 
 import at.livekit.plugin.Plugin;
 
@@ -27,6 +28,9 @@ public class NIOClient<T> {
     protected List<byte[]> outputQueue;
     private ByteBuffer outputBuffer;
     private T identifier;
+
+    private long lastKeepAliveSent = 0;
+    private long lastKeepAliveReceived = 0;
 
     public NIOClient(SelectionKey key, SocketChannel channel) {
         this.key = key;
@@ -84,15 +88,20 @@ public class NIOClient<T> {
         }
     }
 
+    protected boolean canKeepAlive() {
+        if(System.currentTimeMillis() - lastKeepAliveSent > (1000 * 30)) {
+            lastKeepAliveSent = System.currentTimeMillis();
+            return true;
+        }
+        return false;
+    }
+
     protected void read() {
         if(!channel.isConnected()) return;
 
         int read = 0;
         try{
             while((read = channel.read(buffer)) > 0) {
-                //Plugin.log("["+channel.getRemoteAddress().toString()+"] "+(new String(buffer.array(), 0, read, "UTF-8")));
-                String b = new String(buffer.array(), 0, read, "UTF-8");
-                Plugin.debug("["+channel.getRemoteAddress().toString()+"] "+b);
                 builder.append(new String(buffer.array(), 0, read, "UTF-8"));
                 ((Buffer)buffer).clear();
 
@@ -115,6 +124,10 @@ public class NIOClient<T> {
             close();
             if(listener != null) listener.connectionClosed(this);
         }
+    }
+
+    public boolean isConnected() {
+        return channel.isConnected();
     }
 
     protected boolean write() throws IOException {
@@ -160,7 +173,22 @@ public class NIOClient<T> {
     private void parsePackets() {
         while(parseOffset < builder.length()) {
             if(builder.charAt(parseOffset) == '\n') {
-                if(listener != null) listener.messageReceived(this, builder.substring(0, parseOffset));
+                boolean surpress = false;
+                try {
+                    JSONObject json = new JSONObject(builder.substring(0, parseOffset));
+                    if(json.getInt("packet_id") == 1002) {
+                        Plugin.debug("[Proxy|"+getLocalPort()+"] Keep alive received from "+channel.getRemoteAddress().toString());
+                        lastKeepAliveReceived = System.currentTimeMillis();
+                        surpress = true;
+                    }
+                }catch(Exception ex) {
+                    ex.printStackTrace();
+                }
+                
+                
+                if(!surpress && listener != null) {
+                     listener.messageReceived(this, builder.substring(0, parseOffset));
+                }
 
                 builder.delete(0, parseOffset+1);
                 parseOffset = 0;
