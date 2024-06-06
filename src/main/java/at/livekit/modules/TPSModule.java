@@ -18,7 +18,7 @@ import at.livekit.timings.TimedCommandExecutor;
 import at.livekit.timings.TimedRegisteredListener;
 import at.livekit.utils.Utils;
 
-public class PluginModule extends BaseModule{
+public class TPSModule extends BaseModule{
     private static int SECONDS = 60*1 + 15;
 
     private BukkitTask tickTask;
@@ -47,8 +47,8 @@ public class PluginModule extends BaseModule{
     private String timezone = "Unknown";
     private int coreCount = 0;
 
-    public PluginModule(ModuleListener listener) {
-        super(1, "PluginModule", "livekit.module.plugins", UpdateRate.ONCE_PERSEC, listener, "default");
+    public TPSModule(ModuleListener listener) {
+        super(1, "TPSModule", "livekit.module.tps", UpdateRate.ONCE_PERSEC, listener, "default", null);
     }
 
     private void initializeSystemProperties() {

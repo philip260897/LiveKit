@@ -54,7 +54,7 @@ modules:
     password: change_me
   InventoryModule:
     enabled: true
-  PluginModule:
+  TPSModule:
     enabled: true
 plugins:
   DiscordSRV:

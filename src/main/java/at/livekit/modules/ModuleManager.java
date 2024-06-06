@@ -62,7 +62,7 @@ public class ModuleManager
         this.registerModule(new POIModule(listener));
         this.registerModule(new InventoryModule(listener));
         //this.registerModule(new EconomyModule(listener));
-        this.registerModule(new PluginModule(listener));
+        this.registerModule(new TPSModule(listener));
         
         //if(Config.getConsolePassword() != null) {
         if(Config.getConsolePassword() == null) Plugin.warning("Enabling Console access without password. UNSAFE!");
@@ -234,7 +234,7 @@ public class ModuleManager
                             mods.put(module.moduleInfo());
                         }
                     }
-                    packets.put(identity, new ModulesAvailablePacket(mods, getSubscriptionsArray()));
+                    packets.put(identity, new ModulesAvailablePacket(mods, getSubscriptionsArray(identity)));
                 }
                 return packets;
             /*}
@@ -251,7 +251,7 @@ public class ModuleManager
                         mods.put(module.moduleInfo());
                     }
                 }
-                return new ModulesAvailablePacket(mods, getSubscriptionsArray());
+                return new ModulesAvailablePacket(mods, getSubscriptionsArray(identity));
            /* }
         }).get();*/
     }
@@ -383,6 +383,12 @@ public class ModuleManager
             }
         }
 
+        /*for(BaseModule module : _modules.values()) {
+            if(module.canAutoSubscribe() == false) {
+                _default.remove(module.getClass().getSimpleName());
+            }
+        }*/
+
         return _default;
     }
 
@@ -390,12 +396,14 @@ public class ModuleManager
         return _subscriptions;
     }
 
-    private JSONArray getSubscriptionsArray() {
+    private JSONArray getSubscriptionsArray(Identity identity) {
         JSONArray json = new JSONArray();
 
         synchronized(_subscriptions) {
             for(Entry<String, List<String>> entry : _subscriptions.entrySet()) {
-                //if(entry.getKey().equalsIgnoreCase("ConsoleModule")) continue;
+                BaseModule mod = _modules.get(entry.getKey()+":"+entry.getValue().get(0));
+                Plugin.debug("Checking module "+entry.getKey() + " for access (null)"+(mod == null)+" (access)"+(mod != null ? identity.hasPermission(mod.getPermission()) : false));
+                if(mod == null || !identity.hasPermission(mod.getPermission())) continue;
 
                 JSONObject asdf = new JSONObject();
                 JSONArray module = new JSONArray();

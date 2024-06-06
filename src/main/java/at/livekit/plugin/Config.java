@@ -270,9 +270,9 @@ public class Config
             save = true;
         }
 
-        if(config.get("modules.PluginModule") == null) {
-            Plugin.log("Patching config with new Plugin module...");
-            config.set("modules.PluginModule.enabled", true);
+        if(config.get("modules.TPSModule") == null) {
+            Plugin.log("Patching config with new TPSModule...");
+            config.set("modules.TPSModule.enabled", true);
 
             save = true;
         }
