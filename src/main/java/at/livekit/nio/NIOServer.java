@@ -6,12 +6,14 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import at.livekit.livekit.Identity;
 import at.livekit.livekit.LiveProxy;
 import at.livekit.nio.NIOClient.NIOClientEvent;
 import at.livekit.nio.proxy.NIOProxyClient;
@@ -36,8 +38,6 @@ public class NIOServer<T> implements Runnable, NIOClientEvent<T> {
     public NIOServer(int port) {
         this.port = port;
         this.clients = new HashMap<SelectionKey, NIOClient<T>>();
-
-        
     }
 
     public void setServerListener(NIOServerEvent<T> listener) {
@@ -133,17 +133,28 @@ public class NIOServer<T> implements Runnable, NIOClientEvent<T> {
         }
     }
 
-    /*public void enableProxy(String uuid, String token, int limit, String ip, int port) { 
-        try {
-            this.proxyPool = new NIOProxyPool<T>(this, uuid, token, limit, ip, port);
-            this.proxyPool.createClient();
-        } catch (Exception ex) {
-            ex.printStackTrace();
+    public boolean isProxyEnabled() {
+        return proxyPool != null;
+    }
+
+    public List<T> getProxiedClients() {
+        if(proxyPool != null) {
+            synchronized(clients) {
+                return clients.values().stream().filter(c->c instanceof NIOProxyClient).map(c->((NIOProxyClient<T>)c).getIdentifier()).collect(Collectors.toList());
+            }
         }
-    }*/
+        return new ArrayList<>();
+    }
+
+    public boolean isProxyConnectionAvailable() {
+        if(proxyPool != null) {
+            return proxyPool.isAvailableForConnection();
+        }
+        return false;
+    }
 
     private volatile boolean proxyClientRequest = false;
-    public void requestProxyClient() {
+    protected void requestProxyClient() {
         proxyClientRequest = true;
         selector.wakeup();
     }
@@ -153,7 +164,7 @@ public class NIOServer<T> implements Runnable, NIOClientEvent<T> {
         this.requestProxyClient();
     }
 
-    public void keepAlive() {
+    private void keepAlive() {
         synchronized(clients) {
             for(NIOClient<T> client : clients.values()) {
                 if(client instanceof NIOProxyClient) {

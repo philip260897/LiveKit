@@ -1,37 +1,14 @@
 package at.livekit.plugin;
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 import java.util.logging.Logger;
-
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.Server;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandExecutor;
-import org.bukkit.command.CommandMap;
 import org.bukkit.command.PluginCommand;
-import org.bukkit.command.SimpleCommandMap;
-import org.bukkit.craftbukkit.v1_20_R3.CraftServer;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.server.ServerListPingEvent;
 import org.bukkit.event.server.ServerLoadEvent;
-import org.bukkit.plugin.EventExecutor;
-import org.bukkit.plugin.RegisteredListener;
-import org.bukkit.plugin.SimplePluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.scheduler.BukkitScheduler;
-import org.bukkit.scheduler.BukkitTask;
-import org.bukkit.scheduler.BukkitWorker;
-import org.json.JSONObject;
-
-import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
-
 import at.livekit.api.core.ILiveKit;
 import at.livekit.api.core.ILiveKitPlugin;
 import at.livekit.commands.CommandHandler;
@@ -45,7 +22,6 @@ import at.livekit.provider.POISpawnProvider;
 import at.livekit.storage.IStorageAdapterGeneric;
 import at.livekit.storage.StorageManager;
 import at.livekit.supported.DiscordSRVPlugin;
-import at.livekit.timings.TimedRegisteredListener;
 import at.livekit.utils.ConsoleListener;
 import at.livekit.utils.HeadLibraryEvent;
 import at.livekit.utils.HeadLibraryV2;
@@ -53,7 +29,7 @@ import at.livekit.utils.Metrics;
 
 public class Plugin extends JavaPlugin implements ILiveKitPlugin, Listener {
 
-	private static boolean DEBUG = true;
+	private static boolean DEBUG = false;
 
 	private static Logger logger;
 	private static Plugin instance;
@@ -110,21 +86,6 @@ public class Plugin extends JavaPlugin implements ILiveKitPlugin, Listener {
 			return;
 		}
 
-		
-		//System.out.println("System out printlning");
-
-		/*List<String> worlds = Config.getLiveMapWorlds();
-		for(String world : worlds) {
-			if(Bukkit.getWorld(world) == null) {
-				Plugin.severe(world + " does not exist! Shutting down");
-				getServer().getPluginManager().disablePlugin(this);
-				return;
-			}
-		}*/
-
-		//logger.info("Materials: " + Material.values().length);
-		//logger.info("Biomes: " + Biome.values().length);
-
 		HeadLibraryV2.onEnable();
 		HeadLibraryV2.setHeadLibraryListener(new HeadLibraryEvent(){
 			@Override
@@ -157,10 +118,6 @@ public class Plugin extends JavaPlugin implements ILiveKitPlugin, Listener {
 		this.getLiveKit().addPOIInfoProvider(provider);
 		Bukkit.getServer().getPluginManager().registerEvents(provider, Plugin.getInstance());
 
-		//POI
-		//POI center = new POI(new Location(Bukkit.getWorld("world"), 0, 65, 0), "Origin", "The origin of world", Color.fromChatColor(ChatColor.DARK_PURPLE), false);
-        //Plugin.getInstance().getLiveKit().addPointOfInterest(center);
-
 		//Player Pin Provider
 		//PlayerPinProvider playerPins = new PlayerPinProvider();
 		this.getLiveKit().addPlayerInfoProvider(new BasicPlayerPinProvider());
@@ -182,10 +139,7 @@ public class Plugin extends JavaPlugin implements ILiveKitPlugin, Listener {
     }
     
 	@EventHandler
-    public void onServerListPing(ServerListPingEvent event) {
-		//event.setMotd("§kLiveKitTest.minehut.gg§rHi");
-		//Plugin.log("Server list ping event from "+event.getAddress().getHostAddress()+", "+event.getAddress().getHostName()+", "+event.getAddress().getCanonicalHostName()+"!");
-    }
+    public void onServerListPing(ServerListPingEvent event) {}
 
 
 	@EventHandler

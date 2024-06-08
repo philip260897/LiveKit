@@ -71,7 +71,6 @@ public class NIOProxyPool<T> implements NIOProxyListener<T> {
                         server.send(currentClient, new ProxyConnectPacket(serverUuid, token));
                         reconnects = 0;
 
-                        Plugin.log("Proxy connection established, waiting for connection...");
                     } catch(Exception e) {
                         if(scheduled == false && reconnects < reconnectsLimit) {
                             scheduled = true;
@@ -133,6 +132,10 @@ public class NIOProxyPool<T> implements NIOProxyListener<T> {
         }
 
         server.requestProxyClient();
+    }
+
+    public boolean isAvailableForConnection() {
+        return currentClient != null;
     }
 }
 

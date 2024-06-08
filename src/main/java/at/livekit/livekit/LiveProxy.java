@@ -40,6 +40,7 @@ public class LiveProxy {
     private int proxyConnections = 3;
     private String proxyIp = null;
     private int proxyPort = 0;
+    private boolean portOpen = false;
 
     private String echoIp = null;
     private int echoPort = 0;
@@ -120,6 +121,7 @@ public class LiveProxy {
             serverToken = json.getString("token");
             persistIdentity();
             proxy = json.getBoolean("proxy");
+            portOpen = !proxy;
             proxyConnections = json.getInt("proxy_connections");
             proxyIp = json.getString("proxy_ip");
             proxyPort = json.getInt("proxy_port");
@@ -211,6 +213,10 @@ public class LiveProxy {
 
     public int getProxyPort() {
         return proxyPort;
+    }
+
+    public boolean isPortOpen() {
+        return portOpen;
     }
 
     public boolean canProxyConnections() {

@@ -7,7 +7,6 @@ import org.json.JSONObject;
 
 import at.livekit.nio.NIOClient;
 import at.livekit.packets.ProxyClientConnectedPacket;
-import at.livekit.packets.ProxyConnectPacket;
 import at.livekit.plugin.Plugin;
 import at.livekit.nio.NIOClient.NIOClientEvent;
 

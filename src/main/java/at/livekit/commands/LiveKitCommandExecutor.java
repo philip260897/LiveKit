@@ -6,6 +6,7 @@ import java.nio.channels.SelectionKey;
 import java.util.List;
 import java.util.Set;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -29,6 +30,7 @@ import at.livekit.commands.CommandHandler.CommandHandlerPermissionCallback;
 import at.livekit.commands.CommandHandler.MatchResult;
 import at.livekit.livekit.Identity;
 import at.livekit.livekit.LiveKit;
+import at.livekit.livekit.LiveProxy;
 import at.livekit.map.RenderBounds;
 import at.livekit.map.RenderJob;
 import at.livekit.map.RenderScheduler;
@@ -87,6 +89,8 @@ public class LiveKitCommandExecutor implements CommandExecutor, TabCompleter {
     private LKCommand ADMIN_TEXTUREPACK = new LKCommand("livekit tp", "livekit.commands.admin", true, this::cmdTexturepack, Plugin.isDebug());
     private LKCommand ADMIN_TEST = new LKCommand("livekit test", "livekit.commands.admin", true, this::cmdTest, Plugin.isDebug());
     private LKCommand ADMIN_TEST2 = new LKCommand("livekit test {num}", "livekit.commands.admin", true, this::cmdTest2, Plugin.isDebug());
+
+    private LKCommand PROXY_INFO = new LKCommand("livekit connections", "livekit.commands.admin", true, this::cmdConnectionInfo, "Shows general info about the proxy service");
 
     private String prefix;
     private String prefixError;
@@ -585,6 +589,42 @@ public class LiveKitCommandExecutor implements CommandExecutor, TabCompleter {
                 LiveKit.getInstance().disableModule(module.getType());
             }
             LiveKit.getInstance().notifyQueue("SettingsModule");
+        }
+    }
+
+    /**
+     * Displays info about current connections and proxy status
+     * @param sender
+     * @param cmd
+     */
+    private void cmdConnectionInfo(CommandSender sender, LKCommand cmd) {
+        NIOServer<Identity> server = LiveKit.getInstance().getServer();
+        LiveProxy proxy = LiveProxy.getInstance();
+        boolean forwarding = proxy.isPortOpen();
+        boolean proxyEnabled = server.isProxyEnabled();
+
+        sender.sendMessage(prefix+"Connection: "+(forwarding || (proxyEnabled == false) ? ChatColor.GREEN+"[DIRECT]" : ChatColor.RED+"[PROXIED]"));
+        if(forwarding == false && proxyEnabled == false) {
+            sender.sendMessage(prefix+"Proxy service is currently unavailable! Port forwarding neccessary!");
+            return;
+        }
+
+        List<Identity> identities = server.getIdentifiers();
+        List<Identity> proxyClients = server.getProxiedClients();
+        if(proxyEnabled) {
+            sender.sendMessage("Proxy Clients: "+(identities.stream().filter((e)->proxyClients.contains(e)).collect(Collectors.toList()).size())+"/"+proxy.getProxyConnectionCount()+"");
+        }
+        sender.sendMessage("Connected clients ("+identities.size()+"):");
+        for(Identity identity : identities) {
+            boolean isProxyClient = proxyClients.contains(identity);
+            String name = identity.isIdentified() == false ? "Unidentified - Logging In" : identity.getName();
+            sender.sendMessage(" - "+ name + " " + (isProxyClient ? ChatColor.RED+"[PROXY]"+ChatColor.RESET : ChatColor.GREEN+"[DIRECT]"+ChatColor.RESET));
+        }
+        if(server.isProxyConnectionAvailable()) {
+            sender.sendMessage(" - Proxy server connected & waiting for client...");
+        }
+        if(server.isProxyEnabled()) {
+            sender.sendMessage("Proxy clients connect via "+(Config.getProxyHostname() != null ? Config.getProxyHostname() : proxy.getMyResolvedIp())+":"+Config.getServerPort());
         }
     }
 
