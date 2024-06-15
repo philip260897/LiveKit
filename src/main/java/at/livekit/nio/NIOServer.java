@@ -13,12 +13,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import at.livekit.livekit.Identity;
-import at.livekit.livekit.LiveProxy;
+import at.livekit.livekit.LiveCloud.ProxyInfo;
+import at.livekit.livekit.LiveCloud.ServerIdentity;
 import at.livekit.nio.NIOClient.NIOClientEvent;
 import at.livekit.nio.proxy.NIOProxyClient;
 import at.livekit.packets.ProxyClientKeepAlivePacket;
-import at.livekit.plugin.Config;
 import at.livekit.plugin.Plugin;
 
 public class NIOServer<T> implements Runnable, NIOClientEvent<T> {
@@ -159,8 +158,8 @@ public class NIOServer<T> implements Runnable, NIOClientEvent<T> {
         selector.wakeup();
     }
 
-    public void setupProxyPool() {
-        this.proxyPool = new NIOProxyPool<T>(this);
+    public void setupProxyPool(ServerIdentity identity, ProxyInfo proxyInfo) {
+        this.proxyPool = new NIOProxyPool<T>(this, identity, proxyInfo);
         this.requestProxyClient();
     }
 

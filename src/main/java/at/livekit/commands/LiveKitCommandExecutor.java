@@ -29,8 +29,8 @@ import at.livekit.authentication.Session;
 import at.livekit.commands.CommandHandler.CommandHandlerPermissionCallback;
 import at.livekit.commands.CommandHandler.MatchResult;
 import at.livekit.livekit.Identity;
+import at.livekit.livekit.LiveCloud;
 import at.livekit.livekit.LiveKit;
-import at.livekit.livekit.LiveProxy;
 import at.livekit.map.RenderBounds;
 import at.livekit.map.RenderJob;
 import at.livekit.map.RenderScheduler;
@@ -599,12 +599,12 @@ public class LiveKitCommandExecutor implements CommandExecutor, TabCompleter {
      */
     private void cmdConnectionInfo(CommandSender sender, LKCommand cmd) {
         NIOServer<Identity> server = LiveKit.getInstance().getServer();
-        LiveProxy proxy = LiveProxy.getInstance();
-        boolean forwarding = proxy.isPortOpen();
+        LiveCloud proxy = LiveCloud.getInstance();
+        //boolean forwarding = proxy.i
         boolean proxyEnabled = server.isProxyEnabled();
 
-        sender.sendMessage(prefix+"Connection: "+(forwarding || (proxyEnabled == false) ? ChatColor.GREEN+"[DIRECT]" : ChatColor.RED+"[PROXIED]"));
-        if(forwarding == false && proxyEnabled == false) {
+        sender.sendMessage(prefix+"Connection: "+((proxyEnabled == false) ? ChatColor.GREEN+"[DIRECT]" : ChatColor.RED+"[PROXIED]"));
+        if(proxyEnabled == false) {
             sender.sendMessage(prefix+"Proxy service is currently unavailable! Port forwarding neccessary!");
             return;
         }
@@ -612,7 +612,7 @@ public class LiveKitCommandExecutor implements CommandExecutor, TabCompleter {
         List<Identity> identities = server.getIdentifiers();
         List<Identity> proxyClients = server.getProxiedClients();
         if(proxyEnabled) {
-            sender.sendMessage("Proxy Clients: "+(identities.stream().filter((e)->proxyClients.contains(e)).collect(Collectors.toList()).size())+"/"+proxy.getProxyConnectionCount()+"");
+            sender.sendMessage("Proxy Clients: "+(identities.stream().filter((e)->proxyClients.contains(e)).collect(Collectors.toList()).size())+"/"+proxy.getProxyInfo().getProxyConnectionCount()+"");
         }
         sender.sendMessage("Connected clients ("+identities.size()+"):");
         for(Identity identity : identities) {
@@ -624,7 +624,7 @@ public class LiveKitCommandExecutor implements CommandExecutor, TabCompleter {
             sender.sendMessage(" - Proxy server connected & waiting for client...");
         }
         if(server.isProxyEnabled()) {
-            sender.sendMessage("Proxy clients connect via "+(Config.getProxyHostname() != null ? Config.getProxyHostname() : proxy.getMyResolvedIp())+":"+Config.getServerPort());
+            sender.sendMessage("Proxy clients connect via "+(Config.getProxyHostname() != null ? Config.getProxyHostname() : proxy.getServerIp())+":"+Config.getServerPort());
         }
     }
 

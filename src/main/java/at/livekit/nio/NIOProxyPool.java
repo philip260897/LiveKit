@@ -5,13 +5,11 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.bukkit.Bukkit;
-
-import at.livekit.livekit.LiveProxy;
+import at.livekit.livekit.LiveCloud.ProxyInfo;
+import at.livekit.livekit.LiveCloud.ServerIdentity;
 import at.livekit.nio.proxy.NIOProxyClient;
 import at.livekit.nio.proxy.NIOProxyListener;
-import at.livekit.packets.ProxyClientKeepAlivePacket;
 import at.livekit.packets.ProxyConnectPacket;
 import at.livekit.plugin.Plugin;
 
@@ -19,25 +17,25 @@ public class NIOProxyPool<T> implements NIOProxyListener<T> {
     
     private NIOServer<T> server;
 
-    private String serverUuid;
-    private String token;
-    private int limit;
-    private String ip;
-    private int port;
+    //private String serverUuid;
+    //private String token;
+    //private int limit;
+    //private String ip;
+    //private int port;
     
+    private ServerIdentity identity;
+    private ProxyInfo proxyInfo;
+
     private List<NIOProxyClient<T>> clients = new ArrayList<NIOProxyClient<T>>();
     private NIOProxyClient<T> currentClient;
     
     private Object lock = new Object();
 
     
-    public NIOProxyPool(NIOServer<T> server) {
+    public NIOProxyPool(NIOServer<T> server, ServerIdentity identity, ProxyInfo proxyInfo) {
         this.server = server;
-        this.limit = LiveProxy.getInstance().getProxyConnectionCount();
-        this.ip = LiveProxy.getInstance().getProxyIp();
-        this.port = LiveProxy.getInstance().getProxyPort();
-        this.serverUuid = LiveProxy.getInstance().getUuid();
-        this.token = LiveProxy.getInstance().getToken();
+        this.identity = identity;
+        this.proxyInfo = proxyInfo;
     }
 
     private volatile boolean scheduled = false;
@@ -48,7 +46,7 @@ public class NIOProxyPool<T> implements NIOProxyListener<T> {
 
     public void createClient() {
         
-        if(clients.size() < limit) {
+        if(clients.size() < proxyInfo.getProxyConnectionCount()) {
             synchronized(lock) {
                 Plugin.debug("[Proxy] currentClient == null "+(currentClient == null));
                 if(currentClient == null) {
@@ -57,7 +55,7 @@ public class NIOProxyPool<T> implements NIOProxyListener<T> {
                             throw new Exception("Too many retries");
                         }
 
-                        SocketChannel channel = SocketChannel.open(new InetSocketAddress(ip, port));
+                        SocketChannel channel = SocketChannel.open(new InetSocketAddress(proxyInfo.getProxyIp(), proxyInfo.getProxyPort()));
                         channel.configureBlocking(false);
                         channel.socket().setKeepAlive(true);
                         SelectionKey key = channel.register(server.selector, SelectionKey.OP_READ);
@@ -68,7 +66,7 @@ public class NIOProxyPool<T> implements NIOProxyListener<T> {
                             server.clients.put(key, currentClient);
                         }
 
-                        server.send(currentClient, new ProxyConnectPacket(serverUuid, token));
+                        server.send(currentClient, new ProxyConnectPacket(identity.getUuid(), identity.getToken()));
                         reconnects = 0;
 
                     } catch(Exception e) {
