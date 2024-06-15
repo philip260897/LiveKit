@@ -202,7 +202,7 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
         _thread.setName("LiveKit worker");
         _thread.start();
 
-        LiveCloud.getInstance().initialize().thenApply((success) -> {
+        LiveCloud.getInstance().initialize(Config.isProxyEnabled()).thenApply((success) -> {
             if(Config.isProxyEnabled() && success) {
                 if(LiveCloud.getInstance().isProxyEnabled()) {
                     Plugin.log("Connect via "+(Config.getProxyHostname() != null ? Config.getProxyHostname() : LiveCloud.getInstance().getServerIp())+":"+Config.getServerPort()+" \u001B[31m[PROXIED CONNECTION]\u001B[0m");
@@ -219,29 +219,6 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
             }
             return success;
         });
-
-
-        /*Thread _proxyTHread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                if(Config.isProxyEnabled() && LiveProxy.getInstance().enableServer()) {
-                    if(LiveProxy.getInstance().canProxyConnections() && !abort) {
-                        Plugin.log("Connect via "+(Config.getProxyHostname() != null ? Config.getProxyHostname() : LiveProxy.getInstance().getMyResolvedIp())+":"+Config.getServerPort()+" \u001B[31m[PROXIED CONNECTION]\u001B[0m");
-                        if(Config.getProxyHostname() == null) {
-                            Plugin.log("If you want to connect with a hostname instead of your IP, setup the proxy->hostname in the config.yml!");
-                        }
-                        Plugin.warning("NOTE: You need to setup port forwarding for LiveKit port "+Config.getServerPort()+" to enable direct connections! Direct connections offer better performance and stability! Proxy connections are only a fallback if port forwarding is not possible! Only "+LiveProxy.getInstance().getProxyConnectionCount()+" proxy connections are allowed!");
-                        _server.setupProxyPool();
-                    } else {
-                        Plugin.log("Connect via "+(LiveProxy.getInstance().getMyResolvedIp())+":"+Config.getServerPort()+" \u001B[32m[DIRECT CONNECTION]\u001B[0m");
-                    }
-                } else {
-                   if(!abort) Plugin.warning("LiveKit proxy not available. Only direct connections possible \u001B[31m(Port forwarding for LiveKit port "+Config.getServerPort()+" required!)\u001B[0m");
-                }
-            }
-        });
-        _proxyTHread.setName("LiveKit Proxy");
-        _proxyTHread.start();*/
     }
 
     private boolean abort;

@@ -41,8 +41,10 @@ public class LiveCloud {
 
     private LiveCloud(){}
 
-    protected CompletableFuture<Boolean> initialize() {
+    protected CompletableFuture<Boolean> initialize(boolean enabled) {
         return async(()->{
+            if(!enabled) return false;
+
             Plugin.debug("Initializing LiveCloud");
             File identityFile = new File(Plugin.getInstance().getDataFolder(), "identity.json");
             if(identityFile.exists()) {
@@ -78,10 +80,14 @@ public class LiveCloud {
 
     protected CompletableFuture<Boolean> liveKitClientConnected() {
         return async(()->{
-            if(identity == null) return false;
+            if(isInitialized() == false) return false;
             HttpResponse response = apiLiveKitClientConnected(identity);
             return response.getStatus() == 200;
         });
+    }
+
+    public boolean isInitialized() {
+        return identity != null;
     }
 
     public boolean isProxyEnabled() {

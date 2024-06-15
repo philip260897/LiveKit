@@ -40,8 +40,8 @@ public class NIOProxyPool<T> implements NIOProxyListener<T> {
 
     private volatile boolean scheduled = false;
     private int reconnects = 0;
-    private int reconnectsLimit = 3;
-    private int seconds = 5;
+    private int reconnectsLimit = 5;
+    private int seconds = 10;
     private long lastTry = 0;
 
     public void createClient() {
