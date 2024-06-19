@@ -115,6 +115,10 @@ public class Config
         return config.getBoolean("modules.POIModule.teleport_spawn");
     }
 
+    public static boolean showDefaultWorldSpawns() {
+        return config.getBoolean("modules.POIModule.show_default_world_spawns");
+    }
+
     public static StorageSettings getStorageSettings() {
         return getStorageSettings("storage");
     }
@@ -133,6 +137,36 @@ public class Config
     public static boolean isDiscordEnabled() {
         return config.getBoolean("plugins.DiscordSRV.enabled");
     }
+
+    public static boolean isEssentialsEnabled() {
+        return config.getBoolean("plugins.essentialsX.enabled");
+    }
+
+    public static boolean canEssentialsPinHomes() {
+        return config.getBoolean("plugins.essentialsX.homes.pin");
+    }
+
+    public static boolean canEssentialsTeleportHomes() {
+        return config.getBoolean("plugins.essentialsX.homes.can_teleport");
+    }
+
+    public static boolean canEssentialsPinWarps() {
+        return config.getBoolean("plugins.essentialsX.warps.pin");
+    }
+
+    public static boolean canEssentialsTeleportWarps() {
+        return config.getBoolean("plugins.essentialsX.warps.can_teleport");
+    }
+
+    public static boolean canEssentialsPinSpawns() {
+        return config.getBoolean("plugins.essentialsX.spawns.pin");
+    }
+
+    public static boolean canEssentialsTeleportSpawns() {
+        return config.getBoolean("plugins.essentialsX.spawns.can_teleport");
+    }
+
+
 
     public static List<String> getDiscordWhitelist() {
         return (List<String>) config.getList("plugins.DiscordSRV.channelIDs");
@@ -315,6 +349,28 @@ public class Config
 
             Plugin.log("Patching config with new entries");
             config.set("plugins.DiscordSRV.channelIDs", channels);
+
+            save = true;
+        }
+
+        if(config.get("modules.POIModule.show_default_world_spawns") == null)
+        {
+            Plugin.log("Patching config with new entries");
+            config.set("modules.POIModule.show_default_world_spawns", true);
+
+            save = true;
+        }
+
+        if(config.get("plugins.essentialsX.enabled") == null)
+        {
+            Plugin.log("Patching config with new entries");
+            config.set("plugins.essentialsX.enabled", true);
+            config.set("plugins.essentialsX.homes.pin", true);
+            config.set("plugins.essentialsX.homes.can_teleport", true);
+            config.set("plugins.essentialsX.warps.pin", true);
+            config.set("plugins.essentialsX.warps.can_teleport", true);
+            config.set("plugins.essentialsX.spawns.pin", true);
+            config.set("plugins.essentialsX.spawns.can_teleport", true);
 
             save = true;
         }

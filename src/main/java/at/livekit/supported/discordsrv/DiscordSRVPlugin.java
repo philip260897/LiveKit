@@ -1,4 +1,4 @@
-package at.livekit.supported;
+package at.livekit.supported.discordsrv;
 
 import github.scarsz.discordsrv.DiscordSRV;
 import github.scarsz.discordsrv.api.ListenerPriority;

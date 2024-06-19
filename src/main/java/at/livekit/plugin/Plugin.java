@@ -21,7 +21,8 @@ import at.livekit.provider.BasicPlayerPinProvider;
 import at.livekit.provider.POISpawnProvider;
 import at.livekit.storage.IStorageAdapterGeneric;
 import at.livekit.storage.StorageManager;
-import at.livekit.supported.DiscordSRVPlugin;
+import at.livekit.supported.discordsrv.DiscordSRVPlugin;
+import at.livekit.supported.essentialsx.EssentialsPlugin;
 import at.livekit.utils.ConsoleListener;
 import at.livekit.utils.HeadLibraryEvent;
 import at.livekit.utils.HeadLibraryV2;
@@ -29,7 +30,7 @@ import at.livekit.utils.Metrics;
 
 public class Plugin extends JavaPlugin implements ILiveKitPlugin, Listener {
 
-	private static boolean DEBUG = false;
+	private static boolean DEBUG = true;
 
 	private static Logger logger;
 	private static Plugin instance;
@@ -42,7 +43,9 @@ public class Plugin extends JavaPlugin implements ILiveKitPlugin, Listener {
 	private static IStorageAdapterGeneric storage;
 
 	private static DiscordSRVPlugin discordPlugin;
+	private static EssentialsPlugin essentialsPlugin;
 	//private static Stat stat;
+
 
 	@Override
 	public void onEnable() {
@@ -114,9 +117,11 @@ public class Plugin extends JavaPlugin implements ILiveKitPlugin, Listener {
 		Bukkit.getServer().getPluginManager().registerEvents(playerInfoProvider, Plugin.getInstance());
 
 		//POI
-		POISpawnProvider provider = new POISpawnProvider();
-		this.getLiveKit().addPOIInfoProvider(provider);
-		Bukkit.getServer().getPluginManager().registerEvents(provider, Plugin.getInstance());
+		if(Config.showDefaultWorldSpawns()) {
+			POISpawnProvider provider = new POISpawnProvider();
+			this.getLiveKit().addPOIInfoProvider(provider);
+			Bukkit.getServer().getPluginManager().registerEvents(provider, Plugin.getInstance());
+		}
 
 		//Player Pin Provider
 		//PlayerPinProvider playerPins = new PlayerPinProvider();
@@ -135,6 +140,11 @@ public class Plugin extends JavaPlugin implements ILiveKitPlugin, Listener {
 		if(Config.isDiscordEnabled()) {
 			discordPlugin = new DiscordSRVPlugin();
         	discordPlugin.onEnable();
+		}
+
+		if(Config.isEssentialsEnabled()) {
+			essentialsPlugin = new EssentialsPlugin();
+			essentialsPlugin.onEnable();
 		}
     }
     

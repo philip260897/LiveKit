@@ -61,3 +61,14 @@ plugins:
     enabled: false
     channelIDs:
     - all
+  essentialsX:
+    enabled: true
+    homes:
+      pin: true
+      can_teleport: true
+    warps:
+      pin: true
+      can_teleport: true
+    spawns:
+      pin: true
+      can_teleport: false
