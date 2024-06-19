@@ -205,7 +205,10 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
         LiveCloud.getInstance().initialize(Config.isProxyEnabled()).thenApply((success) -> {
             if(Config.isProxyEnabled() && success) {
                 if(LiveCloud.getInstance().isProxyEnabled()) {
-                    Plugin.log("Connect via "+(Config.getProxyHostname() != null ? Config.getProxyHostname() : LiveCloud.getInstance().getServerIp())+":"+Config.getServerPort()+" \u001B[31m[PROXIED CONNECTION]\u001B[0m");
+                    if(Config.getProxyHostname() != null && LiveCloud.getInstance().getProxyInfo().getHostname() == null) {
+                        Plugin.warning("Hostname \'"+Config.getProxyHostname()+"\' was not accepted, using IP instead! Make sure the hostname is valid and resolvable!");
+                    }
+                    Plugin.log("Connect via "+(LiveCloud.getInstance().getProxyInfo().getHostname() != null ? LiveCloud.getInstance().getProxyInfo().getHostname()  : LiveCloud.getInstance().getServerIp())+":"+Config.getServerPort()+" \u001B[31m[PROXIED CONNECTION]\u001B[0m");
                     if(Config.getProxyHostname() == null) {
                         Plugin.log("If you want to connect with a hostname instead of your IP, setup the proxy->hostname in the config.yml!");
                     }

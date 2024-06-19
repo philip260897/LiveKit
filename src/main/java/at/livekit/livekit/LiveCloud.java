@@ -71,7 +71,7 @@ public class LiveCloud {
             }
             
             if(serverAuth.isProxy()) {
-                proxyInfo = new ProxyInfo(serverAuth.getProxyIp(), serverAuth.getProxyPort(), serverAuth.getProxyConnectionCount());
+                proxyInfo = new ProxyInfo(serverAuth.getProxyIp(), serverAuth.getProxyPort(), serverAuth.getProxyConnectionCount(), serverAuth.getHostname());
             }
 
             return true;
@@ -183,11 +183,13 @@ public class LiveCloud {
         private String proxyIp;
         private int proxyPort;
         private int proxyConnectionCount;
+        private String hostname;
 
-        public ProxyInfo(String proxyIp, int proxyPort, int proxyConnectionCount) {
+        public ProxyInfo(String proxyIp, int proxyPort, int proxyConnectionCount, String hostname) {
             this.proxyIp = proxyIp;
             this.proxyPort = proxyPort;
             this.proxyConnectionCount = proxyConnectionCount;
+            this.hostname = hostname;
         }
 
         public String getProxyIp() {
@@ -200,6 +202,10 @@ public class LiveCloud {
 
         public int getProxyConnectionCount() {
             return proxyConnectionCount;
+        }
+
+        public String getHostname() {
+            return hostname;
         }
     }
 
@@ -233,6 +239,7 @@ public class LiveCloud {
         private int proxyConnectionCount;
         private String proxyIp;
         private int proxyPort;
+        private String hostname;
 
         public LCServerAuthResponse(HttpResponse response) {
             super(response);
@@ -262,6 +269,10 @@ public class LiveCloud {
             return proxyPort;
         }
 
+        public String getHostname() {
+            return hostname;
+        }
+
         @Override
         protected void parse(JSONObject json) {
             uuid = json.getString("uuid");
@@ -270,6 +281,7 @@ public class LiveCloud {
             proxyConnectionCount = json.getInt("proxy_connections");
             proxyIp = json.getString("proxy_ip");
             proxyPort = json.getInt("proxy_port");
+            hostname = json.has("hostname") && !json.isNull("hostname") ? json.getString("hostname") : null;
         }
     }
 

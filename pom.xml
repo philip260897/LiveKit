@@ -79,6 +79,10 @@
         <id>Scarsz-Nexus</id>
         <url>https://nexus.scarsz.me/content/groups/public/</url>
       </repository>  
+      <repository>
+        <id>essentialsx-repo</id>
+        <url>https://repo.essentialsx.net/releases/</url>
+      </repository>
     </repositories>
 
   <dependencies>
@@ -152,6 +156,8 @@
       <version>1.20.4-R0.1-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
+
+
   
   </dependencies>
 </project>
