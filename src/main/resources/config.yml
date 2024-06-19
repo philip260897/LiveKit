@@ -3,6 +3,9 @@ server:
   name: 'My Minecraft Server'
   password: 'NULL'
   tickrate: 20
+proxy:
+  enabled: true
+  hostname: 'NULL'
 storage:
   type: 'SQLITE'
   sql:
@@ -50,6 +53,8 @@ modules:
     enabled: true
     password: change_me
   InventoryModule:
+    enabled: true
+  TPSModule:
     enabled: true
 plugins:
   DiscordSRV:

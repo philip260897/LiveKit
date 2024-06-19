@@ -14,7 +14,7 @@ import java.util.UUID;
 
 public class Stat {
     private static String HOST = "https://stat.livekitapp.com/livekit/api/v1";
-    private UUID session;
+    public UUID session;
 
     Stat() {
 		File sessionFile = new File(Plugin.getInstance().getDataFolder(), "session");

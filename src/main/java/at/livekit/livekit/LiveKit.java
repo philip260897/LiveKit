@@ -37,6 +37,7 @@ import at.livekit.modules.BaseModule.Action;
 import at.livekit.modules.BaseModule.ActionMethod;
 import at.livekit.modules.BaseModule.ModuleListener;
 import at.livekit.nio.NIOClient;
+import at.livekit.nio.NIOProxyPool;
 import at.livekit.nio.NIOServer;
 import at.livekit.nio.NIOServer.NIOServerEvent;
 import at.livekit.packets.ActionPacket;
@@ -130,6 +131,14 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
         return null;
     }
 
+    public void onServerLoad() {
+        _modules.onServerLoad();
+    }
+
+    public NIOServer<Identity> getServer() {
+        return _server;
+    }
+
     public void onEnable() throws Exception {
         //PlayerAuth.initialize();
 
@@ -190,7 +199,29 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
 
         abort = false;
         _thread = new Thread(this);
+        _thread.setName("LiveKit worker");
         _thread.start();
+
+        LiveCloud.getInstance().initialize(Config.isProxyEnabled()).thenApply((success) -> {
+            if(Config.isProxyEnabled() && success) {
+                if(LiveCloud.getInstance().isProxyEnabled()) {
+                    if(Config.getProxyHostname() != null && LiveCloud.getInstance().getProxyInfo().getHostname() == null) {
+                        Plugin.warning("Hostname \'"+Config.getProxyHostname()+"\' was not accepted, using IP instead! Make sure the hostname is valid and resolvable!");
+                    }
+                    Plugin.log("Connect via "+(LiveCloud.getInstance().getProxyInfo().getHostname() != null ? LiveCloud.getInstance().getProxyInfo().getHostname()  : LiveCloud.getInstance().getServerIp())+":"+Config.getServerPort()+" \u001B[31m[PROXIED CONNECTION]\u001B[0m");
+                    if(Config.getProxyHostname() == null) {
+                        Plugin.log("If you want to connect with a hostname instead of your IP, setup the proxy->hostname in the config.yml!");
+                    }
+                    Plugin.warning("NOTE: You need to setup port forwarding for LiveKit port "+Config.getServerPort()+" to enable direct connections! Direct connections offer better performance and stability! Proxy connections are only a fallback if port forwarding is not possible! Only "+LiveCloud.getInstance().getProxyInfo().getProxyConnectionCount()+" proxy connections are allowed!");
+                    _server.setupProxyPool(LiveCloud.getInstance().getIdentity(), LiveCloud.getInstance().getProxyInfo());
+                } else {
+                    Plugin.log("Connect via "+(LiveCloud.getInstance().getServerIp())+":"+Config.getServerPort()+" \u001B[32m[DIRECT CONNECTION]\u001B[0m");
+                }
+            } else {
+                Plugin.warning("LiveKit proxy not available. Only direct connections possible \u001B[31m(Port forwarding for LiveKit port "+Config.getServerPort()+" required!)\u001B[0m");
+            }
+            return success;
+        });
     }
 
     private boolean abort;
@@ -204,6 +235,7 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
 
     @Override
     public void run() {
+
         while(!abort) {
             int tickTime = 1000/(_modules.getSettings().liveMapTickRate);
             long start = System.currentTimeMillis();
@@ -390,6 +422,11 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
                 _server.stop();
         }catch(Exception ex){ex.printStackTrace();}
 
+        try {
+            LiveCloud.getInstance().dispose();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         
 
         try{
@@ -563,7 +600,8 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
 
         _server.send(client, new ServerSettingsPacket(serverSettings));
 
-        try {
+        LiveCloud.getInstance().liveKitClientConnected();
+        /*try {
             Bukkit.getScheduler().runTaskAsynchronously(Plugin.getInstance(), new Runnable() {
                 @Override
                 public void run() {
@@ -572,7 +610,7 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
             });
         } catch (Exception e) {
             e.printStackTrace();
-        }
+        }*/
     }
 
     @Override
@@ -814,6 +852,14 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
         identity.setSubscription(baseType, subscription);
         identity.setModuleAuthentication(module.getType(), password);
         _server.send(identity, module.onJoinAsync(identity));
+
+        return new StatusPacket(1);
+    }
+
+    @Action(name = "Unsubscribe", sync = false)
+    public IPacket unsubscribe(Identity identity, ActionPacket action) {
+        String baseType = action.getData().getString("baseType");
+        identity.setSubscription(baseType, null);
 
         return new StatusPacket(1);
     }

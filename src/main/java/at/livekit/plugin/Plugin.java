@@ -1,12 +1,14 @@
 package at.livekit.plugin;
 import java.util.logging.Logger;
 
-
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.command.PluginCommand;
+import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.server.ServerListPingEvent;
+import org.bukkit.event.server.ServerLoadEvent;
 import org.bukkit.plugin.java.JavaPlugin;
-
 import at.livekit.api.core.ILiveKit;
 import at.livekit.api.core.ILiveKitPlugin;
 import at.livekit.commands.CommandHandler;
@@ -40,7 +42,7 @@ public class Plugin extends JavaPlugin implements ILiveKitPlugin, Listener {
 	private static IStorageAdapterGeneric storage;
 
 	private static DiscordSRVPlugin discordPlugin;
-	private static Stat stat;
+	//private static Stat stat;
 
 	@Override
 	public void onEnable() {
@@ -52,8 +54,6 @@ public class Plugin extends JavaPlugin implements ILiveKitPlugin, Listener {
 		if(!getDataFolder().exists()) {
 			getDataFolder().mkdirs();
 		}
-
-		stat = new Stat();
 
 		try{
 			Texturepack.getInstance();
@@ -85,21 +85,6 @@ public class Plugin extends JavaPlugin implements ILiveKitPlugin, Listener {
 			getServer().getPluginManager().disablePlugin(this);
 			return;
 		}
-
-		
-		//System.out.println("System out printlning");
-
-		/*List<String> worlds = Config.getLiveMapWorlds();
-		for(String world : worlds) {
-			if(Bukkit.getWorld(world) == null) {
-				Plugin.severe(world + " does not exist! Shutting down");
-				getServer().getPluginManager().disablePlugin(this);
-				return;
-			}
-		}*/
-
-		//logger.info("Materials: " + Material.values().length);
-		//logger.info("Biomes: " + Biome.values().length);
 
 		HeadLibraryV2.onEnable();
 		HeadLibraryV2.setHeadLibraryListener(new HeadLibraryEvent(){
@@ -133,10 +118,6 @@ public class Plugin extends JavaPlugin implements ILiveKitPlugin, Listener {
 		this.getLiveKit().addPOIInfoProvider(provider);
 		Bukkit.getServer().getPluginManager().registerEvents(provider, Plugin.getInstance());
 
-		//POI
-		//POI center = new POI(new Location(Bukkit.getWorld("world"), 0, 65, 0), "Origin", "The origin of world", Color.fromChatColor(ChatColor.DARK_PURPLE), false);
-        //Plugin.getInstance().getLiveKit().addPointOfInterest(center);
-
 		//Player Pin Provider
 		//PlayerPinProvider playerPins = new PlayerPinProvider();
 		this.getLiveKit().addPlayerInfoProvider(new BasicPlayerPinProvider());
@@ -147,24 +128,25 @@ public class Plugin extends JavaPlugin implements ILiveKitPlugin, Listener {
 		CommandHandler.initialize();
 
 		LiveKitCommandExecutor base = new LiveKitCommandExecutor();
-		getCommand("livekit").setExecutor(base);
-		getCommand("livekit").setTabCompleter(base);
+		PluginCommand cmd = getCommand("livekit");
+		cmd.setExecutor(base);
+		cmd.setTabCompleter(base);
 
 		if(Config.isDiscordEnabled()) {
 			discordPlugin = new DiscordSRVPlugin();
         	discordPlugin.onEnable();
 		}
-
-		int serverPort = Bukkit.getPort();
-		int lkPort = Config.getServerPort();
-		Bukkit.getScheduler().runTaskAsynchronously(this, new Runnable() {
-			@Override
-			public void run() {
-				stat.onEnabled(serverPort, lkPort);
-			}
-		});
     }
     
+	@EventHandler
+    public void onServerListPing(ServerListPingEvent event) {}
+
+
+	@EventHandler
+	public void onServerLoadEvent(ServerLoadEvent event){
+		LiveKit.getInstance().onServerLoad();
+	}
+
 	/*@EventHandler
 	public void onServerLoadEvent(ServerLoadEvent event) {
 		//try enable economy after everything has loaded
@@ -251,9 +233,9 @@ public class Plugin extends JavaPlugin implements ILiveKitPlugin, Listener {
 		return DEBUG;
 	}
 
-	public static Stat getStat() {
+	/*public static Stat getStat() {
 		return stat;
-	}
+	}*/
 
 	@Override
 	public ILiveKit getLiveKit() {

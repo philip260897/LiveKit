@@ -6,13 +6,18 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import at.livekit.livekit.LiveCloud.ProxyInfo;
+import at.livekit.livekit.LiveCloud.ServerIdentity;
 import at.livekit.nio.NIOClient.NIOClientEvent;
+import at.livekit.nio.proxy.NIOProxyClient;
+import at.livekit.packets.ProxyClientKeepAlivePacket;
 import at.livekit.plugin.Plugin;
 
 public class NIOServer<T> implements Runnable, NIOClientEvent<T> {
@@ -20,12 +25,14 @@ public class NIOServer<T> implements Runnable, NIOClientEvent<T> {
     private int port;
     public Map<SelectionKey, NIOClient<T>> clients;
 
-    private Selector selector;
+    protected Selector selector;
     private ServerSocketChannel server;
     private boolean abort = false;
 
     private Thread thread;
-    private NIOServerEvent<T> listener;
+    protected NIOServerEvent<T> listener;
+
+    private NIOProxyPool<T> proxyPool;
     
     public NIOServer(int port) {
         this.port = port;
@@ -45,6 +52,7 @@ public class NIOServer<T> implements Runnable, NIOClientEvent<T> {
         server.register(selector, SelectionKey.OP_ACCEPT);
 
         thread = new Thread(this);
+        thread.setName("LiveKit server");
         thread.start();
     }
 
@@ -55,6 +63,8 @@ public class NIOServer<T> implements Runnable, NIOClientEvent<T> {
             for(NIOClient<T> client : clients.values())client.close();
             clients.clear();
         }
+
+
 
         try{
             selector.close();
@@ -122,28 +132,81 @@ public class NIOServer<T> implements Runnable, NIOClientEvent<T> {
         }
     }
 
+    public boolean isProxyEnabled() {
+        return proxyPool != null;
+    }
+
+    public List<T> getProxiedClients() {
+        if(proxyPool != null) {
+            synchronized(clients) {
+                return clients.values().stream().filter(c->c instanceof NIOProxyClient).map(c->((NIOProxyClient<T>)c).getIdentifier()).collect(Collectors.toList());
+            }
+        }
+        return new ArrayList<>();
+    }
+
+    public boolean isProxyConnectionAvailable() {
+        if(proxyPool != null) {
+            return proxyPool.isAvailableForConnection();
+        }
+        return false;
+    }
+
+    private volatile boolean proxyClientRequest = false;
+    protected void requestProxyClient() {
+        proxyClientRequest = true;
+        selector.wakeup();
+    }
+
+    public void setupProxyPool(ServerIdentity identity, ProxyInfo proxyInfo) {
+        this.proxyPool = new NIOProxyPool<T>(this, identity, proxyInfo);
+        this.requestProxyClient();
+    }
+
+    private void keepAlive() {
+        synchronized(clients) {
+            for(NIOClient<T> client : clients.values()) {
+                if(client instanceof NIOProxyClient) {
+                    if(client.canKeepAlive()) {
+                        Plugin.debug("[Proxy|"+client.getLocalPort()+"] Sending keep alive packet...");
+                        send(client, new ProxyClientKeepAlivePacket());
+                    }
+                }
+            }
+        }
+    }
+
     @Override
     public void run() {
         try
         {
-
             Plugin.log("Server listening on "+port+" for incoming connections");
             boolean writable = false;
+
+
             while(!abort) {
 
-                if(!writable) {
-                    selector.select();
+                if(!writable && !proxyClientRequest) {
+                    selector.select(1000);
                     if(!selector.isOpen()) continue;
                 } else {
                     Thread.sleep(20);
                     selector.selectNow();
                 }
 
-                //System.out.println("Selector working");
+                if(proxyClientRequest) {
+                    proxyClientRequest = false;
+                    if(proxyPool != null) {
+                        proxyPool.createClient();
+                    }
+                }
+
+                keepAlive();
 
                 Iterator<SelectionKey> iter = selector.selectedKeys().iterator();
                 while(iter.hasNext()) {
                     SelectionKey key = iter.next();
+                    
                     
                     if(key.isAcceptable()) {
                         acceptIncoming();
@@ -152,6 +215,7 @@ public class NIOServer<T> implements Runnable, NIOClientEvent<T> {
                     if(key.isReadable()) {
                         NIOClient<T> client = clients.get(key);
                         if(client != null) client.read();
+                        else Plugin.debug("ERROR!!!!!! Client not found for key: "+key);
                     }
 
                     iter.remove();
@@ -178,6 +242,10 @@ public class NIOServer<T> implements Runnable, NIOClientEvent<T> {
         catch(Exception ex)
         {
             ex.printStackTrace();
+        }
+
+        if(proxyPool != null) {
+            proxyPool.close();
         }
 
         try{

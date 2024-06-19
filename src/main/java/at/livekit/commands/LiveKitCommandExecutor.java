@@ -2,8 +2,11 @@ package at.livekit.commands;
 
 import java.io.File;
 import java.io.PrintWriter;
+import java.nio.channels.SelectionKey;
 import java.util.List;
 import java.util.Set;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -26,6 +29,7 @@ import at.livekit.authentication.Session;
 import at.livekit.commands.CommandHandler.CommandHandlerPermissionCallback;
 import at.livekit.commands.CommandHandler.MatchResult;
 import at.livekit.livekit.Identity;
+import at.livekit.livekit.LiveCloud;
 import at.livekit.livekit.LiveKit;
 import at.livekit.map.RenderBounds;
 import at.livekit.map.RenderJob;
@@ -35,6 +39,10 @@ import at.livekit.map.RenderBounds.RenderShape;
 import at.livekit.map.RenderJob.RenderJobMode;
 import at.livekit.modules.BaseModule;
 import at.livekit.modules.LiveMapModule;
+import at.livekit.nio.NIOClient;
+import at.livekit.nio.NIOServer;
+import at.livekit.nio.proxy.NIOProxyClient;
+import at.livekit.packets.StatusPacket;
 import at.livekit.plugin.Config;
 import at.livekit.plugin.Permissions;
 import at.livekit.plugin.Plugin;
@@ -79,7 +87,10 @@ public class LiveKitCommandExecutor implements CommandExecutor, TabCompleter {
     private LKCommand ADMIN_MODULES_ENABLE = new LKCommand("livekit modules {module} enable", "livekit.commands.admin", true, this::cmdModulesToggle, Plugin.isDebug());
     private LKCommand ADMIN_MODULES_DISABLE = new LKCommand("livekit modules {module} disable", "livekit.commands.admin", true, this::cmdModulesToggle, Plugin.isDebug());
     private LKCommand ADMIN_TEXTUREPACK = new LKCommand("livekit tp", "livekit.commands.admin", true, this::cmdTexturepack, Plugin.isDebug());
-    private LKCommand ADMIN_TEST = new LKCommand("livekit test", "livekit.commands.admin", false, this::cmdTest, Plugin.isDebug());
+    private LKCommand ADMIN_TEST = new LKCommand("livekit test", "livekit.commands.admin", true, this::cmdTest, Plugin.isDebug());
+    private LKCommand ADMIN_TEST2 = new LKCommand("livekit test {num}", "livekit.commands.admin", true, this::cmdTest2, Plugin.isDebug());
+
+    private LKCommand PROXY_INFO = new LKCommand("livekit connections", "livekit.commands.admin", true, this::cmdConnectionInfo, "Shows general info about the proxy service");
 
     private String prefix;
     private String prefixError;
@@ -581,6 +592,42 @@ public class LiveKitCommandExecutor implements CommandExecutor, TabCompleter {
         }
     }
 
+    /**
+     * Displays info about current connections and proxy status
+     * @param sender
+     * @param cmd
+     */
+    private void cmdConnectionInfo(CommandSender sender, LKCommand cmd) {
+        NIOServer<Identity> server = LiveKit.getInstance().getServer();
+        LiveCloud proxy = LiveCloud.getInstance();
+        //boolean forwarding = proxy.i
+        boolean proxyEnabled = server.isProxyEnabled();
+
+        sender.sendMessage(prefix+"Connection: "+((proxyEnabled == false) ? ChatColor.GREEN+"[DIRECT]" : ChatColor.RED+"[PROXIED]"));
+        if(proxyEnabled == false) {
+            sender.sendMessage(prefix+"Proxy service is currently unavailable! Port forwarding neccessary!");
+            return;
+        }
+
+        List<Identity> identities = server.getIdentifiers();
+        List<Identity> proxyClients = server.getProxiedClients();
+        if(proxyEnabled) {
+            sender.sendMessage("Proxy Clients: "+(identities.stream().filter((e)->proxyClients.contains(e)).collect(Collectors.toList()).size())+"/"+proxy.getProxyInfo().getProxyConnectionCount()+"");
+        }
+        sender.sendMessage("Connected clients ("+identities.size()+"):");
+        for(Identity identity : identities) {
+            boolean isProxyClient = proxyClients.contains(identity);
+            String name = identity.isIdentified() == false ? "Unidentified - Logging In" : identity.getName();
+            sender.sendMessage(" - "+ name + " " + (isProxyClient ? ChatColor.RED+"[PROXY]"+ChatColor.RESET : ChatColor.GREEN+"[DIRECT]"+ChatColor.RESET));
+        }
+        if(server.isProxyConnectionAvailable()) {
+            sender.sendMessage(" - Proxy server connected & waiting for client...");
+        }
+        if(server.isProxyEnabled()) {
+            sender.sendMessage("Proxy clients connect via "+(Config.getProxyHostname() != null ? Config.getProxyHostname() : proxy.getServerIp())+":"+Config.getServerPort());
+        }
+    }
+
     private void cmdTexturepack(CommandSender sender, LKCommand cmd) {
         try{
             Texturepack.generateTexturePack();
@@ -604,14 +651,51 @@ public class LiveKitCommandExecutor implements CommandExecutor, TabCompleter {
 
     private void cmdTest(CommandSender sender, LKCommand cmd) {
         try {
-            if(sender instanceof Player) {
-                Player player = (Player)sender;
-                Location location = player.getLocation();
-                player.sendMessage("Block Type: "+location.getBlock().getType().name() + " " + Texturepack.getInstance().getTexture(location.getBlock().getType()));
-                Location below = location.clone().add(0, -1, 0);
-                player.sendMessage("Below Block Type: "+below.getBlock().getType().name()+ " " + Texturepack.getInstance().getTexture(location.getBlock().getType()));
+            NIOServer<Identity> server = LiveKit.getInstance().getServer();
+            for(Entry<SelectionKey, NIOClient<Identity>> entry : server.clients.entrySet()) {
+                NIOClient<Identity> client = entry.getValue();
+                SelectionKey key = entry.getKey();
+                printClientStatus(sender, client);
             }
         }catch(Exception ex){ex.printStackTrace();}
+    }
+
+    private void cmdTest2(CommandSender sender, LKCommand cmd) {
+        try {
+            int port = cmd.get("num");
+            NIOServer<Identity> server = LiveKit.getInstance().getServer();
+            for(Entry<SelectionKey, NIOClient<Identity>> entry : server.clients.entrySet()) {
+                NIOClient<Identity> client = entry.getValue();
+                SelectionKey key = entry.getKey();
+
+                if(client.getLocalPort() == port) {
+                    try{
+                        server.send(client, new StatusPacket(1));
+                        printClientStatus(sender, client);
+                    }catch(Exception ex){ex.printStackTrace();}
+                }
+            }
+            
+        }catch(Exception ex){ex.printStackTrace();}
+    }
+
+    private void printClientStatus(CommandSender sender, NIOClient<Identity> client) {
+        SelectionKey key = client.getKey();
+
+        boolean isProxyClient = client instanceof NIOProxyClient;
+        boolean isOpen = key.channel().isOpen();
+        boolean isBlocking = key.channel().isBlocking();
+        boolean isRegistered = key.isValid();
+        boolean isWritable = key.isWritable();
+        boolean isReadable = key.isReadable();
+        boolean isConnectable = key.isConnectable();
+        boolean isAcceptable = key.isAcceptable();
+        int getLocalPort = client.getLocalPort();
+        int getRemotePort = client.getRemotePort();
+        String getRemoteAddress = client.getRemoteAddress();
+        boolean isConnected = client.isConnected();
+
+        sender.sendMessage("Client["+getLocalPort+"->"+getRemoteAddress+":"+getRemotePort+"] Proxy: "+isProxyClient+" Connected: "+isConnected+" Open: "+isOpen+" Blocking: "+isBlocking+" Registered: "+isRegistered+" Writable: "+isWritable+" Readable: "+isReadable+" Connectable: "+isConnectable+" Acceptable: "+isAcceptable);
     }
     
 	private boolean checkPerm(CommandSender sender, String permission, boolean verbose) {

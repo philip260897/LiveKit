@@ -1,6 +1,8 @@
 package at.livekit.utils;
 
 import java.io.File;
+import java.lang.management.ManagementFactory;
+import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.security.SecureRandom;
 import java.util.concurrent.Callable;
@@ -142,5 +144,34 @@ public class Utils
                 }
             }
         });
+    }
+
+    public static long getMaxMemory() {
+        return Runtime.getRuntime().maxMemory()/1024/1024;
+    }
+
+    public static long getMemoryUsage() {
+        return (ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getUsed()/1024/1024);
+    }
+
+    public static float getCPUUsage() {
+        try{
+            return (float) ((com.sun.management.OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean()).getProcessCpuLoad()*100;
+        }catch(Exception ex){
+            return 0f;
+        }
+    }
+
+    public static Field getField(Class clazz, String fieldName) throws NoSuchFieldException {
+        try {
+            return clazz.getDeclaredField(fieldName);
+        } catch (NoSuchFieldException e) {
+            Class superClass = clazz.getSuperclass();
+            if (superClass == null) {
+                throw e;
+            } else {
+                return Utils.getField(superClass, fieldName);
+            }
+        }
     }
 }
