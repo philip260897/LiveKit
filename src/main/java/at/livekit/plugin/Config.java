@@ -372,6 +372,12 @@ public class Config
             config.set("plugins.essentialsX.spawns.pin", true);
             config.set("plugins.essentialsX.spawns.can_teleport", true);
 
+            List<String> perms = getDefaultPermissions();
+            if(!perms.contains("livekit.essentials.homes")) perms.add("livekit.essentials.homes");
+            if(!perms.contains("livekit.essentials.info")) perms.add("livekit.essentials.info");
+            if(!perms.contains("livekit.essentials.warps")) perms.add("livekit.essentials.warps");
+            config.set("permissions.default", perms);
+
             save = true;
         }
 

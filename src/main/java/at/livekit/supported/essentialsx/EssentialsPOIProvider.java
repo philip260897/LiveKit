@@ -25,7 +25,7 @@ public class EssentialsPOIProvider extends POIInfoProvider implements Listener {
     final List<POI> essentialWarpPOIs = new ArrayList<>();
 
     public EssentialsPOIProvider(Essentials essentials) {
-        super(essentials, essentials.getName(), null);
+        super(essentials, essentials.getName(), "livekit.essentials.warps");
 
         try {
             for (String warp : essentials.getWarps().getList()) {

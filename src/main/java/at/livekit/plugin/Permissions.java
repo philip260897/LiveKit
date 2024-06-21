@@ -34,6 +34,7 @@ public class Permissions
         permissions.add("livekit.module.console");
         permissions.add("livekit.module.inventory");
         permissions.add("livekit.module.economy");
+        permissions.add("livekit.module.tps");
         
         permissions.add("livekit.chat.write");
         permissions.add("livekit.chat.write_offline");
@@ -42,6 +43,10 @@ public class Permissions
         permissions.add("livekit.players.other");
         permissions.add("livekit.map.info");
         permissions.add("livekit.console.execute");
+        permissions.add("livekit.essentials.homes");
+        permissions.add("livekit.essentials.info");
+        permissions.add("livekit.essentials.admin");
+        permissions.add("livekit.essentials.warps");
 
         if(use) {
             if(Bukkit.getPluginManager().getPlugin("Vault") == null) {

@@ -19,7 +19,10 @@ public class EssentialsPlugin {
                 Essentials essentials = (Essentials) plugin;
                 EssentialsPlayerInfoProvider playerInfoProvider = new EssentialsPlayerInfoProvider(essentials);
                 at.livekit.plugin.Plugin.getInstance().getLiveKit().addPlayerInfoProvider(playerInfoProvider);
-                Bukkit.getServer().getPluginManager().registerEvents(playerInfoProvider, at.livekit.plugin.Plugin.getInstance());
+
+                EssentialsHomeLocationProvider homeLocationProvider = new EssentialsHomeLocationProvider(essentials);
+                at.livekit.plugin.Plugin.getInstance().getLiveKit().addPlayerInfoProvider(homeLocationProvider);
+                Bukkit.getServer().getPluginManager().registerEvents(homeLocationProvider, at.livekit.plugin.Plugin.getInstance());
 
                 at.livekit.plugin.Plugin.getInstance().getLiveKit().addPlayerInfoProvider(new EssentialsAdminInfoProvider(essentials));
 

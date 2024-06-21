@@ -32,6 +32,9 @@ permissions:
   - livekit.chat.write
   - livekit.poi.personalpins
   - livekit.players.other
+  - livekit.essentials.homes
+  - livekit.essentials.warps
+  - livekit.essentials.info
 modules:
   LiveMapModule:
     enabled: true
@@ -49,6 +52,7 @@ modules:
     personalpins: 5
     teleport_spawn: false
     teleport_bed: false
+    show_default_world_spawns: true
   ConsoleModule:
     enabled: true
     password: change_me
