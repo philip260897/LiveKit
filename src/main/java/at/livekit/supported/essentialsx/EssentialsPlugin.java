@@ -36,6 +36,10 @@ public class EssentialsPlugin {
                     spawnPlugin = new EssentialsSpawnPlugin(essentials);
                     spawnPlugin.onEnable();
                 }
+
+                EssentialsMessaging messaging = new EssentialsMessaging(essentials);
+                at.livekit.plugin.Plugin.getInstance().getLiveKit().setMessagingAdapter(messaging);
+                Bukkit.getServer().getPluginManager().registerEvents(messaging, at.livekit.plugin.Plugin.getInstance());
             }
         }catch(Exception ex){ex.printStackTrace();}
     }

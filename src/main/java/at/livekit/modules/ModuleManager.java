@@ -63,6 +63,7 @@ public class ModuleManager
         this.registerModule(new InventoryModule(listener));
         //this.registerModule(new EconomyModule(listener));
         this.registerModule(new TPSModule(listener));
+        this.registerModule(new MessagingModule(listener));
         
         //if(Config.getConsolePassword() != null) {
         if(Config.getConsolePassword() == null) Plugin.warning("Enabling Console access without password. UNSAFE!");

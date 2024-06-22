@@ -24,6 +24,7 @@ import org.json.JSONObject;
 
 import at.livekit.api.map.POI;
 import at.livekit.api.map.PersonalPin;
+import at.livekit.api.pm.PrivateMessage;
 import at.livekit.authentication.Pin;
 import at.livekit.authentication.Session;
 import at.livekit.plugin.Plugin;
@@ -50,6 +51,7 @@ public class JSONStorage extends StorageThreadMarshallAdapter
         registerClassForStorage(Pin.class);
         registerClassForStorage(POI.class);
         registerClassForStorage(PersonalPin.class);
+        registerClassForStorage(PrivateMessage.class);
     }
 
     private <T> void registerClassForStorage(Class<T> clazz) throws Exception {

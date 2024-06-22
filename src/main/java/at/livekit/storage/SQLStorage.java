@@ -5,6 +5,7 @@ import com.j256.ormlite.table.TableUtils;
 
 import at.livekit.api.map.POI;
 import at.livekit.api.map.PersonalPin;
+import at.livekit.api.pm.PrivateMessage;
 import at.livekit.authentication.Pin;
 import at.livekit.authentication.Session;
 import at.livekit.plugin.Plugin;
@@ -60,6 +61,7 @@ public class SQLStorage extends StorageThreadMarshallAdapter
         registerStorageClass(HeadInfo.class);
         registerStorageClass(POI.class);
         registerStorageClass(PersonalPin.class);
+        registerStorageClass(PrivateMessage.class);
     }
 
     @Override

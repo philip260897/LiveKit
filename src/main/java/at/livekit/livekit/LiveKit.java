@@ -25,12 +25,14 @@ import at.livekit.api.economy.IEconomyAdapter;
 import at.livekit.api.map.POI;
 import at.livekit.api.map.PlayerInfoProvider;
 import at.livekit.api.map.PlayerLocationProvider;
+import at.livekit.api.pm.MessagingAdapter;
 import at.livekit.api.map.POILocationProvider;
 import at.livekit.authentication.Pin;
 import at.livekit.authentication.Session;
 import at.livekit.modules.BaseModule;
 import at.livekit.modules.ChatModule;
 import at.livekit.modules.EconomyModule;
+import at.livekit.modules.MessagingModule;
 import at.livekit.modules.ModuleManager;
 import at.livekit.modules.POIModule;
 import at.livekit.modules.PlayerModule;
@@ -1057,6 +1059,15 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
         if(module != null && module.isEnabled()) {
             module.sendChatMessage(message);
         }
+    }
+
+    @Override
+    public void setMessagingAdapter(MessagingAdapter adapter) {
+        MessagingModule module = (MessagingModule) _modules.getModule("MessagingModule");
+        if(module != null) {
+            module.setMessagingAdapter(adapter);
+        }
+    
     }
 
 	/*@Override
