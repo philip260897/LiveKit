@@ -21,14 +21,14 @@ public class EssentialsPlugin {
                 at.livekit.plugin.Plugin.getInstance().getLiveKit().addPlayerInfoProvider(playerInfoProvider);
 
                 EssentialsHomeLocationProvider homeLocationProvider = new EssentialsHomeLocationProvider(essentials);
-                at.livekit.plugin.Plugin.getInstance().getLiveKit().addPlayerInfoProvider(homeLocationProvider);
+                at.livekit.plugin.Plugin.getInstance().getLiveKit().addPlayerLocationProvider(homeLocationProvider);
                 Bukkit.getServer().getPluginManager().registerEvents(homeLocationProvider, at.livekit.plugin.Plugin.getInstance());
 
                 at.livekit.plugin.Plugin.getInstance().getLiveKit().addPlayerInfoProvider(new EssentialsAdminInfoProvider(essentials));
 
                 if(Config.canEssentialsPinWarps()) {
-                    EssentialsPOIProvider poiProvider = new EssentialsPOIProvider(essentials);
-                    at.livekit.plugin.Plugin.getInstance().getLiveKit().addPOIInfoProvider(poiProvider);
+                    EssentialsWarpProvider poiProvider = new EssentialsWarpProvider(essentials);
+                    at.livekit.plugin.Plugin.getInstance().getLiveKit().addPOILocationProvider(poiProvider);
                     Bukkit.getServer().getPluginManager().registerEvents(poiProvider, at.livekit.plugin.Plugin.getInstance());
                 }
 

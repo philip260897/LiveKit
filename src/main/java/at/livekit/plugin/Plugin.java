@@ -16,7 +16,9 @@ import at.livekit.commands.LiveKitCommandExecutor;
 import at.livekit.livekit.LiveKit;
 import at.livekit.modules.PlayerModule;
 import at.livekit.modules.PlayerModule.LPlayer;
+import at.livekit.provider.BasicPOILocationProvider;
 import at.livekit.provider.BasicPlayerInfoProvider;
+import at.livekit.provider.BasicPlayerLocationProvider;
 import at.livekit.provider.BasicPlayerPinProvider;
 import at.livekit.provider.POISpawnProvider;
 import at.livekit.storage.IStorageAdapterGeneric;
@@ -30,7 +32,7 @@ import at.livekit.utils.Metrics;
 
 public class Plugin extends JavaPlugin implements ILiveKitPlugin, Listener {
 
-	private static boolean DEBUG = false;
+	private static boolean DEBUG = true;
 
 	private static Logger logger;
 	private static Plugin instance;
@@ -116,16 +118,22 @@ public class Plugin extends JavaPlugin implements ILiveKitPlugin, Listener {
 		this.getLiveKit().addPlayerInfoProvider(playerInfoProvider);
 		Bukkit.getServer().getPluginManager().registerEvents(playerInfoProvider, Plugin.getInstance());
 
+		BasicPlayerLocationProvider playerLocationProvider = new BasicPlayerLocationProvider();
+		this.getLiveKit().addPlayerLocationProvider(playerLocationProvider);
+
+		BasicPOILocationProvider poiLocationProvider = new BasicPOILocationProvider();
+		this.getLiveKit().addPOILocationProvider(poiLocationProvider);
+
 		//POI
 		if(Config.showDefaultWorldSpawns()) {
 			POISpawnProvider provider = new POISpawnProvider();
-			this.getLiveKit().addPOIInfoProvider(provider);
+			this.getLiveKit().addPOILocationProvider(provider);
 			Bukkit.getServer().getPluginManager().registerEvents(provider, Plugin.getInstance());
 		}
 
 		//Player Pin Provider
 		//PlayerPinProvider playerPins = new PlayerPinProvider();
-		this.getLiveKit().addPlayerInfoProvider(new BasicPlayerPinProvider());
+		this.getLiveKit().addPlayerLocationProvider(new BasicPlayerPinProvider());
 
 		//registers console listener (console enable check is done inside)
 		ConsoleListener.registerListener();

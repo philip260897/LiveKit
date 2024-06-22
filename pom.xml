@@ -156,14 +156,12 @@
       <scope>provided</scope>
     </dependency>
     <!-- https://mvnrepository.com/artifact/com.comphenix.protocol/ProtocolLib-API -->
-
     <dependency>
       <groupId>org.spigotmc</groupId>
       <artifactId>spigot</artifactId>
       <version>1.20.4-R0.1-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
-
     <dependency>
       <groupId>net.essentialsx</groupId>
       <artifactId>EssentialsX</artifactId>

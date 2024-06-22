@@ -1,13 +1,12 @@
 package at.livekit.provider;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.UUID;
 
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
-import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -16,15 +15,11 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerGameModeChangeEvent;
 import org.bukkit.event.player.PlayerExpChangeEvent;
 
-import at.livekit.api.core.LKLocation;
+import at.livekit.api.core.IIdentity;
 import at.livekit.api.core.Privacy;
 import at.livekit.api.map.InfoEntry;
-import at.livekit.api.map.PersonalPin;
 import at.livekit.api.map.PlayerInfoProvider;
-import at.livekit.api.map.Waypoint;
 import at.livekit.livekit.Economy;
-import at.livekit.livekit.Economy.EconomyNotAvailableException;
-import at.livekit.plugin.Config;
 import at.livekit.plugin.Plugin;
 
 
@@ -38,7 +33,8 @@ public class BasicPlayerInfoProvider extends PlayerInfoProvider implements Liste
     }
 
     @Override
-    public void onResolvePlayerInfo(OfflinePlayer player, List<InfoEntry> entries) {
+    public List<InfoEntry> onResolvePlayerInfo(IIdentity identity, OfflinePlayer player) {
+        List<InfoEntry> entries = new ArrayList<>();
         entries.add( new InfoEntry("Last Played", player.isOnline() ? ChatColor.GREEN+"Now" : _formatter.format(new Date(player.getLastPlayed())), Privacy.PUBLIC) );
         entries.add( new InfoEntry("First Joined", _formatter.format(new Date(player.getFirstPlayed())), Privacy.PRIVATE) );
         
@@ -53,16 +49,10 @@ public class BasicPlayerInfoProvider extends PlayerInfoProvider implements Liste
             entries.add(new InfoEntry("Gamemode", (online.getGameMode() != GameMode.SURVIVAL ? ChatColor.YELLOW : ChatColor.RESET) + online.getGameMode().toString(), Privacy.PUBLIC));
             entries.add(new InfoEntry("Level (XP)", online.getLevel()+" (" +(online.getTotalExperience())+ ")", Privacy.PRIVATE));
         }
+        return entries;
     }
 
-    @Override
-    public void onResolvePlayerLocation(OfflinePlayer player, List<PersonalPin> waypoints) {
-        Location location = player.getBedSpawnLocation();
-        if(location != null) {
-            PersonalPin waypoint = PersonalPin.create(player, LKLocation.fromLocation(location), "Bed Spawn", "Bed Spawn Location of "+player.getName(), BasicPlayerPinProvider.PLAYER_PIN_COLOR, Config.canTeleportBed(), Privacy.PRIVATE);
-            waypoints.add(waypoint);
-        }
-    }
+
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerGameModeChangeEvent(PlayerGameModeChangeEvent event) {

@@ -105,6 +105,15 @@ public class Permissions
         return "";
     }
 
+    public static String getGroup(String world, OfflinePlayer player) {
+        if(use && perms != null)
+        {
+            return perms.getPrimaryGroup(world, player);
+        }
+        
+        return null;
+    }
+
     public static void registerPermission(String permission) {
         synchronized(permissions) {
             if(!permissions.contains(permission)) {

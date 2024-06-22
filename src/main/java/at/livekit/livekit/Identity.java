@@ -9,10 +9,11 @@ import java.util.Map.Entry;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 
+import at.livekit.api.core.IIdentity;
 import at.livekit.plugin.Config;
 import at.livekit.plugin.Permissions;
 
-public class Identity 
+public class Identity implements IIdentity
 {
     private String uuid;
     private String name;
@@ -21,6 +22,7 @@ public class Identity
 
     private String prefix;
     private String suffix;
+    private HashMap<String, String> groups = new HashMap<String, String>();
 
     private boolean identified = false;
 
@@ -101,16 +103,35 @@ public class Identity
         return permissions.toArray(new String[permissions.size()]);
     }
 
+    @Override
     public String getUuid() {
         return uuid;
     }
 
+    @Override
     public String getName() {
         return name;
     }
 
+    @Override
     public boolean isAnonymous() {
         return anonymous;
+    }
+
+    @Override
+    public String getGroup(String world) {
+        if(groups.containsKey(world)) {
+            return groups.get(world);
+        }
+        return null;
+    }
+
+    @Override
+    public String getCurrentViewingWorld() {
+        if(subscriptions.containsKey("LiveMapModule")) {
+            return subscriptions.get("LiveMapModule");
+        }
+        return null;
     }
 
     public String getPrefix() {
@@ -121,6 +142,7 @@ public class Identity
         return suffix;
     }
 
+    @Override
     public boolean hasPermission(String permission) {
         if(!isIdentified()) return false;
         if(uuid == null && anonymous == false) return false;
@@ -154,6 +176,14 @@ public class Identity
 
                 prefix = Permissions.getPrefix(player);
                 suffix = Permissions.getSuffix(player);
+                
+                for(String world : Config.getLiveMapWorlds().keySet()) {
+                    String group = Permissions.getGroup(world, player);
+                    if(group != null) {
+                        groups.put(world, group);
+                    }
+                }
+
             }catch(Exception ex){};
         } else {
             op = false;

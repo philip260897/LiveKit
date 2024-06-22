@@ -1,6 +1,7 @@
 package at.livekit.supported.essentialsx;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -10,8 +11,8 @@ import org.bukkit.OfflinePlayer;
 import com.earth2me.essentials.Essentials;
 import com.earth2me.essentials.User;
 
+import at.livekit.api.core.IIdentity;
 import at.livekit.api.map.InfoEntry;
-import at.livekit.api.map.PersonalPin;
 import at.livekit.api.map.PlayerInfoProvider;
 
 public class EssentialsPlayerInfoProvider extends PlayerInfoProvider {
@@ -24,7 +25,9 @@ public class EssentialsPlayerInfoProvider extends PlayerInfoProvider {
     }
 
     @Override
-    public void onResolvePlayerInfo(OfflinePlayer player, List<InfoEntry> entries) {
+    public List<InfoEntry> onResolvePlayerInfo(IIdentity identity, OfflinePlayer player) {
+        List<InfoEntry> entries = new ArrayList<>();
+
         User user = essentials.getUser(player.getUniqueId());
         String no = ChatColor.RED+"No";
         //String yes = ChatColor.GREEN+"Yes";
@@ -36,12 +39,7 @@ public class EssentialsPlayerInfoProvider extends PlayerInfoProvider {
             }
         }
 
-        
-    }
-
-    @Override
-    public void onResolvePlayerLocation(OfflinePlayer player, List<PersonalPin> pins) {
-
+        return entries;
     }
     
 }

@@ -7,20 +7,18 @@ import org.bukkit.ChatColor;
 import org.bukkit.scheduler.BukkitTask;
 
 import at.livekit.api.core.Color;
-import at.livekit.api.map.AsyncPOIInfoProvider;
+import at.livekit.api.core.IIdentity;
 import at.livekit.api.map.InfoEntry;
 import at.livekit.api.map.POI;
 import at.livekit.plugin.Plugin;
 import at.livekit.utils.FutureSyncCallback;
 import at.livekit.utils.Utils;
 
-public class BasicPOIProvider extends AsyncPOIInfoProvider {
+public class BasicPOIProvider   {
 
     public static Color POI_COLOR = Color.fromChatColor(ChatColor.DARK_RED);
 
     public BasicPOIProvider() {
-        super(Plugin.getInstance(), "Basic POI Provider", "livekit.module.poi");
-
 
     }
 
@@ -56,9 +54,4 @@ public class BasicPOIProvider extends AsyncPOIInfoProvider {
         }, onResult, onError);
     }*/
 
-    @Override
-    public void onResolvePOIInfo(POI poi, List<InfoEntry> arg1) {
-        // TODO Auto-generated method stub
-        
-    }
 }

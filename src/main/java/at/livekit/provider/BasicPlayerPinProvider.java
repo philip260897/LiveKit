@@ -1,12 +1,15 @@
 package at.livekit.provider;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.scheduler.BukkitTask;
 
 import at.livekit.api.core.Color;
+import at.livekit.api.core.IIdentity;
 import at.livekit.api.map.AsyncPlayerInfoProvider;
+import at.livekit.api.map.AsyncPlayerLocationProvider;
 import at.livekit.api.map.InfoEntry;
 import at.livekit.api.map.POI;
 import at.livekit.api.map.PersonalPin;
@@ -15,7 +18,7 @@ import at.livekit.plugin.Plugin;
 import at.livekit.utils.FutureSyncCallback;
 import at.livekit.utils.Utils;
 
-public class BasicPlayerPinProvider extends AsyncPlayerInfoProvider {
+public class BasicPlayerPinProvider extends AsyncPlayerLocationProvider {
 
     public static Color PLAYER_PIN_COLOR = Color.fromHEX("#5D4037");
 
@@ -56,18 +59,13 @@ public class BasicPlayerPinProvider extends AsyncPlayerInfoProvider {
     }
 
     @Override
-    public void onResolvePlayerInfo(OfflinePlayer player, List<InfoEntry> entries) {
-
-    }
-
-    @Override
-    public void onResolvePlayerLocation(OfflinePlayer player, List<PersonalPin> waypoints) {
+    public List<PersonalPin> onResolvePlayerLocation(IIdentity identity, OfflinePlayer player) {
         try{
-            List<PersonalPin> pins = Plugin.getStorage().load(PersonalPin.class, "playeruuid", player.getUniqueId());
-            waypoints.addAll(pins);
+            return Plugin.getStorage().load(PersonalPin.class, "playeruuid", player.getUniqueId());
         }catch(Exception ex){
             ex.printStackTrace();
         }
+        return new ArrayList<>();
     }
 
 }

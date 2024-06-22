@@ -11,38 +11,34 @@ import org.bukkit.event.Listener;
 import com.earth2me.essentials.Essentials;
 
 import at.livekit.api.core.Color;
+import at.livekit.api.core.IIdentity;
 import at.livekit.api.core.LKLocation;
 import at.livekit.api.map.InfoEntry;
 import at.livekit.api.map.POI;
-import at.livekit.api.map.POIInfoProvider;
+import at.livekit.api.map.POILocationProvider;
 import at.livekit.plugin.Config;
 import at.livekit.plugin.Plugin;
 import net.essentialsx.api.v2.events.WarpModifyEvent;
 import net.essentialsx.api.v2.events.WarpModifyEvent.WarpModifyCause;
 
-public class EssentialsPOIProvider extends POIInfoProvider implements Listener {
+public class EssentialsWarpProvider extends POILocationProvider implements Listener {
 
     final List<POI> essentialWarpPOIs = new ArrayList<>();
 
-    public EssentialsPOIProvider(Essentials essentials) {
+    public EssentialsWarpProvider(Essentials essentials) {
         super(essentials, essentials.getName(), "livekit.essentials.warps");
 
         try {
             for (String warp : essentials.getWarps().getList()) {
                 registerPOI(warp, essentials.getWarps().getWarp(warp));
             }
-
-            
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
-
     @Override
-    public void onResolvePOIInfo(POI poi, List<InfoEntry> entries) {
-        if(essentialWarpPOIs.contains(poi)) {
-            entries.add(new InfoEntry("Plugin", getRegisteringPlugin().getName()));
-        }
+    public List<POI> onResolvePOILocations(IIdentity identity) {
+        return essentialWarpPOIs;
     }
 
     @EventHandler
@@ -58,18 +54,14 @@ public class EssentialsPOIProvider extends POIInfoProvider implements Listener {
         } else if (event.getCause() == WarpModifyCause.CREATE) {
             registerPOI(event.getWarpName(), event.getNewLocation());
         }
+        Plugin.getInstance().getLiveKit().notifyPOIChange(this);
     }
 
-    POI registerPOI(String name, Location location) {
-        POI poi = POI.create(LKLocation.fromLocation(location), name, "Essentials warp point "+name, Color.fromChatColor(ChatColor.RED), Config.canEssentialsTeleportWarps(), false);
-        essentialWarpPOIs.add(poi);
-        at.livekit.plugin.Plugin.getInstance().getLiveKit().addPointOfInterest(poi);
-        return poi;
+    void registerPOI(String name, Location location) {
+        essentialWarpPOIs.add( POI.create(LKLocation.fromLocation(location), name, "Essentials warp point "+name, Color.fromChatColor(ChatColor.RED), Config.canEssentialsTeleportWarps(), false) );
     }
 
     void unregisterPOI(POI poi) {
-        Plugin.debug("Remove POI "+poi.getName());
-        at.livekit.plugin.Plugin.getInstance().getLiveKit().removePointOfIntereset(poi);
         essentialWarpPOIs.remove(poi);
     }
 
@@ -81,5 +73,15 @@ public class EssentialsPOIProvider extends POIInfoProvider implements Listener {
         }
         return null;
     }
+    @Override
+    public List<InfoEntry> onResolvePOIInfo(IIdentity identity, POI poi) {
+        List<InfoEntry> entries = new ArrayList<>();
+        entries.add(new InfoEntry("Plugin", getRegisteringPlugin().getName()));
+        entries.add(new InfoEntry("Features", "warps"));
+        entries.add(new InfoEntry("Command", "/warp "+poi.getName()));
+        return entries;
+    }
+
+
     
 }

@@ -13,6 +13,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -38,9 +39,11 @@ import org.json.JSONObject;
 import at.livekit.api.core.Color;
 import at.livekit.api.core.Privacy;
 import at.livekit.api.map.AsyncPlayerInfoProvider;
+import at.livekit.api.map.AsyncPlayerLocationProvider;
 import at.livekit.api.map.InfoEntry;
 import at.livekit.api.map.PersonalPin;
 import at.livekit.api.map.PlayerInfoProvider;
+import at.livekit.api.map.PlayerLocationProvider;
 import at.livekit.api.map.Waypoint;
 import at.livekit.livekit.Identity;
 import at.livekit.plugin.Plugin;
@@ -54,6 +57,7 @@ public class PlayerModule extends BaseModule implements Listener
 {
 
     private List<PlayerInfoProvider> _infoProviders = new ArrayList<PlayerInfoProvider>();
+    private List<PlayerLocationProvider> _locationProviders = new ArrayList<PlayerLocationProvider>();
     private Map<String,LPlayer> _players = new HashMap<String, LPlayer>();
 
     private List<String> _downstreamUpdate = new ArrayList<String>();
@@ -65,6 +69,9 @@ public class PlayerModule extends BaseModule implements Listener
     public void clearProviders() {
         synchronized(_infoProviders) {
             _infoProviders.clear();
+        }
+        synchronized(_locationProviders) {
+            _locationProviders.clear();
         }
     }
 
@@ -80,6 +87,22 @@ public class PlayerModule extends BaseModule implements Listener
         synchronized(_infoProviders) {
             if(_infoProviders.contains(provider)) {
                 _infoProviders.remove(provider);
+            }
+        }
+    }
+
+    public void addLocationProvider(PlayerLocationProvider provider) {
+        synchronized(_locationProviders) {
+            if(!_locationProviders.contains(provider)) {
+                _locationProviders.add(provider);
+            }
+        }
+    }
+
+    public void removeLocationProvider(PlayerLocationProvider provider) {
+        synchronized(_locationProviders) {
+            if(_locationProviders.contains(provider)) {
+                _locationProviders.remove(provider);
             }
         }
     }
@@ -463,6 +486,7 @@ public class PlayerModule extends BaseModule implements Listener
         Player online = player.getPlayer();
         Location location = waypoint.getLocation().toLocation();
         if(location == null) return new StatusPacket(0, "Location does not exist");
+        location = location.getWorld().getHighestBlockAt(location.getBlockX(), location.getBlockZ()).getRelative(BlockFace.UP,1).getLocation();
 
         online.teleport(location);
 
@@ -508,10 +532,19 @@ public class PlayerModule extends BaseModule implements Listener
                             if(iprov instanceof AsyncPlayerInfoProvider) continue;
                             if(iprov.getPermission() != null && !identity.hasPermission(iprov.getPermission()) && !identity.hasPermission("livekit.module.admin")) continue;
 
-                            iprov.onResolvePlayerInfo(player, _infos);
-                            iprov.onResolvePlayerLocation(player, _waypoints);
+                            _infos.addAll(iprov.onResolvePlayerInfo(identity, player).stream().filter((wp) -> wp != null).collect(Collectors.toList()));
                         }
                     }
+
+                    synchronized(_locationProviders) {
+                        for(PlayerLocationProvider lprov : _locationProviders) {
+                            if(lprov instanceof AsyncPlayerLocationProvider) continue;
+                            if(lprov.getPermission() != null && !identity.hasPermission(lprov.getPermission()) && !identity.hasPermission("livekit.module.admin")) continue;
+
+                            _waypoints.addAll(lprov.onResolvePlayerLocation(identity, player).stream().filter((wp) -> wp != null).collect(Collectors.toList()));
+                        }
+                    }
+
                     return null;
                 }
             }).get();
@@ -526,8 +559,15 @@ public class PlayerModule extends BaseModule implements Listener
                 if(!(iprov instanceof AsyncPlayerInfoProvider)) continue;
                 if(iprov.getPermission() != null && !identity.hasPermission(iprov.getPermission()) && !identity.hasPermission("livekit.module.admin")) continue;
 
-                iprov.onResolvePlayerInfo(player, _infos);
-                iprov.onResolvePlayerLocation(player, _waypoints);
+                _infos.addAll(iprov.onResolvePlayerInfo(identity, player).stream().filter((wp) -> wp != null).collect(Collectors.toList()));
+            }
+        }
+        synchronized(_locationProviders) {
+            for(PlayerLocationProvider lprov : _locationProviders) {
+                if(!(lprov instanceof AsyncPlayerLocationProvider)) continue;
+                if(lprov.getPermission() != null && !identity.hasPermission(lprov.getPermission()) && !identity.hasPermission("livekit.module.admin")) continue;
+
+                _waypoints.addAll(lprov.onResolvePlayerLocation(identity, player).stream().filter((wp) -> wp != null).collect(Collectors.toList()));
             }
         }
         synchronized(lplayer._cachedWaypoints) {

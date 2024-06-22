@@ -23,8 +23,9 @@ import at.livekit.api.chat.ChatMessage;
 import at.livekit.api.core.ILiveKit;
 import at.livekit.api.economy.IEconomyAdapter;
 import at.livekit.api.map.POI;
-import at.livekit.api.map.POIInfoProvider;
 import at.livekit.api.map.PlayerInfoProvider;
+import at.livekit.api.map.PlayerLocationProvider;
+import at.livekit.api.map.POILocationProvider;
 import at.livekit.authentication.Pin;
 import at.livekit.authentication.Session;
 import at.livekit.modules.BaseModule;
@@ -37,7 +38,6 @@ import at.livekit.modules.BaseModule.Action;
 import at.livekit.modules.BaseModule.ActionMethod;
 import at.livekit.modules.BaseModule.ModuleListener;
 import at.livekit.nio.NIOClient;
-import at.livekit.nio.NIOProxyPool;
 import at.livekit.nio.NIOServer;
 import at.livekit.nio.NIOServer.NIOServerEvent;
 import at.livekit.packets.ActionPacket;
@@ -935,6 +935,28 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
     }
 
     @Override
+    public void addPlayerLocationProvider(PlayerLocationProvider provider) {
+        PlayerModule module = (PlayerModule)_modules.getModule("PlayerModule");
+        if(module != null) {
+            if(provider.getPermission() != null) {
+                Permissions.registerPermission(provider.getPermission());
+            }
+            module.addLocationProvider(provider);
+        }
+    }
+
+    @Override
+    public void removePlayerLocationProvider(PlayerLocationProvider provider) {
+        PlayerModule module = (PlayerModule)_modules.getModule("PlayerModule");
+        if(module != null) {
+            if(provider.getPermission() != null) {
+                Permissions.unregisterPermission(provider.getPermission());
+            }
+            module.removeLocationProvider(provider);
+        }
+    }
+
+    @Override
 	public void addPlayerInfoProvider(PlayerInfoProvider provider) {
 		PlayerModule module = (PlayerModule)_modules.getModule("PlayerModule");
         if(module != null) {
@@ -956,7 +978,7 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
         }
 	}
 
-    @Override
+    /*@Override
     public void addPointOfInterest(POI waypoint) {
         POIModule module = (POIModule) _modules.getModule("POIModule");
         if(module != null && module.isEnabled()) {
@@ -970,27 +992,35 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
         if(module != null && module.isEnabled()) {
             module.removePOI(waypoint);
         }
-    }
+    }*/
 
     @Override
-    public void addPOIInfoProvider(POIInfoProvider provider) {
-		POIModule module = (POIModule)_modules.getModule("POIModule");
+    public void addPOILocationProvider(POILocationProvider provider) {
+        POIModule module = (POIModule)_modules.getModule("POIModule");
         if(module != null) {
             if(provider.getPermission() != null) {
                 Permissions.registerPermission(provider.getPermission());
             }
-            module.addInfoProvider(provider);
+            module.addLocationProvider(provider);
         }
     }
 
     @Override
-    public void removePOIInfoProvider(POIInfoProvider provider) {
-		POIModule module = (POIModule)_modules.getModule("POIModule");
+    public void removePOILocationProvider(POILocationProvider provider) {
+        POIModule module = (POIModule)_modules.getModule("POIModule");
         if(module != null) {
             if(provider.getPermission() != null) {
                 Permissions.unregisterPermission(provider.getPermission());
             }
-            module.removeInfoProvider(provider);
+            module.removeLocationProvider(provider);
+        }
+    }
+
+    @Override
+    public void notifyPOIChange(POILocationProvider provider) {
+        POIModule module = (POIModule)_modules.getModule("POIModule");
+        if(module != null) {
+            module.notifyPOIChange(provider);
         }
     }
 

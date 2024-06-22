@@ -1,5 +1,6 @@
 package at.livekit.supported.essentialsx;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.bukkit.ChatColor;
@@ -8,8 +9,8 @@ import org.bukkit.OfflinePlayer;
 import com.earth2me.essentials.Essentials;
 import com.earth2me.essentials.User;
 
+import at.livekit.api.core.IIdentity;
 import at.livekit.api.map.InfoEntry;
-import at.livekit.api.map.PersonalPin;
 import at.livekit.api.map.PlayerInfoProvider;
 
 public class EssentialsAdminInfoProvider extends PlayerInfoProvider{
@@ -22,7 +23,9 @@ public class EssentialsAdminInfoProvider extends PlayerInfoProvider{
     }
 
     @Override
-    public void onResolvePlayerInfo(OfflinePlayer player, List<InfoEntry> entries) {
+    public List<InfoEntry> onResolvePlayerInfo(IIdentity identity, OfflinePlayer player) {
+        List<InfoEntry> entries = new ArrayList<>();
+
         User user = essentials.getUser(player.getUniqueId());
         String no = ChatColor.RED+"No";
         String yes = ChatColor.GREEN+"Yes";
@@ -32,9 +35,9 @@ public class EssentialsAdminInfoProvider extends PlayerInfoProvider{
         entries.add(new InfoEntry("Muted", user.isMuted() ? yes : no));
         entries.add(new InfoEntry("Jailed", user.isJailed() ? yes : no));
         entries.add(new InfoEntry("Vanished", user.isVanished() ? yes : no));
+
+        return entries;
     }
 
-    @Override
-    public void onResolvePlayerLocation(OfflinePlayer arg0, List<PersonalPin> arg1) {}
     
 }
