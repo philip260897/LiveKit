@@ -142,31 +142,29 @@ public class Config
         return config.getBoolean("plugins.essentialsX.enabled");
     }
 
-    public static boolean canEssentialsPinHomes() {
+    /*public static boolean canEssentialsPinHomes() {
         return config.getBoolean("plugins.essentialsX.homes.pin");
-    }
+    }*/
 
     public static boolean canEssentialsTeleportHomes() {
-        return config.getBoolean("plugins.essentialsX.homes.can_teleport");
+        return config.getBoolean("plugins.essentialsX.enable_home_teleport");
     }
 
-    public static boolean canEssentialsPinWarps() {
+    /*public static boolean canEssentialsPinWarps() {
         return config.getBoolean("plugins.essentialsX.warps.pin");
-    }
+    }*/
 
     public static boolean canEssentialsTeleportWarps() {
-        return config.getBoolean("plugins.essentialsX.warps.can_teleport");
+        return config.getBoolean("plugins.essentialsX.enable_warp_teleport");
     }
 
-    public static boolean canEssentialsPinSpawns() {
+    /*public static boolean canEssentialsPinSpawns() {
         return config.getBoolean("plugins.essentialsX.spawns.pin");
-    }
+    }*/
 
     public static boolean canEssentialsTeleportSpawns() {
-        return config.getBoolean("plugins.essentialsX.spawns.can_teleport");
+        return config.getBoolean("plugins.essentialsX.enable_spawn_teleport");
     }
-
-
 
     public static List<String> getDiscordWhitelist() {
         return (List<String>) config.getList("plugins.DiscordSRV.channelIDs");
@@ -365,17 +363,15 @@ public class Config
         {
             Plugin.log("Patching config with new entries");
             config.set("plugins.essentialsX.enabled", true);
-            config.set("plugins.essentialsX.homes.pin", true);
-            config.set("plugins.essentialsX.homes.can_teleport", true);
-            config.set("plugins.essentialsX.warps.pin", true);
-            config.set("plugins.essentialsX.warps.can_teleport", true);
-            config.set("plugins.essentialsX.spawns.pin", true);
-            config.set("plugins.essentialsX.spawns.can_teleport", true);
+            config.set("plugins.essentialsX.enable_home_teleport", true);
+            config.set("plugins.essentialsX.enable_warp_teleport", true);
+            config.set("plugins.essentialsX.enable_spawn_teleport", true);
 
             List<String> perms = getDefaultPermissions();
             if(!perms.contains("livekit.essentials.homes")) perms.add("livekit.essentials.homes");
             if(!perms.contains("livekit.essentials.info")) perms.add("livekit.essentials.info");
             if(!perms.contains("livekit.essentials.warps")) perms.add("livekit.essentials.warps");
+            if(!perms.contains("livekit.essentials.spawn")) perms.add("livekit.essentials.spawn");
             config.set("permissions.default", perms);
 
             save = true;

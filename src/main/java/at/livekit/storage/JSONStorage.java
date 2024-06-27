@@ -17,8 +17,6 @@ import com.google.gson.Gson;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.table.DatabaseTable;
 
-import org.apache.commons.lang.NotImplementedException;
-import org.bukkit.Bukkit;
 import org.json.JSONArray;
 import org.json.JSONObject;
 

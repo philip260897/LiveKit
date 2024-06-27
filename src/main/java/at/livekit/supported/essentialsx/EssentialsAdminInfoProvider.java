@@ -31,7 +31,7 @@ public class EssentialsAdminInfoProvider extends PlayerInfoProvider{
         String yes = ChatColor.GREEN+"Yes";
 
 
-        entries.add(new InfoEntry("God", user.isGodModeEnabled() ? yes : no));
+        entries.add(new InfoEntry("God Mode", user.isGodModeEnabled() ? yes : no));
         entries.add(new InfoEntry("Muted", user.isMuted() ? yes : no));
         entries.add(new InfoEntry("Jailed", user.isJailed() ? yes : no));
         entries.add(new InfoEntry("Vanished", user.isVanished() ? yes : no));

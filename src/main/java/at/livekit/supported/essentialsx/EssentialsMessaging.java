@@ -14,7 +14,6 @@ import com.earth2me.essentials.User;
 import at.livekit.api.pm.MessageGroup;
 import at.livekit.api.pm.MessagingAdapter;
 import at.livekit.api.pm.PrivateMessage;
-import at.livekit.plugin.Plugin;
 import net.ess3.api.events.PrivateMessageSentEvent;
 
 public class EssentialsMessaging extends MessagingAdapter implements Listener {
@@ -32,11 +31,8 @@ public class EssentialsMessaging extends MessagingAdapter implements Listener {
         if((message = findBlacklistedMessage(event.getSender().getUUID(), event.getRecipient().getUUID(), event.getMessage())) == null) {
             sendPrivateMessage(event.getSender().getUUID(), event.getRecipient().getUUID(), event.getMessage());
         } else {
-            Plugin.debug("Echo blocked");
             blacklist.remove(message);
         }
-
-        Plugin.debug("Blacklist size: " + blacklist.size());
     }
 
     @Override

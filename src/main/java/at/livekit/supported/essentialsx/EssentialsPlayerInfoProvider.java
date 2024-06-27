@@ -12,6 +12,7 @@ import com.earth2me.essentials.Essentials;
 import com.earth2me.essentials.User;
 
 import at.livekit.api.core.IIdentity;
+import at.livekit.api.core.Privacy;
 import at.livekit.api.map.InfoEntry;
 import at.livekit.api.map.PlayerInfoProvider;
 
@@ -30,12 +31,11 @@ public class EssentialsPlayerInfoProvider extends PlayerInfoProvider {
 
         User user = essentials.getUser(player.getUniqueId());
         String no = ChatColor.RED+"No";
-        //String yes = ChatColor.GREEN+"Yes";
 
         if(player.isOnline()) { 
-            entries.add(new InfoEntry("AFK", user.isAfk() == false ? no : new SimpleDateFormat("dd MMM. HH:mm").format(new Date(user.getAfkSince()))));
+            entries.add(new InfoEntry("AFK", user.isAfk() == false ? no : new SimpleDateFormat("dd MMM. HH:mm").format(new Date(user.getAfkSince())), Privacy.PUBLIC));
             if(user.getAfkMessage() != null) {
-                entries.add(new InfoEntry("AFK Message", user.getAfkMessage()));
+                entries.add(new InfoEntry("AFK Message", user.getAfkMessage(), Privacy.PUBLIC));
             }
         }
 

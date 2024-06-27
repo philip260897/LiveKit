@@ -5,7 +5,6 @@ import org.bukkit.plugin.Plugin;
 
 import com.earth2me.essentials.Essentials;
 
-import at.livekit.plugin.Config;
 import at.livekit.supported.essentialsx.spawn.EssentialsSpawnPlugin;
 
 public class EssentialsPlugin {
@@ -26,16 +25,15 @@ public class EssentialsPlugin {
 
                 at.livekit.plugin.Plugin.getInstance().getLiveKit().addPlayerInfoProvider(new EssentialsAdminInfoProvider(essentials));
 
-                if(Config.canEssentialsPinWarps()) {
-                    EssentialsWarpProvider poiProvider = new EssentialsWarpProvider(essentials);
-                    at.livekit.plugin.Plugin.getInstance().getLiveKit().addPOILocationProvider(poiProvider);
-                    Bukkit.getServer().getPluginManager().registerEvents(poiProvider, at.livekit.plugin.Plugin.getInstance());
-                }
 
-                if(Config.canEssentialsPinSpawns()) {
-                    spawnPlugin = new EssentialsSpawnPlugin(essentials);
-                    spawnPlugin.onEnable();
-                }
+                EssentialsWarpProvider poiProvider = new EssentialsWarpProvider(essentials);
+                at.livekit.plugin.Plugin.getInstance().getLiveKit().addPOILocationProvider(poiProvider);
+                Bukkit.getServer().getPluginManager().registerEvents(poiProvider, at.livekit.plugin.Plugin.getInstance());
+
+
+                spawnPlugin = new EssentialsSpawnPlugin();
+                spawnPlugin.onEnable();
+
 
                 EssentialsMessaging messaging = new EssentialsMessaging(essentials);
                 at.livekit.plugin.Plugin.getInstance().getLiveKit().setMessagingAdapter(messaging);

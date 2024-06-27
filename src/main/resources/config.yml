@@ -29,12 +29,14 @@ permissions:
   - livekit.module.weathertime
   - livekit.module.chat
   - livekit.module.poi
+  - livekit.module.messaging
   - livekit.chat.write
   - livekit.poi.personalpins
   - livekit.players.other
   - livekit.essentials.homes
-  - livekit.essentials.warps
   - livekit.essentials.info
+  - livekit.essentials.warps
+  - livekit.essentials.spawn
 modules:
   LiveMapModule:
     enabled: true
@@ -64,15 +66,9 @@ plugins:
   DiscordSRV:
     enabled: false
     channelIDs:
-    - all
+    - 'all'
   essentialsX:
+    enable_home_teleport: true
+    enable_warp_teleport: true
+    enable_spawn_teleport: true
     enabled: true
-    homes:
-      pin: true
-      can_teleport: true
-    warps:
-      pin: true
-      can_teleport: true
-    spawns:
-      pin: true
-      can_teleport: false

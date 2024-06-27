@@ -48,6 +48,7 @@ public class Permissions
         permissions.add("livekit.essentials.info");
         permissions.add("livekit.essentials.admin");
         permissions.add("livekit.essentials.warps");
+        permissions.add("livekit.essentials.spawn");
 
         if(use) {
             if(Bukkit.getPluginManager().getPlugin("Vault") == null) {

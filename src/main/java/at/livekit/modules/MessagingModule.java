@@ -55,6 +55,15 @@ public class MessagingModule extends BaseModule implements IMessagingInterface {
                             Plugin.getStorage().create(pm);
                         }
 
+                        List<PrivateMessage> existing = getPrivateMessages(pm.getReceiver(), pm.getSender());
+                        existing.sort((a, b) -> Long.compare(a.getTimestamp(), b.getTimestamp()));
+
+                        while(existing.size() > 10) {
+                            PrivateMessage old = existing.get(0);
+                            Plugin.getStorage().delete(existing.get(0));
+                            existing.remove(0);
+                        }
+
                         if(pm.getChannel().equals("default")) {
                             if(LiveKit.getInstance().getConnectedClients(pm.getReceiver().toString()).size() > 0) {
                                 synchronized(messageUpdates) {
