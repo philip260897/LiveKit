@@ -58,8 +58,7 @@ public class MessagingModule extends BaseModule implements IMessagingInterface {
                         List<PrivateMessage> existing = getPrivateMessages(pm.getReceiver(), pm.getSender());
                         existing.sort((a, b) -> Long.compare(a.getTimestamp(), b.getTimestamp()));
 
-                        while(existing.size() > 10) {
-                            PrivateMessage old = existing.get(0);
+                        while(existing.size() > 50) {
                             Plugin.getStorage().delete(existing.get(0));
                             existing.remove(0);
                         }

@@ -29,12 +29,18 @@ public class TPSModule extends BaseModule{
     private HashMap<Long, Integer> _tickBacklog = new HashMap<Long, Integer>();
     private HashMap<Long, Map<String, Long>> _pluginBacklog = new HashMap<Long, Map<String, Long>>();
     private HashMap<Long, Map<String, Map<String, Long>>> _commandBacklog = new HashMap<Long, Map<String, Map<String, Long>>>();
+    private HashMap<Long, Integer> _playersBacklog = new HashMap<Long, Integer>();
+    private HashMap<Long, Integer> _entitiesBacklog = new HashMap<Long, Integer>();
+    private HashMap<Long, Integer> _chunksBacklog = new HashMap<Long, Integer>();
     
     private HashMap<Long, Long> _ram = new HashMap<Long, Long>();
     private HashMap<Long, Float> _cpu = new HashMap<Long, Float>();
     private HashMap<Long, Integer> _tick = new HashMap<Long, Integer>();
     private HashMap<Long, Map<String, Long>> _plugin = new HashMap<Long, Map<String, Long>>();
     private HashMap<Long, Map<String, Map<String, Long>>> _command = new HashMap<Long, Map<String, Map<String, Long>>>();
+    private HashMap<Long, Integer> _players = new HashMap<Long, Integer>();
+    private HashMap<Long, Integer> _entities = new HashMap<Long, Integer>();
+    private HashMap<Long, Integer> _chunks = new HashMap<Long, Integer>();
 
     private Plugin[] plugins;
 
@@ -134,6 +140,9 @@ public class TPSModule extends BaseModule{
             _cpu.put(ts, Utils.getCPUUsage());
             _plugin.put(ts, pluginTimings);
             _command.put(ts, commandTimings);
+            _players.put(ts, Bukkit.getOnlinePlayers().size());
+            _entities.put(ts, Bukkit.getWorlds().stream().mapToInt(w -> w.getEntities().size()).sum());
+            _chunks.put(ts, Bukkit.getWorlds().stream().mapToInt(w -> w.getLoadedChunks().length).sum());
         }
         notifyChange();
         super.update();
@@ -149,6 +158,9 @@ public class TPSModule extends BaseModule{
             data.put("tick", _tickBacklog);
             data.put("plugins", _pluginBacklog);
             data.put("commands", _commandBacklog);
+            data.put("players", _playersBacklog);
+            data.put("entities", _entitiesBacklog);
+            data.put("chunks", _chunksBacklog);
         }
 
         RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
@@ -196,6 +208,9 @@ public class TPSModule extends BaseModule{
             data.put("tick", _tick);
             data.put("plugins", _plugin);
             data.put("commands", _command);
+            data.put("players", _players);
+            data.put("entities", _entities);
+            data.put("chunks", _chunks);
         }
 
 
@@ -208,18 +223,27 @@ public class TPSModule extends BaseModule{
             _tickBacklog.putAll(_tick);
             _pluginBacklog.putAll(_plugin);
             _commandBacklog.putAll(_command);
+            _playersBacklog.putAll(_players);
+            _entitiesBacklog.putAll(_entities);
+            _chunksBacklog.putAll(_chunks);
 
             _ramBacklog.entrySet().removeIf(e -> e.getKey() < ts - SECONDS*1000);
             _cpuBacklog.entrySet().removeIf(e -> e.getKey() < ts - SECONDS*1000);
             _tickBacklog.entrySet().removeIf(e -> e.getKey() < ts - SECONDS*1000);
             _pluginBacklog.entrySet().removeIf(e -> e.getKey() < ts - SECONDS*1000);
             _commandBacklog.entrySet().removeIf(e -> e.getKey() < ts - SECONDS*1000);
+            _playersBacklog.entrySet().removeIf(e -> e.getKey() < ts - SECONDS*1000);
+            _entitiesBacklog.entrySet().removeIf(e -> e.getKey() < ts - SECONDS*1000);
+            _chunksBacklog.entrySet().removeIf(e -> e.getKey() < ts - SECONDS*1000);
 
             _ram.clear();
             _cpu.clear();
             _tick.clear();
             _plugin.clear();
             _command.clear();
+            _players.clear();
+            _entities.clear();
+            _chunks.clear();
         }
 
         return responses;
