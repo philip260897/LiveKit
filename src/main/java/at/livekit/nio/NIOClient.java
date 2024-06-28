@@ -12,6 +12,10 @@ import java.util.List;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import at.livekit.packets.CompressedPacket;
+import at.livekit.packets.IPacket;
+import at.livekit.packets.ProxyClientKeepAlivePacket;
+import at.livekit.packets.ProxyConnectPacket;
 import at.livekit.plugin.Plugin;
 
 
@@ -72,6 +76,7 @@ public class NIOClient<T> {
     }
 
     protected void queueData(INIOPacket packet) {
+        packet = packet instanceof ProxyConnectPacket || packet instanceof ProxyClientKeepAlivePacket ? packet : new CompressedPacket(packet);
         synchronized(outputQueue) {
             if(packet.hasHeader()) outputQueue.add(packet.header());
             outputQueue.add(packet.data());
@@ -79,13 +84,16 @@ public class NIOClient<T> {
     }
 
     protected void queueAll(List<? extends INIOPacket> packets) {
-        synchronized(outputQueue) {
+        for(INIOPacket packet : packets) {
+            queueData(packet);
+        }
+        /*synchronized(outputQueue) {
             for(INIOPacket packet : packets) {
                 if(packet.hasHeader()) outputQueue.add(packet.header());
                 outputQueue.add(packet.data());
             }
             //outputQueue.addAll(packets.stream().map(p->p.data()).collect(Collectors.toList()));
-        }
+        }*/
     }
 
     protected boolean canKeepAlive() {
