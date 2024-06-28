@@ -68,7 +68,8 @@ plugins:
     channelIDs:
     - 'all'
   essentialsX:
+    enabled: true
     enable_home_teleport: true
     enable_warp_teleport: true
     enable_spawn_teleport: true
-    enabled: true
+    
