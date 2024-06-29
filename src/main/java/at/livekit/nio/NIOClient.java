@@ -12,6 +12,7 @@ import java.util.List;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import at.livekit.packets.ClientInfoPacket;
 import at.livekit.plugin.Plugin;
 
 
@@ -31,6 +32,8 @@ public class NIOClient<T> {
 
     private long lastKeepAliveSent = 0;
     private long lastKeepAliveReceived = 0;
+
+    private int appVersion = 0;
 
     public NIOClient(SelectionKey key, SocketChannel channel) {
         this.key = key;
@@ -179,6 +182,12 @@ public class NIOClient<T> {
                     if(json.getInt("packet_id") == 1002) {
                         Plugin.debug("[Proxy|"+getLocalPort()+"] Keep alive received from "+channel.getRemoteAddress().toString());
                         lastKeepAliveReceived = System.currentTimeMillis();
+                        surpress = true;
+                    }
+                    if(json.getInt("packet_id") == ClientInfoPacket.PACKETID) {
+                        Plugin.debug("[Proxy|"+getLocalPort()+"] Client info received from "+channel.getRemoteAddress().toString());
+                        ClientInfoPacket packet = (ClientInfoPacket) new ClientInfoPacket().fromJson(builder.substring(0, parseOffset));
+                        appVersion = packet.getAppVersion();
                         surpress = true;
                     }
                 }catch(Exception ex) {

@@ -3,7 +3,7 @@ main: at.livekit.plugin.Plugin
 name: LiveKit
 version: 1.4.6-BETA-0.2
 author: xStachelbaer
-description: Connector plugin for LiveKit. Allows LiveKit App to connect to server
+description: More than just a live map! 
 softdepend: [Vault,DiscordSRV,Essentials,EssentialsSpawn]
 commands:
   livekit:

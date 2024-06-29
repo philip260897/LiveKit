@@ -698,6 +698,7 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
         String uuid = o.has("uuid")&&!o.isNull("uuid") ? o.getString("uuid") : null;
         boolean anonymous = o.has("anonymous")&&!o.isNull("anonymous") ? o.getBoolean("anonymous") : false;
         String password = o.has("password")&&!o.isNull("password")?o.getString("password"):null;
+        
 
         HashMap<String, String> subscriptions = new HashMap<String,String>();
         //HashMap<String, String> moduleAuths = new HashMap<String, String>();
