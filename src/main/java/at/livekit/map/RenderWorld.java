@@ -30,8 +30,6 @@ import at.livekit.packets.IPacket;
 import at.livekit.plugin.Plugin;
 import at.livekit.utils.Legacy;
 import at.livekit.utils.Utils;
-import net.jpountz.lz4.LZ4Compressor;
-import net.jpountz.lz4.LZ4Factory;
 
 public class RenderWorld 
 {   
@@ -528,45 +526,6 @@ public class RenderWorld
         }catch(Exception ex){ex.printStackTrace();}
 
         throw new Exception("Invalid region requested");
-    }
-
-    LZ4Factory factory = LZ4Factory.fastestInstance();
-    LZ4Compressor compressor = factory.fastCompressor();
-
-    public byte[] getCompressedRegionDataAsync(int x, int z) throws Exception {
-        byte[] data = getRegionDataAsync(x, z);
-
-        long start = System.currentTimeMillis();
-         /*ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-
-        // Create a DeflaterOutputStream with the ByteArrayOutputStreamGZIPOutputStream gzos = new GZIPOutputStream(fos)
-        try (GZIPOutputStream deflaterOutputStream = new GZIPOutputStream(byteArrayOutputStream)) {
-            // Write the input byte array to the DeflaterOutputStream
-            deflaterOutputStream.write(data);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        // Get the compressed data from the ByteArrayOutputStream
-        byte[] output = byteArrayOutputStream.toByteArray();*/
-
-        
-
-        /*int maxCompressedLength = compressor.maxCompressedLength(data.length);
-        byte[] compressed = new byte[maxCompressedLength];
-
-        int compressedLength = compressor.compress(data, 0, data.length, compressed, 0, maxCompressedLength);
-
-        byte[] output = new byte[compressedLength];
-        System.arraycopy(compressed, 0, output, 0, compressedLength);*/
-
-        byte[] output = Zstd.compress(data);
-
-
-
-        System.out.println("Compressed data length: " + output.length+"/"+data.length+"("+((int)((double)output.length/(double)data.length*100))+"%) took "+(System.currentTimeMillis()-start)+"ms");
-
-        return output;
     }
 
     private byte[] readRegionHeader(File file) {

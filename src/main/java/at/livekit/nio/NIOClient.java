@@ -49,6 +49,10 @@ public class NIOClient<T> {
         
     }
 
+    private boolean supportsCompression() {
+        return appVersion >= 58;
+    }
+
     public int getLocalPort() {
         return channel.socket().getLocalPort();
     }
@@ -78,7 +82,7 @@ public class NIOClient<T> {
     }
 
     protected void queueData(INIOPacket packet) {
-        packet = packet instanceof ProxyConnectPacket || packet instanceof ProxyClientKeepAlivePacket ? packet : new CompressedPacket(packet);
+        packet = supportsCompression() == false || packet instanceof ProxyConnectPacket || packet instanceof ProxyClientKeepAlivePacket ? packet : new CompressedPacket(packet);
         synchronized(outputQueue) {
             if(packet.hasHeader()) outputQueue.add(packet.header());
             outputQueue.add(packet.data());
@@ -89,13 +93,6 @@ public class NIOClient<T> {
         for(INIOPacket packet : packets) {
             queueData(packet);
         }
-        /*synchronized(outputQueue) {
-            for(INIOPacket packet : packets) {
-                if(packet.hasHeader()) outputQueue.add(packet.header());
-                outputQueue.add(packet.data());
-            }
-            //outputQueue.addAll(packets.stream().map(p->p.data()).collect(Collectors.toList()));
-        }*/
     }
 
     protected boolean canKeepAlive() {
