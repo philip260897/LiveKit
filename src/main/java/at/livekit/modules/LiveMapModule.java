@@ -79,6 +79,16 @@ public class LiveMapModule extends BaseModule implements Listener
         return new RawPacket(renderWorld.getRegionDataAsync(x, z));
     }
 
+    @Action(name = "ResolveCompressedRegion", sync = false)
+    public IPacket actionResolveCompressedRegion(Identity identity, ActionPacket packet) throws Exception {
+        int x = packet.getData().getInt("x");
+        int z = packet.getData().getInt("z");
+        String world = packet.getData().getString("world");
+        if(!world.equals(world)) return new StatusPacket(0, "World mismatch!");
+
+        return new RawPacket(renderWorld.getCompressedRegionDataAsync(x, z));
+    }
+
     public void setRenderBounds(RenderBounds bounds) {
        renderWorld.setRenderBounds(bounds, true);
        notifyFull();
