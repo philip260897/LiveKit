@@ -95,13 +95,21 @@ public class Texturepack {
     }
 
     public int getTexture(Material material) {
-        Integer id = _textures.get(material.toString());
+        return getTexture(material.toString());
+    }
+
+    public int getTexture(String material) {
+        Integer id = _textures.get(material.replace("minecraft:", "").toUpperCase());
         if(id == null) return 0;
         return id.intValue();
     }
 
     public int getBiome(Biome biome) {
-        Integer id = _biomes.get(biome.toString());
+        return getBiome(biome.toString());
+    }
+
+    public int getBiome(String biome) {
+        Integer id = _biomes.get(biome.replace("minecraft:", "").toUpperCase());
         if(id == null) return 0;
         return id.intValue();
     }

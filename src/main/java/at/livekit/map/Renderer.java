@@ -18,6 +18,7 @@ import org.bukkit.block.data.BlockData;
 import at.livekit.map.RenderWorld.RenderTask;
 import at.livekit.packets.BlockPacket;
 import at.livekit.packets.ChunkPacket;
+import at.livekit.plugin.Plugin;
 import at.livekit.plugin.Texturepack;
 
 public class Renderer 
@@ -34,6 +35,8 @@ public class Renderer
     public static boolean render(String world, RenderTask task, long cpuTime, long frameStart, RenderBounds bounds) throws Exception {
         long start = System.currentTimeMillis();
         initialize(task.getClass().getClassLoader());
+
+
 
         if (task != null) {
             if(task.region == null || task.region.isDead()) throw new Exception("RenderTask region is dead! Region("+(task.region!=null)+")");
@@ -81,7 +84,7 @@ public class Renderer
             long chunk = System.currentTimeMillis();
 
             if(task.isChunk()) {
-
+                //Plugin.debug("Rendering chunk "+task.getChunkOrBlock().x+" "+task.getChunkOrBlock().z+" "+task.renderingX+" "+task.renderingZ);
                 //if(task.renderingX == 0 && task.renderingZ == 0) task.unload = !Bukkit.getWorld(world).isChunkLoaded(task.getChunkOrBlock().x, task.getChunkOrBlock().z);
                 //if(task.unload) Bukkit.getWorld(world).loadChunk(task.getChunkOrBlock().x, task.getChunkOrBlock().z);
 
@@ -99,6 +102,7 @@ public class Renderer
                     for (int x = task.renderingX; x < 16; x++) {
                         long bstart = System.currentTimeMillis();
                         long getblock = 0;
+
 
                         Block block = null;
                         blockX = c.getX() * 16 + x;
@@ -238,7 +242,7 @@ public class Renderer
             }
         }
 
-        if (isLeave(block)) {
+        if (isLeave(block.getType())) {
             biome |= 0x04;
         }    
 
@@ -296,10 +300,10 @@ public class Renderer
         return data;
     }
 
-    private static boolean isLeave(Block block) {
-        Material mat = block.getType();
+    public static boolean isLeave(Material mat) {
         return /* mat == Material.LEGACY_LEAVES || mat == Material.LEGACY_LEAVES_2 || */
         mat == Material.ACACIA_LEAVES || mat == Material.BIRCH_LEAVES || mat == Material.OAK_LEAVES
                 || mat == Material.DARK_OAK_LEAVES || mat == Material.SPRUCE_LEAVES || mat == Material.JUNGLE_LEAVES;
     }
+
 }

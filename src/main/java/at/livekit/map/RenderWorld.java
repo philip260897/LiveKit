@@ -1,28 +1,20 @@
 package at.livekit.map;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.zip.Deflater;
-import java.util.zip.DeflaterOutputStream;
-import java.util.zip.GZIPOutputStream;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.ChunkSnapshot;
 import org.bukkit.block.Block;
-import org.bukkit.scheduler.BukkitTask;
 import org.json.JSONArray;
 import org.json.JSONObject;
-
-import com.github.luben.zstd.Zstd;
 
 import at.livekit.modules.LiveMapModule.Offset;
 import at.livekit.modules.LiveMapModule.RegionData;
@@ -201,7 +193,7 @@ public class RenderWorld
 
     private void updateChunk(int x, int z, boolean chunkLoadEvent) {
         if(!_bounds.chunkInBounds(x, z)) return;
-        
+
         synchronized(_taskLock) {
             if(_task != null && chunkLoadEvent) {
                 if(_task.offset.x == x && _task.offset.z == z) return;
@@ -232,6 +224,11 @@ public class RenderWorld
                         if(_chunkQueue.size() != 0) {
                             Offset chunk = _chunkQueue.remove(0);
                             _task = new RenderTask(chunk, true);
+
+                            if(chunk.x == -28 && chunk.z == 37) {
+                                Plugin.debug("Chunk dequeed");
+                            }
+
                             if(!tick) _task.tickCount++;
                         }
                     }
@@ -290,6 +287,10 @@ public class RenderWorld
                         //System.out.println((System.currentTimeMillis()-start)+" rendereding  ms");
 
                         if(done == true) {
+                            if(_task.offset.x == -28 && _task.offset.z == 37) {
+                                Plugin.debug("chunk redered");
+                            }
+
                             result = _task.result;
                             _task.state = RenderTaskState.DONE;
                         }
@@ -305,6 +306,9 @@ public class RenderWorld
                         /*if(_task.result != null && _task.isChunk()) {
                             _chunkCount++;
                         }*/
+                        if(_task.offset.x == -28 && _task.offset.z == 37) {
+                            Plugin.debug("Chunk done");
+                        }
 
                         synchronized(_regions) {
                             RegionInfo info = _regions.stream().filter(i->i.x == _task.regionX && i.z == _task.regionZ).findFirst().orElse(null);
@@ -388,6 +392,13 @@ public class RenderWorld
 				boolean createNew = true;
                 RegionData region = null;
 
+                /*try {
+                    long start = System.currentTimeMillis();
+                    fastrenderRegion(x, z);
+                    Plugin.debug("Fastrendering took "+(System.currentTimeMillis()-start)+"ms");
+                }catch(Exception ex){ex.printStackTrace();};*/
+                
+
                 RegionData dead = null;
                 synchronized(_loadedRegions) {
                     dead = _loadedRegions.stream().filter(r->r.getX() == x && r.getZ() == z).findFirst().orElse(null);
@@ -407,7 +418,7 @@ public class RenderWorld
                 
                 try{
                     //region = Plugin.getStorage().loadRegion(worldUID, x, z);
-                    File file = new File(workingDirectory,x +"_"+z+".region");
+                    /*File file = new File(workingDirectory,x +"_"+z+".region");
                     if(file.exists()) {
                         byte[] data = Files.readAllBytes(file.toPath());
                         if(data.length == 1048584) {
@@ -418,7 +429,19 @@ public class RenderWorld
                             Plugin.debug("Invalid region detected! Creating new "+data.length);
                             failedToLoad = true;
                         }
+                    }*/
+                    long start = System.currentTimeMillis();
+                    try {
+                        byte[] data = new byte[8 + 512 * 512 * 4];
+                        Arrays.fill(data, (byte)0xFF);
+                        region = new FastRegionData(world, x, z, data);
+                        region.timestamp = Utils.decodeTimestamp(region.data);
+                        region.invalidate();
+                    } catch(Exception ex) {
+                        ex.printStackTrace();
+                        failedToLoad = true;
                     }
+                    Plugin.debug("Loading region "+x+" "+z+" took "+(System.currentTimeMillis()-start)+"ms");
 
 
                     if(region != null) {
@@ -574,6 +597,224 @@ public class RenderWorld
 
         return result;
     }
+
+    /*private void fastrenderRegion(int x, int z) throws Exception{
+        Plugin.debug("Fastrendering region "+x+" "+z);
+        File regionFile = new File(Plugin.getInstance().getDataFolder().getAbsolutePath()+"/../../"+world+"/region/r."+x+"."+z+".mca");
+        if(!regionFile.exists()) {
+            Plugin.debug("Region file not found: "+regionFile.getAbsolutePath());
+            return;
+        }
+
+        try (RandomAccessFile raf = new RandomAccessFile(regionFile, "r")) {
+            byte[] header = new byte[8192];
+            raf.readFully(header);
+
+            for (int i = 0; i < 1024; i++) {
+                int offset = ((header[i * 4 + 0] & 0xFF) << 16) | ((header[i * 4 + 1] & 0xFF) << 8)  | (header[i * 4 + 2] & 0xFF);
+                int sectorCount = header[i * 4 + 3] & 0xFF;
+                int timestamp = ((header[i * 4 + 4096] & 0xFF) << 24) | ((header[i * 4 + 4096 + 1] & 0xFF) << 16) | ((header[i * 4  + 4096 + 2] & 0xFF) << 8)  | (header[i * 4 + 4096 + 3] & 0xFF);
+
+                //Plugin.debug("Chunk "+i+" Offset: "+offset+" Timestamp: "+timestamp);
+
+
+                if (offset == 0 || sectorCount == 0) {
+                    continue;
+                }
+
+                raf.seek(offset * 4096);
+
+                int length = raf.readInt();
+
+                byte compressionType = raf.readByte();
+                //Plugin.debug("Compression: "+compressionType);
+                if (compressionType != 2) {
+                    System.err.println("Unsupported compression type at index " + i + ": " + compressionType);
+                    continue;
+                }
+
+                byte[] chunkData = new byte[length - 1];
+                try {
+                    raf.readFully(chunkData);
+                } catch (EOFException e) {
+                    System.err.println("EOFException while reading chunk data at index " + i);
+                    break;
+                }
+
+                InputStream is = new ByteArrayInputStream(chunkData);
+                if (compressionType == 1) {
+                    is = new GZIPInputStream(is);
+                } else if (compressionType == 2) {
+                    is = new InflaterInputStream(is);
+                } else {
+                    System.err.println("Unsupported compression type at index " + i + ": " + compressionType);
+                    continue;
+                }
+
+                try (DataInputStream nbtIn = new DataInputStream(is)) {
+                    NamedTag namedTag;
+                    try (NBTInputStream nis = new NBTInputStream(nbtIn)) {
+                        namedTag = nis.readTag(512); // Specify a maximum depth of 512
+                    }
+                    if (namedTag != null && namedTag.getTag() instanceof CompoundTag) {
+                        CompoundTag chunkTag = (CompoundTag) namedTag.getTag();
+                        parseChunk(chunkTag);
+                        //return;
+                    } else {
+                        System.err.println("Invalid or corrupt chunk data at index " + i);
+                    }
+                } catch (EOFException e) {
+                    System.err.println("EOFException while reading NBT data at index " + i);
+                }
+            }
+        }
+    }
+
+    private void parseChunk(CompoundTag chunkTag) {
+        ListTag<CompoundTag> sections = chunkTag.getListTag("sections").asCompoundTagList();
+
+        // A map to store the highest block ID for each x, z coordinate
+        Map<Integer, Integer> highestBlocks = new HashMap<>();
+        Map<Integer, String> blockNames = new HashMap<>();
+        Map<Integer, String> blockBiomes = new HashMap<>();
+
+        // Iterate over each section in the chunk
+        for (CompoundTag section : sections) {
+            int yBase = section.getByte("Y") * 16;
+
+            if (!section.containsKey("block_states") || !section.containsKey("biomes")) {
+                continue;
+            }
+
+            CompoundTag blockStates = section.getCompoundTag("block_states");
+            CompoundTag biomes = section.getCompoundTag("biomes");
+
+            long[] blockStatesLong = blockStates.getLongArray("data");
+            long[] biomesLong = biomes.getLongArray("data");
+
+            if (blockStatesLong.length == 0 || blockStates.getListTag("palette") == null || biomesLong.length == 0 || biomes.getListTag("palette") == null) {
+                continue;
+            }
+
+            ListTag<CompoundTag> blockPalette = blockStates.getListTag("palette").asCompoundTagList();
+            ListTag<StringTag> biomePalette = biomes.getListTag("palette").asStringTagList();
+
+            int bitsPerBlock = Math.max(4, (int) Math.ceil(Math.log(blockPalette.size()) / Math.log(2)));
+            int blocksPerLong = 64 / bitsPerBlock;
+
+            int bitsPerBiome = Math.max(1, (int) Math.ceil(Math.log(biomePalette.size()) / Math.log(2)));
+            int biomesPerLong = 64 / bitsPerBiome;
+
+            for (int x = 0; x < 16; x++) {
+                for (int z = 0; z < 16; z++) {
+                    for (int height = 15; height >= 0; height--) {
+                        int index = (height * 16 * 16) + (z * 16) + x;
+                        int blockLongIndex = index / blocksPerLong;
+                        int blockStartBit = (index % blocksPerLong) * bitsPerBlock;
+                        int blockPaletteIndex = (int) ((blockStatesLong[blockLongIndex] >>> blockStartBit) & ((1 << bitsPerBlock) - 1));
+
+                        String blockName = blockPalette.get(blockPaletteIndex).getString("Name");
+
+                        if (!blockName.equals("minecraft:air")) {
+                            int globalY = yBase + height;
+                            int key = (x << 8) | z;
+
+                            int biomeIndex = (height / 4) * 16 + (z / 4) * 4 + (x / 4);
+                            int biomeLongIndex = biomeIndex / biomesPerLong;
+                            int biomeStartBit = (biomeIndex % biomesPerLong) * bitsPerBiome;
+                            int biomePaletteIndex = (int) ((biomesLong[biomeLongIndex] >>> biomeStartBit) & ((1 << bitsPerBiome) - 1));
+                            String biomeName = biomePalette.get(biomePaletteIndex).getValue();//.getString("Name");
+
+                            if (!highestBlocks.containsKey(key) || globalY > highestBlocks.get(key)) {
+                                highestBlocks.put(key, globalY);
+                                blockNames.put(key, blockName);
+                                blockBiomes.put(key, biomeName);
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Print or use the highestBlocks map as needed
+        for (Map.Entry<Integer, Integer> entry : highestBlocks.entrySet()) {
+            int x = (entry.getKey() >> 8) & 0xFF;
+            int z = entry.getKey() & 0xFF;
+            int y = entry.getValue();
+            String blockName = blockNames.get(entry.getKey());
+            String biomeName = blockBiomes.get(entry.getKey());
+            System.out.println("Topmost block at (" + x + ", " + z + "): " + y + " (" + blockName + ") in biome: " + biomeName);
+        }
+        /*chunkTag.entrySet().forEach(entry -> {
+            String key = entry.getKey();
+            Plugin.debug(key + ": " + entry.getValue().toString());
+        });
+
+        CompoundTag level = chunkTag.getCompoundTag("Level");*/
+        /*ListTag<CompoundTag> sections = chunkTag.getListTag("sections").asCompoundTagList();
+
+        // A map to store the highest block ID for each x, z coordinate
+        Map<Integer, Integer> highestBlocks = new HashMap<>();
+        Map<Integer, String> blockNames = new HashMap<>();
+
+        // Iterate over each section in the chunk
+        for (CompoundTag section : sections) {
+            //Plugin.debug(section.toString());
+            int yBase = section.getByte("Y") * 16;
+            CompoundTag blockStates = section.getCompoundTag("block_states");
+            CompoundTag biomes = section.getCompoundTag("biomes");
+
+            long[] blockStatesLong = blockStates.getLongArray("data");
+            long[] biomesLong = biomes.getLongArray("data");
+
+            if(blockStatesLong.length == 0) continue;
+            if(blockStates.getListTag("palette") == null) continue;
+
+            //Plugin.debug("Palette found");
+
+            ListTag<CompoundTag> palette = blockStates.getListTag("palette").asCompoundTagList();
+            //int paletteLength = palette != null ? palette.size() : 0;
+
+            int bitsPerBlock = Math.max(4, (int) Math.ceil(Math.log(palette.size()) / Math.log(2)));
+            int blocksPerLong = 64 / bitsPerBlock;
+
+            for (int x = 0; x < 16; x++) {
+                for (int z = 0; z < 16; z++) {
+                    for (int height = 15; height >= 0; height--) {
+                        int index = (height * 16 * 16) + (z * 16) + x;
+                        int longIndex = index / blocksPerLong;
+                        int startBit = (index % blocksPerLong) * bitsPerBlock;
+                        int paletteOffset = (int) ((blockStatesLong[longIndex] >>> startBit) & ((1 << bitsPerBlock) - 1));
+
+                        String blockName = palette.get(paletteOffset).getString("Name");
+
+                        
+                        
+                        
+                        if (!blockName.equals("minecraft:air")) {
+                            int globalY = yBase + height;
+                            int key = (x << 8) | z;
+                            if (!highestBlocks.containsKey(key) || globalY > highestBlocks.get(key)) {
+                                highestBlocks.put(key, globalY);
+                                blockNames.put(key, blockName);
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+
+        }
+
+        // Print or use the highestBlocks map as needed
+        for (Map.Entry<Integer, Integer> entry : highestBlocks.entrySet()) {
+            int x = (entry.getKey() >> 8) & 0xFF;
+            int z = entry.getKey() & 0xFF;
+            int y = entry.getValue();
+            System.out.println("Topmost block at (" + x + ", " + z + "): " + y + " (" + blockNames.get(entry.getKey()) + ")");
+        }*/
+    //}
 
     private enum RenderTaskState {
         IDLE, LOADING_REGION, RENDERING, DONE
