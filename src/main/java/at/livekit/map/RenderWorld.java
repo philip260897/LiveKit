@@ -26,7 +26,7 @@ import at.livekit.utils.Utils;
 public class RenderWorld 
 {   
     private static int MAX_LOADED_REGIONS = 16;
-    private static int TIMEOUT_LOADING = 10 * 1000;
+    private static int TIMEOUT_LOADING = 15 * 1000;
 
     private String world;
     private String worldUID;
@@ -417,8 +417,8 @@ public class RenderWorld
                 }
                 
                 try{
-                    //region = Plugin.getStorage().loadRegion(worldUID, x, z);
-                    /*File file = new File(workingDirectory,x +"_"+z+".region");
+                    long start = System.currentTimeMillis();
+                    File file = new File(workingDirectory,x +"_"+z+".region");
                     if(file.exists()) {
                         byte[] data = Files.readAllBytes(file.toPath());
                         if(data.length == 1048584) {
@@ -429,18 +429,25 @@ public class RenderWorld
                             Plugin.debug("Invalid region detected! Creating new "+data.length);
                             failedToLoad = true;
                         }
-                    }*/
-                    long start = System.currentTimeMillis();
-                    try {
-                        byte[] data = new byte[8 + 512 * 512 * 4];
-                        Arrays.fill(data, (byte)0xFF);
-                        region = new FastRegionData(world, x, z, data);
-                        region.timestamp = Utils.decodeTimestamp(region.data);
-                        region.invalidate();
-                    } catch(Exception ex) {
-                        ex.printStackTrace();
-                        failedToLoad = true;
                     }
+                    
+                    if(region == null) {
+                        try {
+                            byte[] data = new byte[8 + 512 * 512 * 4];
+                            Arrays.fill(data, (byte)0xFF);
+                            region = new FastRegionData(world, x, z, data);
+                            ((FastRegionData)region).fastrender();
+                            region.timestamp = Utils.decodeTimestamp(region.data);
+                            region.invalidate();
+                            failedToLoad = false;
+                        } catch(Exception ex) {
+                            ex.printStackTrace();
+                            region = null;
+                            failedToLoad = true;
+                        }
+                        
+                    }
+
                     Plugin.debug("Loading region "+x+" "+z+" took "+(System.currentTimeMillis()-start)+"ms ("+world+")");
 
 

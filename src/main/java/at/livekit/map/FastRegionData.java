@@ -34,7 +34,7 @@ public class FastRegionData extends RegionData {
         this.world = world;
     }
 
-    private void fastrender() throws Exception{
+    public void fastrender() throws Exception{
         if(texturepack == null) {
             texturepack = Texturepack.getInstance();
         }
