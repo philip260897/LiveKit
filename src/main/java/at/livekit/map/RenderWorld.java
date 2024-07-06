@@ -425,6 +425,7 @@ public class RenderWorld
                             region = new RegionData(x, z, data);
                             region.timestamp = Utils.decodeTimestamp(data);
                             region.invalidate();
+
                         } else {
                             Plugin.debug("Invalid region detected! Creating new "+data.length);
                             failedToLoad = true;
@@ -448,7 +449,7 @@ public class RenderWorld
                         
                     }
 
-                    Plugin.debug("Loading region "+x+" "+z+" took "+(System.currentTimeMillis()-start)+"ms ("+world+")");
+                    Plugin.debug("Loading region "+x+" "+z+" took "+(System.currentTimeMillis()-start)+"ms ("+world+") " + (region != null ? (file.exists() ? " From File " : " Fast Rendered") : "Failed, creating new"));
 
 
                     if(region != null) {
