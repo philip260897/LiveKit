@@ -14,6 +14,7 @@ import java.util.zip.InflaterInputStream;
 import org.bukkit.Material;
 import org.bukkit.block.Biome;
 
+import at.livekit.modules.LiveMapModule.Offset;
 import at.livekit.modules.LiveMapModule.RegionData;
 import at.livekit.plugin.Plugin;
 import at.livekit.plugin.Texturepack;
@@ -29,9 +30,15 @@ public class FastRegionData extends RegionData {
     private static Texturepack texturepack;
     private final String world;
 
+    private Offset foundBlock;
+
     public FastRegionData(String world, int x, int z, byte[] data) throws Exception{
         super(x, z, data);
         this.world = world;
+    }
+
+    public Offset getFoundBlock() {
+        return foundBlock;
     }
 
     public void fastrender() throws Exception{
@@ -171,6 +178,10 @@ public class FastRegionData extends RegionData {
             data[offset + 1] = (byte) dataId;
             data[offset + 2] = (byte) h;
             data[offset + 3] = (byte) (biome | (biomeId << 4) | ((h & 0x100) != 0x00 ? ((byte)0x01) : ((byte)0x00)));
+
+            if(foundBlock == null) {
+                foundBlock = new Offset((chunkX * 16 + x), (chunkZ * 16 + z));
+            }
         }
     }
 

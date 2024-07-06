@@ -78,21 +78,7 @@ public class LiveMapModule extends BaseModule implements Listener
         String world = packet.getData().getString("world");
         if(!world.equals(world)) return new StatusPacket(0, "World mismatch!");
 
-        try {
-
-        byte[] data = new byte[8 + 512 * 512 * 4];
-        Arrays.fill(data, (byte)0xFF);
-        FastRegionData region = new FastRegionData(world, x, z, data);
-                        region.timestamp = Utils.decodeTimestamp(region.data);
-                        region.invalidate();
-
-        //return new RawPacket(renderWorld.getRegionDataAsync(x, z));
-        return new RawPacket(region.data);
-
-        }catch(Exception ex) {
-            ex.printStackTrace();
-            return new StatusPacket(0, "Failed to resolve region "+x+" "+z);
-        }
+        return new RawPacket(renderWorld.getRegionDataAsync(x, z));
     }
 
     public void setRenderBounds(RenderBounds bounds) {

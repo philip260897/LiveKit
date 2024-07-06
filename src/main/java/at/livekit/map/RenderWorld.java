@@ -34,6 +34,7 @@ public class RenderWorld
 
     private List<Offset> _blockQueue = new ArrayList<Offset>();
     private List<Offset> _chunkQueue = new ArrayList<Offset>();
+    private List<Offset> _regionQueue = new ArrayList<Offset>();
 
     private List<RegionInfo> _regions = new ArrayList<RegionInfo>(); 
     private List<RegionData> _loadedRegions = new ArrayList<RegionData>();
@@ -229,6 +230,15 @@ public class RenderWorld
                                 Plugin.debug("Chunk dequeed");
                             }
 
+                            if(!tick) _task.tickCount++;
+                        }
+                    }
+                }
+                if(_task == null) {
+                    synchronized(_regionQueue) {
+                        if(_regionQueue.size() != 0) {
+                            Offset region = _regionQueue.remove(0);
+                            _task = new RenderTask(region, true);
                             if(!tick) _task.tickCount++;
                         }
                     }
@@ -441,6 +451,14 @@ public class RenderWorld
                             region.timestamp = Utils.decodeTimestamp(region.data);
                             region.invalidate();
                             failedToLoad = false;
+                            synchronized(_regions) {
+                                _regions.add(new RegionInfo(x, z, region.timestamp));
+                            }
+                            if(((FastRegionData)region).getFoundBlock() != null) {
+                                synchronized(_blockQueue) {
+                                    _blockQueue.add(((FastRegionData)region).getFoundBlock());
+                                }
+                            }
                         } catch(Exception ex) {
                             ex.printStackTrace();
                             region = null;
@@ -828,13 +846,37 @@ public class RenderWorld
         IDLE, LOADING_REGION, RENDERING, DONE
     }
 
+    public static class BlockRenderTask extends RenderTask {
+        public BlockRenderTask(Offset offset) {
+            super(offset, false);
+            this.regionX = (int) Math.floor(((double) offset.x / 512.0 ));
+            this.regionZ = (int) Math.floor(((double) offset.z / 512.0 ));
+        }
+    }
+
+    public static class ChunkRenderTask extends RenderTask {
+        public ChunkRenderTask(Offset offset) {
+            super(offset, true);
+            this.regionX = (int) Math.floor(((double) offset.x / 32.0 ));
+            this.regionZ = (int) Math.floor(((double) offset.z / 32.0 ));
+        }
+    }
+
+    public static class RegionRenderTask extends RenderTask {
+        public RegionRenderTask(Offset offset) {
+            super(offset, true);
+            this.regionX = offset.x;
+            this.regionZ = offset.z;
+        }
+    }
+
     public static class RenderTask {
         private RenderTaskState state;
         private Offset offset;
         private boolean chunk;
 
-        private int regionX;
-        private int regionZ;
+        protected int regionX;
+        protected int regionZ;
 
         public RegionData region;
 
