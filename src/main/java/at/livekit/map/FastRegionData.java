@@ -32,10 +32,13 @@ import net.querz.nbt.tag.StringTag;
 public class FastRegionData extends RegionData {
 
     private static Texturepack texturepack;
+    private final String world;
 
     public FastRegionData(String world, int x, int z, byte[] data) throws Exception{
         super(x, z, data);
+        this.world = world;
         initialize(world);
+        
     }
 
     private void initialize(String world) throws Exception{
@@ -60,18 +63,14 @@ public class FastRegionData extends RegionData {
 
         ByteBuffer buffer = ByteBuffer.wrap(header);
 
-        //try (RandomAccessFile raf = new RandomAccessFile(file, "r")) {
-        //    byte[] header = new byte[8192];
-        //    raf.readFully(header);
+        for (int i = 0; i < 1024; i++) {
+            int offset = ((header[i * 4 + 0] & 0xFF) << 16) | ((header[i * 4 + 1] & 0xFF) << 8)  | (header[i * 4 + 2] & 0xFF);
+            int sectorCount = header[i * 4 + 3] & 0xFF;
+            int timestamp = ((header[i * 4 + 4096] & 0xFF) << 24) | ((header[i * 4 + 4096 + 1] & 0xFF) << 16) | ((header[i * 4  + 4096 + 2] & 0xFF) << 8)  | (header[i * 4 + 4096 + 3] & 0xFF);
 
-            for (int i = 0; i < 1024; i++) {
-                int offset = ((header[i * 4 + 0] & 0xFF) << 16) | ((header[i * 4 + 1] & 0xFF) << 8)  | (header[i * 4 + 2] & 0xFF);
-                int sectorCount = header[i * 4 + 3] & 0xFF;
-                int timestamp = ((header[i * 4 + 4096] & 0xFF) << 24) | ((header[i * 4 + 4096 + 1] & 0xFF) << 16) | ((header[i * 4  + 4096 + 2] & 0xFF) << 8)  | (header[i * 4 + 4096 + 3] & 0xFF);
-
-                if (offset == 0 || sectorCount == 0) {
-                    continue;
-                }
+            if (offset == 0 || sectorCount == 0) {
+                continue;
+            }
 
                 //raf.seek(offset * 4096);
                 //int length = raf.readInt();
@@ -134,10 +133,19 @@ public class FastRegionData extends RegionData {
         }*/
     }
 
+    Map<String, Material> blockCache = new HashMap<>();
+    Map<Integer, CompoundTag> sectionCache = new HashMap<>();
     private void parseChunk(CompoundTag chunkTag) {
+        //blockCache.clear();
+
         ListTag<CompoundTag> sections = chunkTag.getListTag("sections").asCompoundTagList();
-        sections.sort((a, b) -> b.getByte("Y") - a.getByte("Y"));
+        //sections.sort((a, b) -> b.getByte("Y") - a.getByte("Y"));
         int maxSection = sections.get(0).getByte("Y");
+
+        for(int i = 0; i < sections.size(); i++) {
+            CompoundTag section = sections.get(i);
+            sectionCache.put((int)section.getByte("Y"), section);
+        }
 
         int chunkX = chunkTag.getInt("xPos");
         int chunkZ = chunkTag.getInt("zPos");
@@ -161,6 +169,7 @@ public class FastRegionData extends RegionData {
 
         //Plugin.debug("Chunk: "+chunkX+" "+chunkYPos+" "+chunkZ);
 
+        Block previous = null;
 
 
         for (int i = 0; i < heights.length; i++) {
@@ -168,7 +177,7 @@ public class FastRegionData extends RegionData {
             int z = i / 16;
             int y = (chunkYPos * 16) - 1 + heights[i];
 
-            Block block = decodeBlock(x, y, z, sections);
+            Block block = previous == null ? decodeBlock(x, y, z, sections) : decodeBlock(x, y, z, sections, previous.getSection(), previous.getBlockStates(), previous.getBlockPalette(), previous.getBlockStatesLong(), previous.getBiomes(), previous.getBiomePalette(), previous.getBiomesLong(), previous.getType());
             if(block == null || block.getType() == null) continue;
 
             //int ySection = Math.floorDiv(y, 16);
@@ -265,8 +274,6 @@ public class FastRegionData extends RegionData {
                             int biomePaletteIndex = biomesLong.length == 0 ? 0 : (int) ((biomesLong[biomeLongIndex] >>> biomeStartBit) & ((1 << bitsPerBiome) - 1));
                             String biomeName = biomePalette.get(biomePaletteIndex).getValue();*/
 
-                            int dataId = (int)texturepack.getTexture(block.getType());
-                            byte biomeId = (byte)texturepack.getBiome(block.getBiome());
                             byte biome = Renderer.isLeave(block.getType()) ? (byte) 0x04 : 0x00;
 
                             int waterDepth = -1;
@@ -275,7 +282,7 @@ public class FastRegionData extends RegionData {
                                 biome |= 0x08;
                                 //Block d = getWaterDepth(sections, section.getByte("Y"), block.getX(), block.getZ(), block.getY(), 100, log);
 
-                                /*Block b = getBlockBelow(block, sections);
+                                Block b = getBlockBelow(block, sections);
                                 if(b == null) continue;
 
                                 for(int j = 0; j < 100; j++) {
@@ -284,9 +291,9 @@ public class FastRegionData extends RegionData {
                                         waterDepth = ++j;
                                         break;
                                     }
-                                    b = getBlockBelow(block, sections);
+                                    b = getBlockBelow(b, sections);
                                     if(b == null) break;
-                                }*/
+                                }
 
                                 /*if(d != null && (y - d.getY()) > 0) {
                                     waterDepth = (y - d.getY());
@@ -297,6 +304,10 @@ public class FastRegionData extends RegionData {
                             if(waterDepth > 0) {
                                 h = waterDepth;
                             }
+
+                            int dataId = (int)texturepack.getTexture(block.getType());
+                            byte biomeId = (byte)texturepack.getBiome(block.getBiome());
+                            
 
                             //Plugin.debug("blockName: "+blockName+" "+mat.name()+" "+globalY+" "+height+" "+section.getByte("Y") + " isBlock: "+isBlock(mat));
 
@@ -320,15 +331,6 @@ public class FastRegionData extends RegionData {
         
     }
 
-    private CompoundTag findSection(ListTag<CompoundTag> sections, int ySection) {
-        for(CompoundTag section : sections) {
-            if(section.getByte("Y") == ySection) {
-                return section;
-            }
-        }
-
-        return null;
-    }
 
 
     
@@ -385,7 +387,7 @@ public class FastRegionData extends RegionData {
         if(block.getType() == Material.BEDROCK && block.getY() != 0) {
             boolean air = false;
             while(block.getY() > 0 && air == false) {
-               block = getBlockBelow(block, sections);
+               block = getBlockBelow(block, !air ? 3 : 1, sections);
                if(block == null) return null;
 
                if(block.getType() == Material.AIR) air = true;
@@ -402,8 +404,12 @@ public class FastRegionData extends RegionData {
         return block;
     }
 
+    public Block getBlockBelow(Block block, int depth, ListTag<CompoundTag> sections) {
+        return decodeBlock(block.getX(), block.getY() - depth, block.getZ(), sections, block.getSection(), block.getBlockStates(), block.getBlockPalette(), block.getBlockStatesLong(), block.getBiomes(), block.getBiomePalette(), block.getBiomesLong(), block.getType());
+    }
+
     public Block getBlockBelow(Block block, ListTag<CompoundTag> sections) {
-        return decodeBlock(block.getX(), block.getY() - 1, block.getZ(), sections);
+        return getBlockBelow(block, 1, sections);
     }
 
     public static int[] unpackHeightMap(long[] data, int bitsPerValue, int valueCount) {
@@ -422,7 +428,7 @@ public class FastRegionData extends RegionData {
 
     private boolean isBlock(Material material) {
         if(material.isBlock() == true && material.isSolid() == false) {
-            if(material != Material.WATER && material != Material.SNOW) {
+            if(material != Material.WATER && material != Material.SNOW && material != Material.LAVA) {
                 return false;
             }
         }
@@ -430,15 +436,41 @@ public class FastRegionData extends RegionData {
     }
 
     int millis = 0;
+
     private Block decodeBlock(int x, int y, int z, ListTag<CompoundTag> sections) {
-        int start = (int)System.currentTimeMillis();
+        return decodeBlock(x, y, z, sections, null, null, null, null, null, null, null, null);
+    }
+    
+    private Block decodeBlock(int x, int y, int z, ListTag<CompoundTag> sections, CompoundTag section, CompoundTag blockStates, ListTag<CompoundTag> blockPalette, long[] blockStatesLong, CompoundTag biomes, ListTag<StringTag> biomePalette, long[] biomesLong, Material mat) {
+        
         int ySection = Math.floorDiv(y, 16);
         int sectionHeight = Math.floorMod(y, 16);
 
-        for(CompoundTag section : sections) {
-            if(section.getByte("Y") != ySection) continue;
+        if(section == null || section.getByte("Y") != ySection) {
+            section = sectionCache.get(ySection);
+            if(section == null) return null;
 
-            CompoundTag blockStates = section.getCompoundTag("block_states");
+            blockStates = section.getCompoundTag("block_states");
+            if(blockStates == null) return null;
+
+            blockPalette = blockStates.getListTag("palette").asCompoundTagList();
+            blockStatesLong = blockStates.getLongArray("data");
+
+            biomes = section.getCompoundTag("biomes");
+            if(biomes == null) return null;
+
+            biomePalette = biomes.getListTag("palette").asStringTagList();
+            biomesLong = biomes.getLongArray("data");
+        }
+
+
+
+       /*  }
+
+        for(CompoundTag section : sections) {
+            if(section.getByte("Y") != ySection) continue;*/
+
+            /*CompoundTag blockStates = section.getCompoundTag("block_states");
             if(blockStates == null) continue;
             ListTag<CompoundTag> blockPalette = blockStates.getListTag("palette").asCompoundTagList();
 
@@ -447,7 +479,7 @@ public class FastRegionData extends RegionData {
 
             long[] biomesLong = biomes.getLongArray("data");
             if(biomesLong == null) biomesLong = new long[0];
-            ListTag<StringTag> biomePalette = biomes.getListTag("palette").asStringTagList();
+            ListTag<StringTag> biomePalette = biomes.getListTag("palette").asStringTagList();*/
             int bitsPerBiome = Math.max(1, (int) Math.ceil(Math.log(biomePalette.size()) / Math.log(2)));
             int biomesPerLong = 64 / bitsPerBiome;
 
@@ -460,13 +492,17 @@ public class FastRegionData extends RegionData {
             Biome biome = Biome.valueOf(biomeName.replace("minecraft:", "").toUpperCase());
             //Biome biome = Biome.BADLANDS;
 
-            long[] blockStatesLong = blockStates.getLongArray("data");
+            //long[] blockStatesLong = blockStates.getLongArray("data");
             if(blockStatesLong == null || blockStatesLong.length == 0) {
                 String blockName = blockPalette.get(0).getString("Name");
-                Material mat = Material.getMaterial(blockName.replace("minecraft:", "").toUpperCase());
+                int start = (int)System.currentTimeMillis();
+                mat = mat != null && mat.name().equals(blockName.replace("minecraft:", "").toUpperCase()) ? mat : getMaterial(blockName);
 
                 millis += (int)System.currentTimeMillis() - start;
-                return new Block(x, y, z, mat, biome);
+                Block block = new Block(x, y, z, mat, biome);
+                block.setCache(section, blockStates, blockPalette, blockStatesLong, biomes, biomePalette, biomesLong);
+
+                return block;
             }
 
             int bitsPerBlock = Math.max(4, (int) Math.ceil(Math.log(blockPalette.size()) / Math.log(2)));
@@ -477,15 +513,34 @@ public class FastRegionData extends RegionData {
             int blockStartBit = (index % blocksPerLong) * bitsPerBlock;
             int blockPaletteIndex = (int) ((blockStatesLong[blockLongIndex] >>> blockStartBit) & ((1 << bitsPerBlock) - 1));
 
+            
             String blockName = blockPalette.get(blockPaletteIndex).getString("Name");
-            Material mat = Material.getMaterial(blockName.replace("minecraft:", "").toUpperCase());
-
+            int start = (int)System.currentTimeMillis();
+            mat = mat != null && mat.name().equals(blockName.replace("minecraft:", "").toUpperCase()) ? mat : getMaterial(blockName);
             millis += (int)System.currentTimeMillis() - start;
-            return new Block(x, y, z, mat, biome);
-        }
 
-        millis += (int)System.currentTimeMillis() - start;
-        return null;
+            Block block = new Block(x, y, z, mat, biome);
+            block.setCache(section, blockStates, blockPalette, blockStatesLong, biomes, biomePalette, biomesLong);
+
+            return block;
+        //}
+
+        //int start = (int)System.currentTimeMillis();
+        //millis += (int)System.currentTimeMillis() - start;
+        //return null;
+    }
+
+    private Material getMaterial(String name) {
+        name = name.replace("minecraft:", "").toUpperCase();
+        Material mat = blockCache.get(name);
+        if(mat == null) {
+            mat = Material.getMaterial(name);
+            blockCache.put(name, mat);
+            /*if(world.equals("world_nether")) {
+                Plugin.debug("Committing to cache: "+name+" "+mat+" "+blockCache.size());
+            }*/
+        }
+        return mat;
     }
 
     /*private static class DepthWrapper {
@@ -505,12 +560,31 @@ public class FastRegionData extends RegionData {
         final private Material material;
         final private Biome biome;
 
+        private CompoundTag cachedSection;
+        private CompoundTag cachedBlockStates;
+        private ListTag<CompoundTag> cachedBlockPalette;
+        private long[] cachedBlockStatesLong;
+
+        private CompoundTag cachedBiomes;
+        private ListTag<StringTag> cachedBiomePalette;
+        private long[] cachedBiomesLong;
+
         public Block(int x, int y, int z, Material material, Biome biome) {
             this.x = x;
             this.y = y;
             this.z = z;
             this.material = material;
             this.biome = biome;
+        }
+
+        public void setCache(CompoundTag section, CompoundTag blockStates, ListTag<CompoundTag> blockPalette, long[] blockStatesLong, CompoundTag biomes, ListTag<StringTag> biomePalette, long[] biomesLong) {
+            this.cachedSection = section;
+            this.cachedBlockStates = blockStates;
+            this.cachedBlockPalette = blockPalette;
+            this.cachedBlockStatesLong = blockStatesLong;
+            this.cachedBiomes = biomes;
+            this.cachedBiomePalette = biomePalette;
+            this.cachedBiomesLong = biomesLong;
         }
 
         public int getX() {
@@ -531,6 +605,34 @@ public class FastRegionData extends RegionData {
 
         public Biome getBiome() {
             return biome;
+        }
+
+        public CompoundTag getSection() {
+            return cachedSection;
+        }
+
+        public CompoundTag getBlockStates() {
+            return cachedBlockStates;
+        }
+
+        public ListTag<CompoundTag> getBlockPalette() {
+            return cachedBlockPalette;
+        }
+
+        public long[] getBlockStatesLong() {
+            return cachedBlockStatesLong;
+        }
+
+        public CompoundTag getBiomes() {
+            return cachedBiomes;
+        }
+
+        public ListTag<StringTag> getBiomePalette() {
+            return cachedBiomePalette;
+        }
+
+        public long[] getBiomesLong() {
+            return cachedBiomesLong;
         }
     }
 }

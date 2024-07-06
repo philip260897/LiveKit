@@ -441,7 +441,7 @@ public class RenderWorld
                         ex.printStackTrace();
                         failedToLoad = true;
                     }
-                    Plugin.debug("Loading region "+x+" "+z+" took "+(System.currentTimeMillis()-start)+"ms");
+                    Plugin.debug("Loading region "+x+" "+z+" took "+(System.currentTimeMillis()-start)+"ms ("+world+")");
 
 
                     if(region != null) {
