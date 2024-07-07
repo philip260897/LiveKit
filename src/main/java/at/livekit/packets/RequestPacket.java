@@ -11,9 +11,11 @@ public class RequestPacket extends Packet {
     public NIOClient<Identity> client;
 
     public RequestPacket() {
+        super(true);
     }
 
     public RequestPacket(int requestId) {
+        super(true);
         this.requestId = requestId;
     }
 

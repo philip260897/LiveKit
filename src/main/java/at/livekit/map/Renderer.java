@@ -1,13 +1,8 @@
 package at.livekit.map;
 
-import java.io.File;
 import java.util.Arrays;
-import java.util.HashMap;
-
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
-import org.bukkit.ChunkSnapshot;
-import org.bukkit.HeightMap;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Biome;
@@ -15,10 +10,11 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.BlockData;
 
+import at.livekit.map.RenderWorld.BlockRenderTask;
+import at.livekit.map.RenderWorld.ChunkRenderTask;
 import at.livekit.map.RenderWorld.RenderTask;
 import at.livekit.packets.BlockPacket;
 import at.livekit.packets.ChunkPacket;
-import at.livekit.plugin.Plugin;
 import at.livekit.plugin.Texturepack;
 
 public class Renderer 
@@ -33,7 +29,7 @@ public class Renderer
 
     private static byte[] DEFAULT_BLOCK = new byte[]{(byte)0xff, (byte)0xff, (byte)0xff, (byte)0xff};
     public static boolean render(String world, RenderTask task, long cpuTime, long frameStart, RenderBounds bounds) throws Exception {
-        long start = System.currentTimeMillis();
+        //long start = System.currentTimeMillis();
         initialize(task.getClass().getClassLoader());
 
 
@@ -43,10 +39,10 @@ public class Renderer
 
             
 
-            boolean isChunk = task.isChunk();
+            boolean isChunk = (task instanceof ChunkRenderTask);
             
-            if(isChunk && task.rendering == false && task.getChunkOrBlock().onlyIfAbsent) {
-                if(task.region.loadedChunkExists(task.getChunkOrBlock())) {
+            if(isChunk && task.rendering == false && ((ChunkRenderTask) task).getChunkOffset().onlyIfAbsent) {
+                if(task.region.loadedChunkExists(((ChunkRenderTask) task).getChunkOffset())) {
                     return true;
                 }
             }
@@ -57,20 +53,21 @@ public class Renderer
                 task.rendering = true;
                 task.renderingX = 0;
                 task.renderingZ = 0;
-                task.buffer = new byte[ task.isChunk() ? 16*16*4 : 4];
+                task.buffer = new byte[ isChunk ? 16*16*4 : 4];
                 //reset in region data buffer if has previous data => out of bounds dont gets overwritten
                 Arrays.fill(task.buffer, (byte)0xFF);
 
-                if(task.isChunk()) {
+                if(isChunk) {
+                    ChunkRenderTask ctask = (ChunkRenderTask) task;
                     
-                    long chunkLoad = System.currentTimeMillis();
+                    //long chunkLoad = System.currentTimeMillis();
 
-                    task.unload = !bWorld.isChunkLoaded(task.getChunkOrBlock().x, task.getChunkOrBlock().z);
+                    task.unload = !bWorld.isChunkLoaded(ctask.getChunkOffset().x, ctask.getChunkOffset().z);
 
-                    Chunk c = bWorld.getChunkAt(task.getChunkOrBlock().x, task.getChunkOrBlock().z);
+                    Chunk c = bWorld.getChunkAt(ctask.getChunkOffset().x, ctask.getChunkOffset().z);
                     if(task.unload && !task.isChunkLoadEvent()) c.load();
 
-                    long snap = System.currentTimeMillis();
+                    //long snap = System.currentTimeMillis();
                     //task.rchunk = c.getChunkSnapshot(true, true, false);
 
                     //task.rchunk = bWorld.getChunkAt(task.getChunkOrBlock().x, task.getChunkOrBlock().z).getChunkSnapshot(true, true, false);
@@ -80,10 +77,11 @@ public class Renderer
                 }
             }
 
-            long setup = System.currentTimeMillis();
-            long chunk = System.currentTimeMillis();
+            //long setup = System.currentTimeMillis();
+            //long chunk = System.currentTimeMillis();
 
-            if(task.isChunk()) {
+            if(task instanceof ChunkRenderTask) {
+                ChunkRenderTask ctask = (ChunkRenderTask) task;
                 //Plugin.debug("Rendering chunk "+task.getChunkOrBlock().x+" "+task.getChunkOrBlock().z+" "+task.renderingX+" "+task.renderingZ);
                 //if(task.renderingX == 0 && task.renderingZ == 0) task.unload = !Bukkit.getWorld(world).isChunkLoaded(task.getChunkOrBlock().x, task.getChunkOrBlock().z);
                 //if(task.unload) Bukkit.getWorld(world).loadChunk(task.getChunkOrBlock().x, task.getChunkOrBlock().z);
@@ -92,16 +90,16 @@ public class Renderer
                 //ChunkSnapshot c = task.rchunk;
                 
                 
-                chunk = System.currentTimeMillis();
-                Chunk c = bWorld.getChunkAt(task.getChunkOrBlock().x, task.getChunkOrBlock().z);
+               //chunk = System.currentTimeMillis();
+                Chunk c = bWorld.getChunkAt(ctask.getChunkOffset().x, ctask.getChunkOffset().z);
 
                 int blockX = 0;
                 int blockZ = 0;
 
                 for (int z = task.renderingZ; z < 16; z++) {
                     for (int x = task.renderingX; x < 16; x++) {
-                        long bstart = System.currentTimeMillis();
-                        long getblock = 0;
+                        //long bstart = System.currentTimeMillis();
+                        //long getblock = 0;
 
 
                         Block block = null;
@@ -114,7 +112,7 @@ public class Renderer
                             //task.rchunk = bWorld.getChunkAt(task.getChunkOrBlock().x, task.getChunkOrBlock().z);
                             block = bWorld.getHighestBlockAt(blockX, blockZ);
                             //int y = c.getHighestBlockYAt(x, z)-1;
-                            getblock = System.currentTimeMillis();
+                           // getblock = System.currentTimeMillis();
 
                             
 
@@ -139,14 +137,14 @@ public class Renderer
                             localZ += 512;
 
                         byte[] blockData = (block != null ? getBlockData(block/*, c.getBiome(x, z), c.getHighestBlockYAt(x, z)*/) : DEFAULT_BLOCK);
-                        long render = System.nanoTime();
+                        //long render = System.nanoTime();
 
                         for (int i = 0; i < blockData.length; i++) {
                             task.region.data[8 + (localZ * 4) * 512 + (localX * 4) + i] =  blockData[i];
                             task.buffer[z * 4 * 16 + x*4 + i] = blockData[i];
                         }
 
-                        long write = System.nanoTime();
+                        //long write = System.nanoTime();
 
                         //System.out.println(((System.nanoTime()-bstart)/1000)+"us write: "+((write - render)/1000)+"us render: "+((render - getblock)/1000)+" block: "+((getblock - bstart)/1000)+" block update "+block.getType()+" y: "+block.getY()+" "+Thread.currentThread().getName());
                          
@@ -156,7 +154,7 @@ public class Renderer
                             task.renderingX = x+1;
 
                             if(! (z == 15 && x == 15)) { 
-                                long end = System.currentTimeMillis();
+                                //long end = System.currentTimeMillis();
                                 //System.out.println("Abort rendering: "+(end - chunk)+"ms chunk: "+(chunk - setup)+"ms setup: "+(setup - start)+"ms total: "+(end - start)+"ms");
                                 return false;
                             }
@@ -166,9 +164,10 @@ public class Renderer
                     }
                     task.renderingX = 0;
                 }
-                if(task.unload) { bWorld.unloadChunk(task.getChunkOrBlock().x, task.getChunkOrBlock().z, false);  }
-            } else {
-                Block block = bWorld.getHighestBlockAt(task.getChunkOrBlock().x, task.getChunkOrBlock().z);
+                if(task.unload) { bWorld.unloadChunk(ctask.getChunkOffset().x, ctask.getChunkOffset().z, false);  }
+            } else if(task instanceof BlockRenderTask) {
+                BlockRenderTask btask = (BlockRenderTask) task;
+                Block block = bWorld.getHighestBlockAt(btask.getBlockOffset().x, btask.getBlockOffset().z);
 
                 int localX = block.getX() % 512;
                 if (localX < 0)
@@ -184,16 +183,16 @@ public class Renderer
                 }
             }
 
-            long rdone = System.currentTimeMillis();
+            //long rdone = System.currentTimeMillis();
 
             task.region.invalidate();
             task.rendering = false;
             long timestamp = task.region.timestamp;
 
-            if(isChunk) task.result = new ChunkPacket(task.getChunkOrBlock().x, task.getChunkOrBlock().z, task.buffer, timestamp);
-            else task.result = new BlockPacket(task.getChunkOrBlock().x, task.getChunkOrBlock().z, task.buffer, timestamp);
+            if(task instanceof ChunkRenderTask) task.result = new ChunkPacket(((ChunkRenderTask)task).getChunkOffset().x, ((ChunkRenderTask)task).getChunkOffset().z, task.buffer, timestamp);
+            if(task instanceof BlockRenderTask) task.result = new BlockPacket(((BlockRenderTask)task).getBlockOffset().x, ((BlockRenderTask)task).getBlockOffset().z, task.buffer, timestamp);
 
-            long end = System.currentTimeMillis();
+            //long end = System.currentTimeMillis();
             //System.out.println("DONE cleanup: "+(end-rdone)+"ms rendering: "+(rdone - chunk)+"ms chunk: "+(chunk - setup)+"ms setup: "+(setup - start)+"ms total: "+(end - start)+"ms");
 
             return true;

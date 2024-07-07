@@ -82,10 +82,18 @@ public class NIOClient<T> {
     }
 
     protected void queueData(INIOPacket packet) {
-        packet = supportsCompression() == false || packet instanceof ProxyConnectPacket || packet instanceof ProxyClientKeepAlivePacket ? packet : new CompressedPacket(packet);
+        byte[] header = packet.hasHeader() ? packet.header() : null;
+        byte[] data = packet.data();
+
+        if(supportsCompression() == true && packet.supportsCompression() == true && data.length >= 2048) {
+            packet = new CompressedPacket(header, data);
+            header = packet.header();
+            data = packet.data();
+        }
+
         synchronized(outputQueue) {
-            if(packet.hasHeader()) outputQueue.add(packet.header());
-            outputQueue.add(packet.data());
+            if(header != null) outputQueue.add(header);
+            outputQueue.add(data);
         }
     }
 

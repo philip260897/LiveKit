@@ -35,7 +35,9 @@ import at.livekit.map.RenderBounds;
 import at.livekit.map.RenderJob;
 import at.livekit.map.RenderScheduler;
 import at.livekit.map.RenderWorld;
-import at.livekit.map.RenderBounds.RenderShape;
+import at.livekit.map.RenderBounds.AlwaysInRenderBounds;
+import at.livekit.map.RenderBounds.CircleRenderBounds;
+import at.livekit.map.RenderBounds.RectRenderBounds;
 import at.livekit.map.RenderJob.RenderJobMode;
 import at.livekit.modules.BaseModule;
 import at.livekit.modules.LiveMapModule;
@@ -75,6 +77,7 @@ public class LiveKitCommandExecutor implements CommandExecutor, TabCompleter {
     private LKCommand WORLD_RENDER_RADIUS = new LKCommand("livekit {world} render {radius}", "livekit.commands.admin", false, this::cmdWorldRenderRadius, "Renders a rectangular radius around the players position. (Worlds must match)");
     private LKCommand WORLD_RENDER_RADIUS_MISSING = new LKCommand("livekit {world} render {radius} -m", "livekit.commands.admin", false, this::cmdWorldRenderRadius, "Renders missing tiles in a rectangular radius around the players position. (Worlds must match)");
 
+    private LKCommand WORLD_BOUNDS_REMOVE = new LKCommand("livekit {world} bounds remove", "livekit.commands.admin", true, this::cmdWorldBoundsRemove, "Removes bounds of <world>");
     private LKCommand WORLD_BOUNDS_INFO = new LKCommand("livekit {world} bounds", "livekit.commands.admin", true, this::cmdWorldBoundsInfo, "Displays bounds of <world>");
     private LKCommand WORLD_BOUNDS_RADIUS = new LKCommand("livekit {world} bounds {radius}", "livekit.commands.admin", true, this::cmdWorldBounds, "Creates rectangular Bound with radius <radius>");
     private LKCommand WORLD_BOUNDS_RADIUS_CIRCULAR = new LKCommand("livekit {world} bounds {radius} -c", "livekit.commands.admin", true, this::cmdWorldBounds, "Creates circular Bound with radius <radius>");
@@ -382,14 +385,18 @@ public class LiveKitCommandExecutor implements CommandExecutor, TabCompleter {
         sender.sendMessage(prefix+"Info of "+map.getWorldName());
         sender.sendMessage(world.getWorldInfoString());
         sender.sendMessage("Render bounds [in Blocks]: ");
-        sender.sendMessage("  shape: "+bounds.getShape().name());
-        if(bounds.getShape() == RenderShape.CIRCLE) {
-            sender.sendMessage("  radius: "+bounds.getRadius());
-        } else {
-            sender.sendMessage("  left("+ChatColor.GREEN+"-x"+ChatColor.RESET+"): "+bounds.getLeft());
-            sender.sendMessage("  top("+ChatColor.GREEN+"-z"+ChatColor.RESET+"): "+bounds.getTop());
-            sender.sendMessage("  right("+ChatColor.GREEN+"x"+ChatColor.RESET+"): "+bounds.getRight());
-            sender.sendMessage("  bottom("+ChatColor.GREEN+"z"+ChatColor.RESET+"): "+bounds.getBottom());
+        //sender.sendMessage("  shape: "+bounds.getShape().name());
+        if(bounds instanceof CircleRenderBounds) {
+            CircleRenderBounds c = (CircleRenderBounds)bounds;
+            sender.sendMessage("  radius: "+c.getRadius());
+        } else if (bounds instanceof RectRenderBounds) {
+            RectRenderBounds r = (RectRenderBounds)bounds;
+            sender.sendMessage("  left("+ChatColor.GREEN+"-x"+ChatColor.RESET+"): "+r.getLeft());
+            sender.sendMessage("  top("+ChatColor.GREEN+"-z"+ChatColor.RESET+"): "+r.getTop());
+            sender.sendMessage("  right("+ChatColor.GREEN+"x"+ChatColor.RESET+"): "+r.getRight());
+            sender.sendMessage("  bottom("+ChatColor.GREEN+"z"+ChatColor.RESET+"): "+r.getBottom());
+        } else if(bounds instanceof AlwaysInRenderBounds) {
+            sender.sendMessage("  No bounds set");
         }
         sender.sendMessage("Is Rendering: "+friendlyBool(job != null));
         if(job != null) {
@@ -410,6 +417,12 @@ public class LiveKitCommandExecutor implements CommandExecutor, TabCompleter {
         LiveMapModule map = (LiveMapModule)LiveKit.getInstance().getModuleManager().getModule("LiveMapModule:"+w.getName());
         if(map == null || !map.isEnabled()) { sender.sendMessage(Plugin.getPrefixError()+" LiveMapModule not enabled."); return; }
         RenderWorld world = map.getRenderWorld();
+
+        RenderBounds bounds = world.getRenderBounds();
+        if(bounds instanceof AlwaysInRenderBounds) {
+            sender.sendMessage(prefixError+"No bounds set for "+map.getWorldName()+". Set bounds first!");
+            return;
+        }
 
         RenderJob job = RenderJob.fromBounds(world.getRenderBounds(), !renderMissing ? RenderJobMode.FORCED : RenderJobMode.MISSING);
         try{
@@ -435,7 +448,7 @@ public class LiveKitCommandExecutor implements CommandExecutor, TabCompleter {
 
         Player player = (Player)sender;
         if(player.getWorld().getName().equalsIgnoreCase(map.getWorldName())) {
-            RenderBounds bounds = new RenderBounds(radius, player.getLocation().getBlockX(), player.getLocation().getBlockZ());
+            RenderBounds bounds = new CircleRenderBounds(radius, player.getLocation().getBlockX(), player.getLocation().getBlockZ());
             if(bounds.valid() && radius <= 1024) {
                 try{
                     RenderJob job = RenderJob.fromBounds(bounds, forced ? RenderJobMode.FORCED : RenderJobMode.MISSING);
@@ -500,7 +513,7 @@ public class LiveKitCommandExecutor implements CommandExecutor, TabCompleter {
         LiveMapModule map = (LiveMapModule)LiveKit.getInstance().getModuleManager().getModule("LiveMapModule:"+w.getName());
         if(map == null || !map.isEnabled()) { sender.sendMessage(Plugin.getPrefixError()+" LiveMapModule not enabled."); return; }
 
-        RenderBounds bounds = circular ? new RenderBounds(radius) : new RenderBounds(-radius, -radius, radius, radius);
+        RenderBounds bounds = circular ? new CircleRenderBounds(radius) : new RectRenderBounds(-radius, -radius, radius, radius);
         if(bounds.valid()) {
             map.setRenderBounds(bounds);
             sender.sendMessage(prefix+"New render bounds set for "+map.getWorldName());
@@ -508,6 +521,21 @@ public class LiveKitCommandExecutor implements CommandExecutor, TabCompleter {
         } else {
             sender.sendMessage(prefixError+"Invalid radius specified. Make sure ist greater than 0.");
         }
+    }
+
+    /**
+     * Removes render bounds
+     * @param sender
+     * @param cmd
+     */
+    private void cmdWorldBoundsRemove(CommandSender sender, LKCommand cmd) {
+        World w = cmd.get("world");
+
+        LiveMapModule map = (LiveMapModule)LiveKit.getInstance().getModuleManager().getModule("LiveMapModule:"+w.getName());
+        if(map == null || !map.isEnabled()) { sender.sendMessage(Plugin.getPrefixError()+" LiveMapModule not enabled."); return; }
+
+        map.setRenderBounds(new AlwaysInRenderBounds());
+        sender.sendMessage(prefix+"Render bounds removed for "+map.getWorldName());
     }
 
     /**
@@ -525,7 +553,7 @@ public class LiveKitCommandExecutor implements CommandExecutor, TabCompleter {
         LiveMapModule map = (LiveMapModule)LiveKit.getInstance().getModuleManager().getModule("LiveMapModule:"+w.getName());
         if(map == null || !map.isEnabled()) { sender.sendMessage(Plugin.getPrefixError()+" LiveMapModule not enabled."); return; }
 
-        RenderBounds bounds = new RenderBounds(left, top, right, bottom);
+        RenderBounds bounds = new RectRenderBounds(left, top, right, bottom);
         if(bounds.valid()) {
             map.setRenderBounds(bounds);
             sender.sendMessage(prefix+"New render bounds set for "+map.getWorldName());

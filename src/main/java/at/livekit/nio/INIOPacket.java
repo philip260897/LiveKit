@@ -6,4 +6,6 @@ public interface INIOPacket {
     public byte[] header();
 
     public boolean hasHeader();
+
+    public boolean supportsCompression();
 }

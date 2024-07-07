@@ -13,6 +13,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.ChunkSnapshot;
 import org.bukkit.block.Block;
+import org.bukkit.scheduler.BukkitScheduler;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -98,13 +99,7 @@ public class RenderWorld
             ex.printStackTrace();
         }
 
-        /*for(int x = -40; x < 40; x++) {
-            for(int z = -40; z < 40; z++) {
-                RegionData region = createRegion(x, z);
-                _loadedRegions.remove(region);
-                saveRegion(region);
-            }
-        }*/
+
     }
 
     public void setRenderBounds(RenderBounds bounds, boolean save) {
@@ -131,6 +126,38 @@ public class RenderWorld
             ex.printStackTrace();
         }
         
+        Bukkit.getScheduler().runTaskAsynchronously(Plugin.getInstance(), new Runnable() {
+            @Override
+            public void run() {
+                try{
+                    List<Offset> availableRegions = new ArrayList<Offset>();
+                    for(File file : workingDirectory.listFiles()) {
+                        if(file.getAbsolutePath().endsWith(".region")) {
+                            int x = Integer.parseInt(file.getName().split("_")[0]);
+                            int z = Integer.parseInt(file.getName().split("_")[1].replace(".region", ""));
+                            availableRegions.add(new Offset(x, z));
+                        }
+                    }
+
+                    List<Offset> worldRegions = Utils.getWorldRegions(world);
+                    List<Offset> missingRegions = new ArrayList<Offset>();
+                    for(Offset region : worldRegions) {
+                        //Plugin.log("Checking region "+region.x+" "+region.z+" for "+world);
+                        Offset matching = availableRegions.stream().filter(r->r.x == region.x && r.z == region.z).findFirst().orElse(null);
+                        if(matching == null) {
+                            missingRegions.add(region);
+                        }
+                    }
+
+                    synchronized(_regionQueue) {
+                        _regionQueue.addAll(missingRegions);
+                        Plugin.debug("Added "+missingRegions.size()+" regions to queue for "+world);
+                    }
+                }catch(Exception ex){
+                    ex.printStackTrace();
+                }
+            }
+        });
     }
 
     public void startJob(RenderJob job) throws Exception {
@@ -216,7 +243,7 @@ public class RenderWorld
                 synchronized(_blockQueue) {
                     if(_blockQueue.size() != 0) {
                         Offset block = _blockQueue.remove(0);
-                        _task = new RenderTask(block, false);
+                        _task = new BlockRenderTask(block);
                         if(!tick) _task.tickCount++;
                     }
                 }
@@ -224,11 +251,7 @@ public class RenderWorld
                     synchronized(_chunkQueue) {
                         if(_chunkQueue.size() != 0) {
                             Offset chunk = _chunkQueue.remove(0);
-                            _task = new RenderTask(chunk, true);
-
-                            if(chunk.x == -28 && chunk.z == 37) {
-                                Plugin.debug("Chunk dequeed");
-                            }
+                            _task = new ChunkRenderTask(chunk);
 
                             if(!tick) _task.tickCount++;
                         }
@@ -238,7 +261,7 @@ public class RenderWorld
                     synchronized(_regionQueue) {
                         if(_regionQueue.size() != 0) {
                             Offset region = _regionQueue.remove(0);
-                            _task = new RenderTask(region, true);
+                            _task = new RegionRenderTask(region);
                             if(!tick) _task.tickCount++;
                         }
                     }
@@ -250,7 +273,7 @@ public class RenderWorld
                 if(_job != null) {
                     Offset next = _job.next();
                     if(next == null) _job = null;
-                    else { _task = new RenderTask(next, true); if(!tick) _task.tickCount++; }
+                    else { _task = new ChunkRenderTask(next); if(!tick) _task.tickCount++; }
                 }
             }
         }
@@ -268,7 +291,11 @@ public class RenderWorld
                     _task.loadingWatchdog = System.currentTimeMillis();
                     if((_task.region = getLoadedRegion(_task.regionX, _task.regionZ)) != null) {
                         _task.loadingWatchdog = System.currentTimeMillis() - _task.loadingWatchdog;
-                        _task.state = RenderTaskState.RENDERING;
+                        if(_task instanceof RegionRenderTask) {
+                            _task.state = RenderTaskState.DONE;
+                        } else {
+                            _task.state = RenderTaskState.RENDERING;
+                        }
                     } else {
                         loadRegionAsync(_task.regionX, _task.regionZ);
                     }
@@ -277,7 +304,11 @@ public class RenderWorld
                     _task.region = getLoadedRegion(_task.regionX, _task.regionZ);
                     if(_task.region != null) {
                         _task.loadingWatchdog = System.currentTimeMillis() - _task.loadingWatchdog;
-                        _task.state = RenderTaskState.RENDERING;
+                        if(_task instanceof RegionRenderTask) {
+                            _task.state = RenderTaskState.DONE;
+                        } else {
+                            _task.state = RenderTaskState.RENDERING;
+                        }
                     } else {
                         _needsUpdate = false;
                         if(System.currentTimeMillis() - _task.loadingWatchdog > TIMEOUT_LOADING) {
@@ -534,14 +565,14 @@ public class RenderWorld
         JSONObject root = new JSONObject();
         synchronized(_taskLock) {
             synchronized(_blockQueue) {
-                if(_task != null && !_task.isChunk()) _blockQueue.add(_task.offset);
+                if(_task != null && (_task instanceof BlockRenderTask)) _blockQueue.add(_task.offset);
                 root.put("blocks", _blockQueue.stream().map(b->b.toJson()).collect(Collectors.toList()));
             }
         }
         synchronized(_taskLock) {
             synchronized(_chunkQueue) {
                 _chunkQueue.clear();
-                if(_task != null && _task.isChunk()) _chunkQueue.add(_task.offset);
+                if(_task != null && (_task instanceof ChunkRenderTask)) _chunkQueue.add(_task.offset);
                 root.put("chunks", _chunkQueue.stream().map(c->c.toJson()).collect(Collectors.toList()));
             }
         }
@@ -848,32 +879,44 @@ public class RenderWorld
 
     public static class BlockRenderTask extends RenderTask {
         public BlockRenderTask(Offset offset) {
-            super(offset, false);
+            super(offset);
             this.regionX = (int) Math.floor(((double) offset.x / 512.0 ));
             this.regionZ = (int) Math.floor(((double) offset.z / 512.0 ));
+        }
+
+        public Offset getBlockOffset() {
+            return offset;
         }
     }
 
     public static class ChunkRenderTask extends RenderTask {
         public ChunkRenderTask(Offset offset) {
-            super(offset, true);
+            super(offset);
             this.regionX = (int) Math.floor(((double) offset.x / 32.0 ));
             this.regionZ = (int) Math.floor(((double) offset.z / 32.0 ));
+        }
+
+        public Offset getChunkOffset() {
+            return offset;
         }
     }
 
     public static class RegionRenderTask extends RenderTask {
         public RegionRenderTask(Offset offset) {
-            super(offset, true);
+            super(offset);
             this.regionX = offset.x;
             this.regionZ = offset.z;
+        }
+
+        public Offset getRegionOffset() {
+            return offset;
         }
     }
 
     public static class RenderTask {
         private RenderTaskState state;
-        private Offset offset;
-        private boolean chunk;
+        protected Offset offset;
+        //private boolean chunk;
 
         protected int regionX;
         protected int regionZ;
@@ -894,22 +937,22 @@ public class RenderWorld
         public byte[] buffer;
         public IPacket result;
 
-        public RenderTask(Offset offset, boolean chunk) {
+        public RenderTask(Offset offset/*, boolean chunk*/) {
             this.offset = offset;
-            this.chunk = chunk;
+            //this.chunk = chunk;
             this.state = RenderTaskState.IDLE;
 
-            this.regionX = (int) Math.floor(((double) offset.x / (chunk ? 32.0 : 512.0 )));
-            this.regionZ = (int) Math.floor(((double) offset.z / (chunk ? 32.0 : 512.0 )));
+            //this.regionX = (int) Math.floor(((double) offset.x / (chunk ? 32.0 : 512.0 )));
+            //this.regionZ = (int) Math.floor(((double) offset.z / (chunk ? 32.0 : 512.0 )));
         }
 
         public boolean isChunkLoadEvent() {
             return offset.onlyIfAbsent;
         }
 
-        public boolean isChunk() {
+        /*public boolean isChunk() {
             return chunk;
-        }
+        }*/
 
         public int getRegionX() {
             return regionX;
@@ -919,13 +962,13 @@ public class RenderWorld
             return regionZ;
         }
 
-        public Offset getChunkOrBlock() {
+        /*public Offset getChunkOrBlock() {
             return offset;
-        }
+        }*/
 
         @Override
         public String toString() {
-            return "RenderTask[state="+state.name()+"; chunk="+chunk+"; x="+offset.x+"; z="+offset.z+"; regionX="+regionX+"; regionZ="+regionZ+" ticks="+tickCount+"; loading="+loadingWatchdog+"ms; rendering="+renderingWatchdog+"ms]";
+            return "RenderTask[state="+state.name()+"; x="+offset.x+"; z="+offset.z+"; regionX="+regionX+"; regionZ="+regionZ+" ticks="+tickCount+"; loading="+loadingWatchdog+"ms; rendering="+renderingWatchdog+"ms]";
         }
     }
 
