@@ -192,6 +192,14 @@ public class Utils
         return regionFolder;
     }
 
+    public static boolean hasRegion(String world, int x, int z) {
+        File regionFolder = getRegionFolder(world);
+        if(regionFolder == null) return false;
+
+        File regionFile = new File(regionFolder, "r."+x+"."+z+".mca");
+        return regionFile.exists();
+    }
+
     public static List<Offset> getWorldRegions(String world) {
         List<Offset> regions = new ArrayList<>();
         File regionFolder = getRegionFolder(world);

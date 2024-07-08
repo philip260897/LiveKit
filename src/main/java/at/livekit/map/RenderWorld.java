@@ -473,7 +473,7 @@ public class RenderWorld
                         }
                     }
                     
-                    if(region == null) {
+                    if(Utils.hasRegion(world, x, z) && (region == null || failedToLoad)) {
                         try {
                             byte[] data = new byte[8 + 512 * 512 * 4];
                             Arrays.fill(data, (byte)0xFF);
@@ -513,13 +513,13 @@ public class RenderWorld
                 if(createNew) {
                      region = createRegion(x, z);
 
-                     if(failedToLoad) {
+                     /*if(failedToLoad) {
                         for(int cz = 0; cz < 32; cz++) {
                             for(int cx = 0; cx < 32; cx++) {
                                 updateChunk(x*32 + cx, z*32 + cz, true);
                             }
                         }
-                    }
+                    }*/
                 }
 			}
         });
