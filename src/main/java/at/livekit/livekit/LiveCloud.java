@@ -48,7 +48,7 @@ public class LiveCloud {
             Plugin.debug("Initializing LiveCloud");
             File identityFile = new File(Plugin.getInstance().getDataFolder(), "identity.json");
             if(identityFile.exists()) {
-                JSONObject json = new JSONObject(Files.readString(identityFile.toPath()));
+                JSONObject json = new JSONObject(new String(Files.readAllBytes(identityFile.toPath())));
                 identity = ServerIdentity.fromJson(json);
             }
 

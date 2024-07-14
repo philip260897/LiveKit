@@ -21,6 +21,7 @@ import at.livekit.plugin.Texturepack;
 import net.querz.nbt.io.NBTInputStream;
 import net.querz.nbt.io.NamedTag;
 import net.querz.nbt.tag.CompoundTag;
+import net.querz.nbt.tag.IntTag;
 import net.querz.nbt.tag.ListTag;
 import net.querz.nbt.tag.LongArrayTag;
 import net.querz.nbt.tag.StringTag;
@@ -106,6 +107,12 @@ public class FastRegionData extends RegionData {
     private Map<Integer, CompoundTag> sectionCache = new HashMap<>();
     private void parseChunk(CompoundTag chunkTag) {
         sectionCache.clear();
+
+        //print all tag names in chunkTag, recursively
+
+
+       // IntTag level = chunkTag.getIntTag("DataVersion");
+       // System.out.println("DataVersion: " + level.toString());
         
         ListTag<CompoundTag> sections = chunkTag.getListTag("sections").asCompoundTagList();
         for(int i = 0; i < sections.size(); i++) {

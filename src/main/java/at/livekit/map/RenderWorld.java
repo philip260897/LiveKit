@@ -281,6 +281,10 @@ public class RenderWorld
             if(_task != null) {
                 if(tick) _task.tickCount++;
 
+                if(_task instanceof RegionRenderTask) {
+                    Plugin.debug("Region "+_task.regionX+" "+_task.regionZ+" State: "+_task.state.toString() + " offset: "+_task.offset.x+":"+_task.offset.z + " Is in bounds: "+_bounds.regionInBounds(_task.regionX, _task.regionZ));
+                    Plugin.debug("Bounds: "+_bounds.getChunkLeft() + " "+_bounds.getChunkTop() + " "+_bounds.getChunkRight() + " "+_bounds.getChunkBottom());
+                }
                 //Filtering out of bounds regions
                 if(!_bounds.regionInBounds(_task.regionX, _task.regionZ)) {
                     _task.state = RenderTaskState.DONE;

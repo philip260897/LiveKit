@@ -204,7 +204,7 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
         _thread.setName("LiveKit worker");
         _thread.start();
 
-        LiveCloud.getInstance().initialize(Config.isProxyEnabled()).thenApply((success) -> {
+        LiveCloud.getInstance().initialize(Config.isProxyEnabled()).exceptionally((ex) -> {ex.printStackTrace(); return false;}).thenApply((success) -> {
             if(Config.isProxyEnabled() && success) {
                 if(LiveCloud.getInstance().isProxyEnabled()) {
                     if(Config.getProxyHostname() != null && LiveCloud.getInstance().getProxyInfo().getHostname() == null) {

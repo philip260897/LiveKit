@@ -2,6 +2,8 @@ package at.livekit.map;
 
 import org.json.JSONObject;
 
+import at.livekit.plugin.Plugin;
+
 
 public abstract class RenderBounds 
 {
@@ -78,10 +80,17 @@ public abstract class RenderBounds
         private int bottom = 512;
 
         public RectRenderBounds(int left, int top, int right, int bottom) {
+            this.left = left;
+            this.top = top;
+            this.right = right;
+            this.bottom = bottom;
+            
+            Plugin.debug("Creating RectRenderBounds: left="+left+"; top="+top+"; right="+right+"; bottom="+bottom);
             _chunkLeft = (int) Math.floor( (double) left / 16.0 );
             _chunkTop = (int) Math.floor( (double) top / 16.0 );
             _chunkRight = (int) Math.ceil( (double) right / 16.0 );
             _chunkBottom = (int) Math.ceil( (double) bottom / 16.0 );
+            Plugin.debug("Chunk bounds: left="+_chunkLeft+"; top="+_chunkTop+"; right="+_chunkRight+"; bottom="+_chunkBottom);
         }
 
         @Override
