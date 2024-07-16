@@ -14,6 +14,7 @@ public class ChunkPacket extends Packet{
     private long timestamp;
 
     public ChunkPacket(int x, int z, byte[] data, long timestamp) {
+        super(false);
         this.x = x;
         this.z = z;
         this.data = Base64.getEncoder().encodeToString(data);

@@ -261,6 +261,7 @@ public abstract class BaseModule
         private JSONArray subscriptions;
 
         public ModulesAvailablePacket(JSONArray modules, JSONArray subscriptions) {
+            super(true);
             this.modules = modules;
             this.subscriptions = subscriptions;
         }
@@ -283,6 +284,7 @@ public abstract class BaseModule
         private String moduleType;
 
         public ModulePacket(String type) {
+            super(true);
             this.moduleType = type;
         }
 

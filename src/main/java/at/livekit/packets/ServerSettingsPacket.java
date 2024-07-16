@@ -7,6 +7,7 @@ public class ServerSettingsPacket extends Packet {
 
     private JSONObject settings;
     public ServerSettingsPacket(JSONObject settings) {
+        super(true);
         this.settings = settings;
     }
 

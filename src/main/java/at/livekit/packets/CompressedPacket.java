@@ -7,25 +7,26 @@ import at.livekit.nio.INIOPacket;
 public class CompressedPacket extends Packet {
     
     public static int PACKETID = 19;
-    private INIOPacket packet;
+   // private INIOPacket packet;
     private byte[] data;
 
-    public CompressedPacket(INIOPacket packet) {
-        this.packet = packet;
+    public CompressedPacket(byte[] header, byte[] body) {
+        super(false);
+        //this.packet = packet;
 
-        byte[] data = packet.data();
-        if(packet.hasHeader()) {
-            data = new byte[packet.data().length+packet.header().length];
-            System.arraycopy(packet.header(), 0, data, 0, packet.header().length);
-            System.arraycopy(packet.data(), 0, data, packet.header().length, packet.data().length);
+        byte[] data = body;
+        if(header != null) {
+            data = new byte[body.length+header.length];
+            System.arraycopy(header, 0, data, 0, header.length);
+            System.arraycopy(body, 0, data, header.length, body.length);
         }
 
         this.data = Zstd.compress(data);
     }
 
-    public INIOPacket getPacket() {
+    /*public INIOPacket getPacket() {
         return packet;
-    }
+    }*/
 
     @Override
     public byte[] data() {

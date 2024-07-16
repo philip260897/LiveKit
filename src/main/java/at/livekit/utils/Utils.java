@@ -5,6 +5,8 @@ import java.lang.management.ManagementFactory;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Callable;
 
 import org.bukkit.Bukkit;
@@ -14,6 +16,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.metadata.MetadataValue;
 import org.bukkit.scheduler.BukkitTask;
 
+import at.livekit.modules.LiveMapModule.Offset;
 import at.livekit.plugin.Plugin;
 
 
@@ -173,5 +176,44 @@ public class Utils
                 return Utils.getField(superClass, fieldName);
             }
         }
+    }
+
+    public static File getRegionFolder(String world) {
+        File regionFolder = new File(Plugin.getInstance().getDataFolder(), "/../../"+world+"/region");
+        if(!regionFolder.exists()) {
+            regionFolder = new File(Plugin.getInstance().getDataFolder(), "/../../"+world+"/DIM-1/region");
+            if(!regionFolder.exists()) {
+                regionFolder = new File(Plugin.getInstance().getDataFolder(), "/../../"+world+"/DIM1/region");
+                if(!regionFolder.exists()) {
+                    return null;
+                }
+            }
+        }
+        return regionFolder;
+    }
+
+    public static boolean hasRegion(String world, int x, int z) {
+        File regionFolder = getRegionFolder(world);
+        if(regionFolder == null) return false;
+
+        File regionFile = new File(regionFolder, "r."+x+"."+z+".mca");
+        return regionFile.exists();
+    }
+
+    public static List<Offset> getWorldRegions(String world) {
+        List<Offset> regions = new ArrayList<>();
+        File regionFolder = getRegionFolder(world);
+        if(regionFolder == null) return regions;
+
+        for(File file : regionFolder.listFiles()) {
+            if(file.getName().endsWith(".mca")) {
+                String[] parts = file.getName().split("\\.");
+                int x = Integer.parseInt(parts[1]);
+                int z = Integer.parseInt(parts[2]);
+                regions.add(new Offset(x, z));
+            }
+        }
+
+        return regions;
     }
 }

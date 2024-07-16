@@ -10,6 +10,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.json.JSONObject;
 import at.livekit.map.RenderBounds;
+import at.livekit.map.RenderBounds.RectRenderBounds;
 import at.livekit.plugin.Plugin;
 import at.livekit.storage.IStorageAdapterGeneric;
 import at.livekit.storage.legacy.IStorageAdapter;
@@ -54,7 +55,7 @@ public class Legacy
 
                 if(right - left > 0 && right - left <= 40) {
                     if(bottom - top > 0 && bottom - top <= 40) {
-                        RenderBounds bounds = new RenderBounds(left*512, top*512, right*512, bottom*512);
+                        RenderBounds bounds = new RectRenderBounds(left*512, top*512, right*512, bottom*512);
                         return bounds;
                     }
                 }

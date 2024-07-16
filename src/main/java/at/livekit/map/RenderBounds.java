@@ -4,74 +4,21 @@ import org.json.JSONObject;
 
 import at.livekit.plugin.Plugin;
 
-public class RenderBounds 
+
+public abstract class RenderBounds 
 {
-    public static RenderBounds DEFAULT = new RenderBounds(-512*2, -512*2, 512*2, 512*2);
+    public static RenderBounds DEFAULT = new AlwaysInRenderBounds(); //new RenderBounds(-512*2, -512*2, 512*2, 512*2);
 
-    private int left = -512;
-    private int top = -512;
-    private int right = 512;
-    private int bottom = 512;
+    protected int _chunkLeft = -32;
+    protected int _chunkTop = -32;
+    protected int _chunkRight = 32;
+    protected int _chunkBottom = 32;
 
-    private int radius = 0;
-    private double radius_sq = 0;
-    private int offset_x = 0;
-    private int offset_z = 0;
+    protected RenderBounds(){}
 
-    private RenderShape shape;
+    public boolean valid(){ return false; }
 
-    private int _chunkLeft = -32;
-    private int _chunkTop = -32;
-    private int _chunkRight = 32;
-    private int _chunkBottom = 32;
-
-    public RenderBounds(int radius) {
-        this(radius, 0, 0);
-    }
-
-    public RenderBounds(int radius, int x, int z) {
-        this.radius = Math.abs(radius);
-        this.radius_sq = Math.pow(this.radius, 2);
-        this.offset_x = x;
-        this.offset_z = z;
-        shape = RenderShape.CIRCLE;
-
-        initialize();
-    }
-
-    public RenderBounds(int left, int top, int right, int bottom) {
-        this.left = left;
-        this.top = top;
-        this.right = right;
-        this.bottom = bottom;
-        shape = RenderShape.RECT;
-
-        initialize();
-    }
-
-    private void initialize() {
-        if(shape == RenderShape.RECT) {
-            _chunkLeft = (int) Math.floor( (double) left / 16.0 );
-            _chunkTop = (int) Math.floor( (double) top / 16.0 );
-            _chunkRight = (int) Math.ceil( (double) right / 16.0 );
-            _chunkBottom = (int) Math.ceil( (double) bottom / 16.0 );
-        } else if(shape == RenderShape.CIRCLE) {
-            _chunkLeft = (int) Math.floor((double)((-radius) + offset_x) / 16.0);
-            _chunkTop = (int) Math.floor((double)((-radius) + offset_z) / 16.0);
-            _chunkRight = (int) Math.ceil((double)(radius + offset_x) / 16.0);
-            _chunkBottom = (int) Math.ceil((double)(radius + offset_z) / 16.0);
-        }
-    }
-
-    public boolean valid() {
-        if(shape == RenderShape.CIRCLE) {
-            return radius > 0;
-        }
-        if(shape == RenderShape.RECT) {
-            if(right - left > 0 && bottom - top > 0) return true;
-        }
-        return false;
-    }
+    public boolean blockInBounds(int x, int z) { return false; }
 
     public boolean regionInBounds(int x, int z) {
         if(x >= Math.floor((double)_chunkLeft/32.0) && x < Math.ceil((double)_chunkRight/32.0)) {
@@ -87,20 +34,6 @@ public class RenderBounds
             if( z >= _chunkTop && z < _chunkBottom) {
                 return true;
             }
-        }
-        return false;
-    }
-
-    public boolean blockInBounds(int x, int z) {
-        if(shape == RenderShape.RECT) {
-            if( x >= left && x < right) {
-                if(z >= top && z < bottom) {
-                    return true;
-                }
-            }
-        }
-        if(shape == RenderShape.CIRCLE) {
-            return Math.pow(x - offset_x, 2) + Math.pow(z - offset_z, 2) < radius_sq;
         }
         return false;
     }
@@ -121,58 +54,178 @@ public class RenderBounds
         return _chunkBottom;
     }
 
-    public int getLeft() {
-        return left;
-    }
-
-    public int getRight() {
-        return right;
-    }
-
-    public int getTop() {
-        return top;
-    }
-
-    public int getBottom() {
-        return bottom;
-    }
-
-    public int getRadius() {
-        return radius;
-    }
-
-    public RenderShape getShape() {
-        return shape;
-    }
-
-    @Override
-    public String toString() {
-        return shape == RenderShape.RECT ?  "RenderBounds[shape="+shape+"; left(-x)="+left+"; top(-z)="+top+"; right(x)="+right+"; bottom(z)="+bottom+";]" :
-                                            "RenderBounds[shape="+shape+"; radius="+radius+";]" ;
-    }
-
-    public JSONObject toJson() {
-        JSONObject json = new JSONObject();
-        json.put("shape", shape.name());
-        json.put("left", left);
-        json.put("right", right);
-        json.put("top", top);
-        json.put("bottom", bottom);
-        json.put("radius", radius);
-        json.put("offset_x", offset_x);
-        json.put("offset_z", offset_z);
-        return json;
-    }
+    public JSONObject toJson() {return null;}
 
     public static RenderBounds fromJson(JSONObject json) throws Exception {
-        if(json.getString("shape").equalsIgnoreCase("CIRCLE")) {
-            return new RenderBounds(json.getInt("radius"), json.getInt("offset_x"), json.getInt("offset_z"));
-        } else {
-            return new RenderBounds(json.getInt("left"), json.getInt("top"), json.getInt("right"), json.getInt("bottom"));
+        String shape = json.getString("shape");
+        if(shape.equalsIgnoreCase("ALWAYS_IN")) {
+            return new AlwaysInRenderBounds();
+        } else
+        if(shape.equalsIgnoreCase("CIRCLE")) {
+            return new CircleRenderBounds(json.getInt("radius"), json.getInt("offset_x"), json.getInt("offset_z"));
+        } else if(shape.equalsIgnoreCase("RECT")) {
+            return new RectRenderBounds(json.getInt("left"), json.getInt("top"), json.getInt("right"), json.getInt("bottom"));
+        }
+        throw new Exception("Invalid RenderBounds shape: "+shape);
+    }
+
+    /*public enum RenderShape {
+        RECT, CIRCLE
+    }*/
+
+    public static class RectRenderBounds extends RenderBounds{
+        private int left = -512;
+        private int top = -512;
+        private int right = 512;
+        private int bottom = 512;
+
+        public RectRenderBounds(int left, int top, int right, int bottom) {
+            this.left = left;
+            this.top = top;
+            this.right = right;
+            this.bottom = bottom;
+            
+            Plugin.debug("Creating RectRenderBounds: left="+left+"; top="+top+"; right="+right+"; bottom="+bottom);
+            _chunkLeft = (int) Math.floor( (double) left / 16.0 );
+            _chunkTop = (int) Math.floor( (double) top / 16.0 );
+            _chunkRight = (int) Math.ceil( (double) right / 16.0 );
+            _chunkBottom = (int) Math.ceil( (double) bottom / 16.0 );
+            Plugin.debug("Chunk bounds: left="+_chunkLeft+"; top="+_chunkTop+"; right="+_chunkRight+"; bottom="+_chunkBottom);
+        }
+
+        @Override
+        public boolean blockInBounds(int x, int z) {
+            if( x >= left && x < right) {
+                if(z >= top && z < bottom) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        @Override
+        public boolean valid() {
+            if(right - left > 0 && bottom - top > 0) return true;
+            return false;
+        }
+
+        public int getLeft() {
+            return left;
+        }
+
+        public int getTop() {
+            return top;
+        }
+
+        public int getRight() {
+            return right;
+        }
+
+        public int getBottom() {
+            return bottom;
+        }
+
+        @Override
+        public JSONObject toJson() {
+            JSONObject json = new JSONObject();
+            json.put("shape", "RECT");
+            json.put("left", left);
+            json.put("top", top);
+            json.put("right", right);
+            json.put("bottom", bottom);
+            return json;
+        }
+
+        @Override
+        public String toString() {
+            return "RenderBounds[shape=RECT; left(-x)="+left+"; top(-z)="+top+"; right(x)="+right+"; bottom(z)="+bottom+";]";
         }
     }
 
-    public enum RenderShape {
-        RECT, CIRCLE
+    public static class CircleRenderBounds extends RenderBounds {
+        private int radius = 0;
+        private double radius_sq = 0;
+        private int offset_x = 0;
+        private int offset_z = 0;
+
+        public CircleRenderBounds(int radius) {
+            this(radius, 0, 0);
+        }
+
+        public CircleRenderBounds(int radius, int x, int z) {
+            this.radius = Math.abs(radius);
+            this.radius_sq = Math.pow(this.radius, 2);
+            this.offset_x = x;
+            this.offset_z = z;
+
+            _chunkLeft = (int) Math.floor((double)((-radius) + offset_x) / 16.0);
+            _chunkTop = (int) Math.floor((double)((-radius) + offset_z) / 16.0);
+            _chunkRight = (int) Math.ceil((double)(radius + offset_x) / 16.0);
+            _chunkBottom = (int) Math.ceil((double)(radius + offset_z) / 16.0);
+        }
+
+        @Override
+        public boolean blockInBounds(int x, int z) {
+            return Math.pow(x - offset_x, 2) + Math.pow(z - offset_z, 2) < radius_sq;
+        }
+
+        @Override
+        public boolean valid() {
+            return radius > 0;
+        }
+
+        public int getRadius() {
+            return radius;
+        }
+
+        @Override
+        public JSONObject toJson() {
+            JSONObject json = new JSONObject();
+            json.put("shape", "CIRCLE");
+            json.put("radius", radius);
+            json.put("offset_x", offset_x);
+            json.put("offset_z", offset_z);
+            return json;
+        }
+
+        @Override
+        public String toString() {
+            return "RenderBounds[shape=CIRCLE; radius="+radius+";]";
+        }
+    }
+
+    public static class AlwaysInRenderBounds extends RenderBounds {
+
+        @Override
+        public boolean chunkInBounds(int x, int z) {
+            return true;
+        }
+
+        @Override
+        public boolean regionInBounds(int x, int z) {
+            return true;
+        }
+
+        @Override
+        public boolean blockInBounds(int x, int z) {
+            return true;
+        }
+
+        @Override
+        public boolean valid() {
+            return true;
+        }
+
+        @Override
+        public JSONObject toJson() {
+            JSONObject json = new JSONObject();
+            json.put("shape", "ALWAYS_IN");
+            return json;
+        }
+
+        @Override
+        public String toString() {
+            return "RenderBounds[shape=ALWAYS_IN;]";
+        }
     }
 }

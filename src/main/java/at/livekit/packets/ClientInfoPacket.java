@@ -8,9 +8,11 @@ public class ClientInfoPacket extends Packet {
     private int appVersion;
 
     public ClientInfoPacket() {
+        super(false);
     }
 
     public ClientInfoPacket(int appVersion) {
+        super(false);
         this.appVersion = appVersion;
     }
 

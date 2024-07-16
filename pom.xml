@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>LiveKit</groupId>
   <artifactId>LiveKit</artifactId>
-  <version>1.4.6-BETA-0.3</version>
+  <version>1.4.6</version>
   <name>LiveKit</name>
   <properties>
   <maven.compiler.source>1.8</maven.compiler.source>
@@ -172,6 +172,11 @@
         <groupId>com.github.luben</groupId>
         <artifactId>zstd-jni</artifactId>
         <version>1.5.5-1</version>
+    </dependency>
+    <dependency>
+      <groupId>com.github.Querz</groupId>
+      <artifactId>NBT</artifactId>
+      <version>6.1</version>
     </dependency>
     <dependency>
       <groupId>net.essentialsx</groupId>

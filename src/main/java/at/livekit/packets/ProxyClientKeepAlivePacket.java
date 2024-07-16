@@ -4,6 +4,11 @@ import org.json.JSONObject;
 
 public class ProxyClientKeepAlivePacket extends Packet {
     public static int PACKETID = 1002;
+
+    public ProxyClientKeepAlivePacket() {
+        super(false);
+    }
+
     @Override
     public JSONObject toJson() {
         JSONObject json = new JSONObject();

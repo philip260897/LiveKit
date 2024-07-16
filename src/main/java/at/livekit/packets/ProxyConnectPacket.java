@@ -6,10 +6,13 @@ public class ProxyConnectPacket extends Packet {
     public static int PACKETID = 1000;
     private String serverUUID;
     private String token;
+
     public ProxyConnectPacket(String serverUUID, String token) {
+        super(false);
         this.serverUUID = serverUUID;
         this.token = token;
     }
+    
     @Override
     public JSONObject toJson() {
         JSONObject json = new JSONObject();
