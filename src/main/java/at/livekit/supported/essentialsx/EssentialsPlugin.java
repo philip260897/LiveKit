@@ -31,9 +31,11 @@ public class EssentialsPlugin {
                 Bukkit.getServer().getPluginManager().registerEvents(poiProvider, at.livekit.plugin.Plugin.getInstance());
 
 
-                spawnPlugin = new EssentialsSpawnPlugin();
-                spawnPlugin.onEnable();
-
+                Plugin spawnPluginPlugin = Bukkit.getPluginManager().getPlugin("EssentialsSpawn");
+                if(spawnPluginPlugin != null && spawnPluginPlugin.isEnabled()) {
+                    spawnPlugin = new EssentialsSpawnPlugin();
+                    spawnPlugin.onEnable();
+                }
 
                 EssentialsMessaging messaging = new EssentialsMessaging(essentials);
                 at.livekit.plugin.Plugin.getInstance().getLiveKit().setMessagingAdapter(messaging);

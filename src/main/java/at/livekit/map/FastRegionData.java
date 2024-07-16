@@ -271,7 +271,13 @@ public class FastRegionData extends RegionData {
         int biomePaletteIndex = biomesLong.length == 0 ? 0 : (int) ((biomesLong[biomeLongIndex] >>> biomeStartBit) & ((1 << bitsPerBiome) - 1));
         String biomeName = biomePalette.get(biomePaletteIndex).getValue();
             
-        Biome biome = Biome.valueOf(biomeName.replace("minecraft:", "").toUpperCase());
+        Biome biome;
+
+        try {
+            biome = Biome.valueOf(biomeName.replace("minecraft:", "").toUpperCase());
+        } catch (Exception e) {
+            biome = Biome.PLAINS;
+        }
 
         if(blockStatesLong == null || blockStatesLong.length == 0) {
             String blockName = blockPalette.get(0).getString("Name");
