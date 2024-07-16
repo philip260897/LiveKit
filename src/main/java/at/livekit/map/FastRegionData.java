@@ -105,14 +105,8 @@ public class FastRegionData extends RegionData {
 
     private Map<String, Material> blockCache = new HashMap<>();
     private Map<Integer, CompoundTag> sectionCache = new HashMap<>();
-    private void parseChunk(CompoundTag chunkTag) {
+    private void parseChunk(CompoundTag chunkTag) throws Exception {
         sectionCache.clear();
-
-        //print all tag names in chunkTag, recursively
-
-
-       // IntTag level = chunkTag.getIntTag("DataVersion");
-       // System.out.println("DataVersion: " + level.toString());
         
         ListTag<CompoundTag> sections = chunkTag.getListTag("sections").asCompoundTagList();
         for(int i = 0; i < sections.size(); i++) {
@@ -133,7 +127,6 @@ public class FastRegionData extends RegionData {
 
         long[] heightMapData = motionBlocking.getValue();
         int[] heights = unpackHeightMap(heightMapData, 9, 256);
-
 
         Block previous = null;
         for (int i = 0; i < heights.length; i++) {
