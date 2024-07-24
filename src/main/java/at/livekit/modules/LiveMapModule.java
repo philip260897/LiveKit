@@ -359,20 +359,6 @@ public class LiveMapModule extends BaseModule implements Listener
             if (localZ < 0)
                 localZ += 512;
 
-            if(chunk.x == -42 && chunk.z == 79) {
-                for(int x = 0; x < 15; x++) {
-                    for(int z = 0; z < 15; z++) {
-                        System.out.println("X "+(localX+x)+" Z "+(localZ+z));
-                        printByteArrayAsHex(data, 8 + ((localZ+z) * 4 * 512) + ((localX+x) * 4),  8 + ((localZ+z) * 4 * 512) + ((localX+x) * 4) + 3);
-                    }
-                }
-                System.out.println("====");
-                printByteArrayAsHex(data, 8 + ((localZ+0) * 4 * 512) + ((localX+0) * 4),  8 + ((localZ+0) * 4 * 512) + ((localX+0) * 4) + 3);
-                printByteArrayAsHex(data, 8 + ((localZ+15) * 4 * 512) + ((localX+0) * 4),  8 + ((localZ+15) * 4 * 512) + ((localX+0) * 4) + 3);
-                printByteArrayAsHex(data, 8 + ((localZ+0) * 4 * 512) + ((localX+15) * 4),  8 + ((localZ+0) * 4 * 512) + ((localX+15) * 4) + 3);
-                printByteArrayAsHex(data, 8 + ((localZ+15) * 4 * 512) + ((localX+15) * 4),  8 + ((localZ+15) * 4 * 512) + ((localX+15) * 4) + 3);
-            }
-
             int edges = 0;
             boolean hasEdge = false;
             for(int i = 0; i < 4; i++) {
@@ -395,19 +381,6 @@ public class LiveMapModule extends BaseModule implements Listener
             }
             if(hasEdge) edges++;
             return edges == 4;
-        }
-
-        public static void printByteArrayAsHex(byte[] byteArray, int start, int end) {
-            if (start < 0 || end >= byteArray.length || start > end) {
-                throw new IllegalArgumentException("Invalid range");
-            }
-    
-            StringBuilder hexString = new StringBuilder();
-            for (int i = start; i <= end; i++) {
-                hexString.append(String.format("%02X", byteArray[i])).append(" ");
-            }
-    
-            System.out.println(hexString.toString().trim());
         }
     }
 
