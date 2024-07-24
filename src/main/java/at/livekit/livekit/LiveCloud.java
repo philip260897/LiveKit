@@ -23,7 +23,7 @@ import at.livekit.plugin.Plugin;
 
 public class LiveCloud {
     
-    private static final String HOST = "https://proxy.livekitapp.com/livekit/api/v1";
+    private static final String HOST = Plugin.isDebug() ? "http://127.0.0.1:9090" : "https://proxy.livekitapp.com/livekit/api/v1";
     private static LiveCloud instance = null;
     public static LiveCloud getInstance() {
         if(instance == null) {
@@ -86,6 +86,14 @@ public class LiveCloud {
         });
     }
 
+    protected CompletableFuture<Boolean> livekitVerifyNotificationId(String id, String playerUuid) {
+        return async(()->{
+            if(isInitialized() == false) return false;
+            HttpResponse response = apiVerifyNotificationId(identity, id, playerUuid);
+            return response.getStatus() == 200;
+        });
+    }
+
     public boolean isInitialized() {
         return identity != null;
     }
@@ -129,6 +137,11 @@ public class LiveCloud {
     private boolean error(HttpResponse response) {
         Plugin.debug("HTTP " + response.getStatus() + " " + response.getUrl() + " " + response.getBody());
         return false;
+    }
+
+    private HttpResponse apiVerifyNotificationId(ServerIdentity identity, String id, String playerUuid) {
+        assert identity != null;
+        return httpClient.get(HOST + "/notification/verify?id="+id+"&playerUuid="+playerUuid, identity.toHeaders());
     }
 
     private LCServerAuthResponse apiEnableServer(ServerIdentity identity, String ip, String alias, int serverPort, int liveKitPort) {

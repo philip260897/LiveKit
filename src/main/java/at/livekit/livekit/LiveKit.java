@@ -872,6 +872,16 @@ public class LiveKit implements ILiveKit, ModuleListener, NIOServerEvent<Identit
         return new StatusPacket(1, "This just computed on the main thread!");
     }
 
+    @Action(name = "VerifyNotificationId", sync = false) 
+    public IPacket verifyNotificationId(Identity identity, ActionPacket action) {
+        if(identity.isAnonymous()) return new StatusPacket(0, "Permission denied!");
+
+        String notificationId = action.getData().getString("notificationId");
+        LiveCloud.getInstance().livekitVerifyNotificationId(notificationId, identity.getUuid());
+
+        return new StatusPacket(1);
+    }
+
     
     private Future<Map<Identity, IPacket>> invokeActionsAsync(Map<Identity, ActionPacket> actions) {
         return executor.submit(()->{
