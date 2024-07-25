@@ -13,6 +13,7 @@ import at.livekit.api.core.ILiveKit;
 import at.livekit.api.core.ILiveKitPlugin;
 import at.livekit.commands.CommandHandler;
 import at.livekit.commands.LiveKitCommandExecutor;
+import at.livekit.lib.LibraryLoader;
 import at.livekit.livekit.LiveKit;
 import at.livekit.modules.PlayerModule;
 import at.livekit.modules.PlayerModule.LPlayer;
@@ -60,6 +61,12 @@ public class Plugin extends JavaPlugin implements ILiveKitPlugin, Listener {
 			getDataFolder().mkdirs();
 		}
 
+		LibraryLoader.loadLibraries(this);
+
+		try{
+			Class.forName("org.postgresql.Driver");
+		}catch(Exception ex){ex.printStackTrace();}
+
 		try{
 			Texturepack.getInstance();
 		}catch(Exception ex){ 
@@ -70,8 +77,8 @@ public class Plugin extends JavaPlugin implements ILiveKitPlugin, Listener {
 		}
 
 		name = this.getDescription().getName();
-		prefix = color+"["+ChatColor.WHITE+name+color+"] "+ChatColor.WHITE;
-		prefixError = ChatColor.RED+"["+ChatColor.WHITE+name+ChatColor.RED+"] "+ChatColor.WHITE;
+		prefix = color+"["+ChatColor.RESET+name+color+"] "+ChatColor.RESET;
+		prefixError = ChatColor.RED+"["+ChatColor.RESET+name+ChatColor.RED+"] "+ChatColor.RESET;
 
 		//initialize config
 		Config.initialize();
