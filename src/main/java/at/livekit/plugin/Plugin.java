@@ -64,10 +64,6 @@ public class Plugin extends JavaPlugin implements ILiveKitPlugin, Listener {
 		LibraryLoader.loadLibraries(this);
 
 		try{
-			Class.forName("org.postgresql.Driver");
-		}catch(Exception ex){ex.printStackTrace();}
-
-		try{
 			Texturepack.getInstance();
 		}catch(Exception ex){ 
 			ex.printStackTrace(); 
