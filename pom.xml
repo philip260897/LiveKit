@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>LiveKit</groupId>
   <artifactId>LiveKit</artifactId>
-  <version>1.4.8</version>
+  <version>1.4.9</version>
   <name>LiveKit</name>
   <properties>
   <maven.compiler.source>1.8</maven.compiler.source>
@@ -206,20 +206,20 @@
     <dependency>
       <groupId>org.spigotmc</groupId>
       <artifactId>spigot-api</artifactId>
-      <version>1.20.4-R0.1-SNAPSHOT</version>
+      <version>1.21.8-R0.1-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
     <!-- https://mvnrepository.com/artifact/com.comphenix.protocol/ProtocolLib-API -->
     <dependency>
       <groupId>org.spigotmc</groupId>
       <artifactId>spigot</artifactId>
-      <version>1.20.4-R0.1-SNAPSHOT</version>
+      <version>1.21.8-R0.1-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>net.essentialsx</groupId>
       <artifactId>EssentialsX</artifactId>
-      <version>2.20.1</version>
+      <version>2.21.1</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -237,9 +237,9 @@
     <dependency>
       <groupId>net.essentialsx</groupId>
       <artifactId>EssentialsXSpawn</artifactId>
-      <version>2.21.0</version>
+      <version>2.21.1</version>
       <scope>system</scope>
-      <systemPath>${project.basedir}/EssentialsXSpawn-2.21.0.jar</systemPath>
+      <systemPath>${project.basedir}/EssentialsXSpawn-2.21.1.jar</systemPath>
   </dependency>
   
   </dependencies>

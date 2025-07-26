@@ -1,7 +1,7 @@
 api-version: 1.16
 main: at.livekit.plugin.Plugin
 name: LiveKit
-version: 1.4.8
+version: 1.4.9
 author: xStachelbaer
 description: More than just a live map! 
 softdepend: [Vault,DiscordSRV,Essentials,EssentialsSpawn]
