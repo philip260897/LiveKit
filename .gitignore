@@ -1,7 +1,8 @@
 /target
 /.vscode
-/.DS_Store
+.DS_Store
 /.classpath
 /.factorypath
 /.settings
 /.project
+/src/main/resources/texturepack_previous.json
